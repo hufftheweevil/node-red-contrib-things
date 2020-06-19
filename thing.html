@@ -1,0 +1,91 @@
+<script type="text/javascript">
+  RED.nodes.registerType('thing', {
+    category: 'common',
+    color: '#D8BFD8',
+    defaults: {
+      nodeName: { value: '' },
+      name: { value: '' },
+      output: { value: 'change' }
+    },
+    inputs: 1,
+    outputs: 1,
+    icon: 'font-awesome/fa-asterisk',
+    label: function () {
+      return this.name || this.nodeName || 'thing'
+    },
+    labelStyle: function () {
+      return this.name ? 'node_label_italic' : ''
+    }
+  })
+</script>
+
+<script type="text/html" data-template-name="thing">
+  <div class="form-row">
+      <label for="node-input-nodeName"><i class="fa fa-tag"></i> Node Name</label>
+      <input type="text" id="node-input-nodeName" placeholder="Node Name">
+  </div>
+  <div class="form-row">
+      <label for="node-input-name"><i class="fa fa-id-badge"></i> Thing Name</label>
+      <input type="text" id="node-input-name" placeholder="Thing Name">
+  </div>
+  <div class="form-row">
+      <label for="node-input-output"><i class="fa fa-list"></i> Output</label>
+      <select id="node-input-output">
+        <option value='all'>On All State Updates</option>
+        <option value='change'>Only When State Changes</option>
+        <option value='input'>Only On Input</option>
+        <option value='never'>Never</option>
+      </select>
+  </div>
+</script>
+
+<script type="text/html" data-help-name="thing">
+  <p>A simple, but dynamic, node that keeps track of things and their state.</p>
+  <p>This node is designed for multiple uses. It has three main purposes:</p>
+    <ol>
+      <li>To setup <i>things</i></li>
+      <li>To update state on <i>things</i></li>
+      <li>To trigger from <i>thing</i> state updates</li>
+    </ol>
+  <p>A <i>thing</i> is any object/device/entity that you want to keep state on.
+    All <i>things</i> are stored globally, so you can access them wherever you want.
+    Each <i>thing</i> has a few standard parts:</p>
+    <ul>
+      <li><code>name</code> - a friendly name that will be used to reference the <i>thing</i>. Can contain spaces</li>
+      <li><code>state</code> - the current state. Can be any type, but is typically an object</li>
+      <li><code>status</code> - a function that takes in the current state and outputs a node-red status object</li>
+    </ul>
+
+  <h3>Properties</h3>
+    <dl class="message-properties">
+      <dt class="optional">Thing Name</dt>
+      <dd> The <i>thing</i> name. If not specified here, must be in <code>topic</code> on input </dd>
+      <dt class="optional">Output</dt>
+      <dd> When to output <i>thing</i> state </dd>
+      <ul>
+        <li><b>On All State Updates</b> - Any time the <i>thing</i> state is updated by this or any other <i>thing</i> node with the same <i>thing</i> name specified. Will trigger even if state did not change.</li>
+        <li><b>Only When State Changes</b> - Any time the <i>thing</i> state is changed. Comparison is done using <code>JSON.stringify</code></li>
+        <li><b>Only On Input</b> - Only when this node receives an input, regardless of if the state changed</li>
+        <li><b>Never</b> - Never</li>
+    </dl>
+
+  <h3>Inputs</h3>
+    <dl class="message-properties">
+      <dt class="optional">topic <span class="property-type">string</span></dt>
+      <dd> The <i>thing</i> name. Only used if not specified in properties. <b>Note:</b> will NOT override property setting </dd>
+      <dt class="optional">payload <span class="property-type">any</span></dt>
+      <dd> The state update (ignored if <code>setup</code> is specified) </dd>
+      <dt class="optional">replace <span class="property-type">boolean</span></dt>
+      <dd> If true, <code>payload</code> will completely replace state. Otherwise it will be recursively merged. </dd>
+      <dt class="optional">setup <span class="property-type">object</span></dt>
+      <dd> The entire <i>thing</i> object. Only used for setup/initization </dd>
+    </dl>
+
+  <h3>Outputs</h3>
+    <dl class="message-properties">
+      <dt>topic <span class="property-type">string</span></dt>
+      <dd> The <i>thing</i> name </dd>
+      <dt>payload <span class="property-type">any</span></dt>
+      <dd> The latest <i>thing</i> state </dd>
+    </dl>
+</script>

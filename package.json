@@ -1,0 +1,17 @@
+{
+  "name": "node-red-contrib-things",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {},
+  "author": "hufftheweevil",
+  "license": "ISC",
+  "node-red": {
+    "nodes": {
+      "thing": "thing.js"
+    }
+  },
+  "dependencies": {
+    "deepmerge": "^4.2.2"
+  }
+}
