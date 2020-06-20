@@ -4,8 +4,10 @@
     color: '#D8BFD8',
     defaults: {
       nodeName: { value: '' },
+      all: { value: false },
       name: { value: '' },
-      output: { value: 'change' }
+      output: { value: 'change' },
+      incThing: { value: false }
     },
     inputs: 1,
     outputs: 1,
@@ -37,6 +39,11 @@
         <option value='never'>Never</option>
       </select>
   </div>
+  <div class="form-row">
+    <label for="node-input-incThing">&nbsp;</label>
+    <input type="checkbox" id="node-input-incThing" placeholder="Node Name" style="display:inline-block; width:15px; vertical-align:baseline;">
+    <span> Include <code>thing</code> in output</span>
+  </div>
 </script>
 
 <script type="text/html" data-help-name="thing">
@@ -52,8 +59,11 @@
     Each <i>thing</i> has a few standard parts:</p>
     <ul>
       <li><code>name</code> - a friendly name that will be used to reference the <i>thing</i>. Can contain spaces</li>
-      <li><code>state</code> - the current state. Can be any type, but is typically an object</li>
-      <li><code>status</code> - a function that takes in the current state and outputs a node-red status object</li>
+      <li><code>type</code> - the thing type (default <code>''</code>)
+      <li><code>id</code> - a unique identifier among all <i>things</i> of the same type (default <i>name</i>)</li>
+      <li><code>state</code> - the current state. Can be any type, but is typically an object (default <code>{}</code>)</li>
+      <li><code>props</code> - static properties (default <code>{}</code>)</li>
+      <li><code>status</code> - a function that takes in the current state and props, and outputs a node-red status object (default <code>() => ({ text: JSON.stringify(state) })</code>)</li>
     </ul>
 
   <h3>Properties</h3>
@@ -67,6 +77,9 @@
         <li><b>Only When State Changes</b> - Any time the <i>thing</i> state is changed. Comparison is done using <code>JSON.stringify</code></li>
         <li><b>Only On Input</b> - Only when this node receives an input, regardless of if the state changed</li>
         <li><b>Never</b> - Never</li>
+      </ul>
+      <dt class="optional">Output</dt>
+      <dd> When to output <i>thing</i> state </dd>
     </dl>
 
   <h3>Inputs</h3>

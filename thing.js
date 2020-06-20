@@ -25,6 +25,10 @@ module.exports = function (RED) {
       if (msg.setup) {
         let newThing = msg.setup
 
+        if (!name) {
+          node.error(`Name must be specified if setup is used`)
+          return
+        }
         if (typeof newThing !== 'object') {
           node.error(
             `Payload for ${name} must be an object; Instead got: ${JSON.stringify(newThing)}`
@@ -42,7 +46,7 @@ module.exports = function (RED) {
           status: () => state => ({ text: JSON.stringify(state) }),
           ...newThing
         }
-      } else {
+      } else if (name) {
         // Must be state update message
         let stateUpdate = msg.payload
 
@@ -60,6 +64,10 @@ module.exports = function (RED) {
         } else {
           thing.state = deepmerge(thing.state, stateUpdate)
         }
+      } else {
+        // No name specified
+        node.error('Thing name is required in properties or input')
+        return
       }
 
       // Emit to the bus so that all other nodes that
@@ -73,7 +81,8 @@ module.exports = function (RED) {
       if (config.output == 'input' || msg.setup)
         return {
           topic: name,
-          payload: THINGS[name].state
+          payload: THINGS[name].state,
+          thing: config.incThing && THINGS[name]
         }
     })
 
@@ -83,7 +92,6 @@ module.exports = function (RED) {
     // state. This will change the node's status and
     // output a message (if configured as such)
     if (config.name != '') {
-      //
       // Keep last known state (only used when config.output == 'change')
       let lastKnownState = ''
 
@@ -101,7 +109,8 @@ module.exports = function (RED) {
         if (config.output == 'all' || (config.output == 'change' && lastKnownState != latestState))
           node.send({
             topic: thing.name,
-            payload: thing.state
+            payload: thing.state,
+            thing: config.incThing && thing
           })
 
         // Update last known state
@@ -120,7 +129,13 @@ module.exports = function (RED) {
     function updateStatus() {
       if (!config.name) return
       let thing = THINGS[config.name]
-      if (thing) node.status(thing.status(thing.state))
+      if (thing) {
+        try {
+          node.status(thing.status(thing.state, thing.props))
+        } catch (err) {
+          node.warn(`Unable to set status for ${thing.name}: ${err}`)
+        }
+      }
     }
 
     // Initialize status (if thing already exists)
