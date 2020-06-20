@@ -6,6 +6,12 @@ module.exports = function (RED) {
   // to output when any node of the same name receives an input.
   let bus = new EventEmitter()
 
+  // Temporary storage for parent assignments. This is used if
+  // the a parent is being setup with a proxy, but the child
+  // has not been set up yet. When child is setup, it will
+  // read from here.
+  let parentAssignment = {}
+
   function ThingNode(config) {
     RED.nodes.createNode(this, config)
 
@@ -43,8 +49,38 @@ module.exports = function (RED) {
           type: '',
           props: {},
           state: {},
-          status: () => state => ({ text: JSON.stringify(state) }),
+          status: state => ({ text: JSON.stringify(state) }),
+          parents: parentAssignment[name],
           ...newThing
+        }
+        let thing = THINGS[name]
+
+        // If proxies are specified
+        if (thing.proxy) {
+          //
+          // For each proxied thing
+          Object.entries(thing.proxy).forEach(([proxyThingName, { state: stateMap }]) => {
+            //
+            // Link states with getter
+            Object.entries(stateMap).forEach(([from, to]) =>
+              Object.defineProperty(thing.state, from, {
+                // This check for the thing is mostly just in case it attempts to
+                // use this state to update the status before the child has been setup
+                get: () => THINGS[proxyThingName] && THINGS[proxyThingName].state[to],
+                enumerable: true
+              })
+            )
+
+            // Find proxied thing (i.e. the child)
+            let proxyThing = THINGS[proxyThingName]
+            if (proxyThing) {
+              // If already setup, note parent in proxied thing
+              proxyThing.parents = addUnique(proxyThing.parents, name)
+            } else {
+              // Otherwise, store in backlog until proxied thing has been setup
+              parentAssignment[proxyThingName] = addUnique(parentAssignment[proxyThingName], name)
+            }
+          })
         }
       } else if (name) {
         // Must be state update message
@@ -115,6 +151,9 @@ module.exports = function (RED) {
 
         // Update last known state
         lastKnownState = latestState
+
+        // Check for parents and trigger
+        thing.parents && thing.parents.forEach(parent => bus.emit(parent))
       }
 
       // Listen for state updates for this thing
@@ -126,6 +165,7 @@ module.exports = function (RED) {
       })
     }
 
+    // Updates the node status
     function updateStatus() {
       if (!config.name) return
       let thing = THINGS[config.name]
@@ -142,4 +182,8 @@ module.exports = function (RED) {
     updateStatus()
   }
   RED.nodes.registerType('thing', ThingNode)
+}
+
+function addUnique(array, item) {
+  return [...(array || []), item].filter((el, i, all) => all.indexOf(el) == i)
 }
