@@ -7,7 +7,8 @@
       all: { value: false },
       name: { value: '' },
       output: { value: 'change' },
-      incThing: { value: false }
+      incThing: { value: false },
+      debug: { value: false }
     },
     inputs: 1,
     outputs: 1,
@@ -41,8 +42,12 @@
   </div>
   <div class="form-row">
     <label for="node-input-incThing">&nbsp;</label>
-    <input type="checkbox" id="node-input-incThing" placeholder="Node Name" style="display:inline-block; width:15px; vertical-align:baseline;">
+    <input type="checkbox" id="node-input-incThing" style="display:inline-block; width:15px; vertical-align:baseline;">
     <span> Include <code>thing</code> in output</span>
+  </div>
+  <div class="form-row">
+    <label for="node-input-output"><i class="fa fa-bug"></i> Debug</label>
+    <input type="checkbox" id="node-input-debug" style="width:min-content">
   </div>
 </script>
 

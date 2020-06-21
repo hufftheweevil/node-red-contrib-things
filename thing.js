@@ -10,7 +10,7 @@ module.exports = function (RED) {
   // the a parent is being setup with a proxy, but the child
   // has not been set up yet. When child is setup, it will
   // read from here.
-  let parentAssignment = {}
+  // let parentAssignment = {}
 
   function ThingNode(config) {
     RED.nodes.createNode(this, config)
@@ -20,9 +20,10 @@ module.exports = function (RED) {
     // Initialize global.things if it doesn't exist, then create pointer
     let global = this.context().global
     if (!global.get('things')) global.set('things', {})
-    const THINGS = global.get('things')
 
     node.on('input', function (msg) {
+      const THINGS = global.get('things')
+
       // Name should be set in properties, or provided on input.
       // Property takes precedence.
       let name = config.name || msg.topic
@@ -42,6 +43,15 @@ module.exports = function (RED) {
           return { error: true }
         }
 
+        let parents = []
+        Object.values(THINGS)
+          .filter(t => t.proxy)
+          .forEach(possibleParent => {
+            let proxyDef = possibleParent.proxy[name]
+            if (proxyDef && proxyDef.state) parents.push(possibleParent.name)
+          })
+        if (config.debug)
+          node.warn(`Setting up ${name} with parents ${parents.length ? parents : '<none>'}`)
         // Sets defaults first, then includes the payload from input
         THINGS[name] = {
           id: name,
@@ -50,7 +60,7 @@ module.exports = function (RED) {
           props: {},
           state: {},
           status: state => ({ text: JSON.stringify(state) }),
-          parents: parentAssignment[name],
+          parents: parents.length ? parents : undefined,
           ...newThing
         }
         let thing = THINGS[name]
@@ -67,7 +77,13 @@ module.exports = function (RED) {
                 // This check for the thing is mostly just in case it attempts to
                 // use this state to update the status before the child has been setup
                 get: () => {
-                  console.log(THINGS[proxyThingName])
+                  const THINGS = global.get('things')
+                  if (config.debug)
+                    node.warn(
+                      `Calling getter for '${name}'.state.${from} -- Will return '${
+                        THINGS[proxyThingName] && THINGS[proxyThingName].state[to]
+                      }'`
+                    )
                   return THINGS[proxyThingName] && THINGS[proxyThingName].state[to]
                 },
                 enumerable: true
@@ -77,11 +93,9 @@ module.exports = function (RED) {
             // Find proxied thing (i.e. the child)
             let proxyThing = THINGS[proxyThingName]
             if (proxyThing) {
+              if (config.debug) node.warn(`Adding parent ${name} to proxy child ${proxyThing.name}`)
               // If already setup, note parent in proxied thing
               proxyThing.parents = addUnique(proxyThing.parents, name)
-            } else {
-              // Otherwise, store in backlog until proxied thing has been setup
-              parentAssignment[proxyThingName] = addUnique(parentAssignment[proxyThingName], name)
             }
           })
         }
@@ -133,6 +147,8 @@ module.exports = function (RED) {
 
       // The function to be called when triggered
       let action = () => {
+        // Get THINGS again, just to be sure we're pointing to the correct reference
+        const THINGS = global.get('things')
         let thing = THINGS[config.name]
         if (!thing) return
 
@@ -164,10 +180,20 @@ module.exports = function (RED) {
     // Updates the node status
     function updateStatus() {
       if (!config.name) return
+
+      // Get THINGS again, just to be sure we're pointing to the correct reference
+      const THINGS = global.get('things')
       let thing = THINGS[config.name]
+
+      // Catch any errors that occur when running the thing.status function
       if (thing) {
         try {
-          node.status(thing.status(thing.state, thing.props))
+          let statusMsg = thing.status(thing.state, thing.props) || {
+            fill: 'red',
+            shape: 'ring',
+            text: 'Unknown'
+          }
+          node.status(statusMsg)
         } catch (err) {
           node.warn(`Unable to set status for ${thing.name}: ${err}`)
         }
