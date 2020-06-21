@@ -33,13 +33,13 @@ module.exports = function (RED) {
 
         if (!name) {
           node.error(`Name must be specified if setup is used`)
-          return
+          return { error: true }
         }
         if (typeof newThing !== 'object') {
           node.error(
             `Payload for ${name} must be an object; Instead got: ${JSON.stringify(newThing)}`
           )
-          return
+          return { error: true }
         }
 
         // Sets defaults first, then includes the payload from input
@@ -66,7 +66,10 @@ module.exports = function (RED) {
               Object.defineProperty(thing.state, from, {
                 // This check for the thing is mostly just in case it attempts to
                 // use this state to update the status before the child has been setup
-                get: () => THINGS[proxyThingName] && THINGS[proxyThingName].state[to],
+                get: () => {
+                  console.log(THINGS[proxyThingName])
+                  return THINGS[proxyThingName] && THINGS[proxyThingName].state[to]
+                },
                 enumerable: true
               })
             )
@@ -91,7 +94,7 @@ module.exports = function (RED) {
 
         if (!thing) {
           node.error(`Unknown thing ${name}`)
-          return
+          return { error: true }
         }
 
         // Update state accordingly
@@ -103,7 +106,7 @@ module.exports = function (RED) {
       } else {
         // No name specified
         node.error('Thing name is required in properties or input')
-        return
+        return { error: true }
       }
 
       // Emit to the bus so that all other nodes that
@@ -114,12 +117,9 @@ module.exports = function (RED) {
       // If configured to output on input (or this is for
       // setup), send message here because it wasn't done
       // by the bus (for simplicity)
-      if (config.output == 'input' || msg.setup)
-        return {
-          topic: name,
-          payload: THINGS[name].state,
-          thing: config.incThing && THINGS[name]
-        }
+      if (config.output == 'input' || msg.setup) {
+        output(THINGS[name])
+      }
     })
 
     // During node creation, if name is set in properties,
@@ -143,11 +143,7 @@ module.exports = function (RED) {
 
         // Output state message accordingly
         if (config.output == 'all' || (config.output == 'change' && lastKnownState != latestState))
-          node.send({
-            topic: thing.name,
-            payload: thing.state,
-            thing: config.incThing && thing
-          })
+          output(thing)
 
         // Update last known state
         lastKnownState = latestState
@@ -176,6 +172,15 @@ module.exports = function (RED) {
           node.warn(`Unable to set status for ${thing.name}: ${err}`)
         }
       }
+    }
+
+    // Sends output message
+    function output(thing) {
+      node.send({
+        topic: thing.name,
+        payload: thing.state,
+        thing: config.incThing ? thing : undefined
+      })
     }
 
     // Initialize status (if thing already exists)
