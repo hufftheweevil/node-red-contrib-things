@@ -115,6 +115,11 @@ module.exports = function (RED) {
         if (msg.replace) {
           thing.state = stateUpdate
         } else {
+          if (config.debug)
+            node.warn(`Merging state for ${name}.
+                      Current state: ${JSON.stringify(thing.state)}.
+                      Update: ${JSON.stringify(stateUpdate)}
+                      New state: ${JSON.stringify(deepmerge(thing.state, stateUpdate))}`)
           thing.state = deepmerge(thing.state, stateUpdate)
         }
       } else {
