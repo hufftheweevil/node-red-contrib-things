@@ -22,7 +22,7 @@
       return this.mode == 'out' ? 'font-awesome/fa-terminal' : 'font-awesome/fa-paper-plane'
     },
     label: function () {
-      return this.nodeName || this.name || this.thingType || 'command'
+      return this.nodeName || (this.mode == 'in' ? this.name : this.thingType) || 'command'
     },
     labelStyle: function () {
       return this.name ? 'node_label_italic' : ''
