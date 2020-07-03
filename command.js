@@ -20,65 +20,78 @@ module.exports = function (RED) {
       return null
     }
 
+    function getThing(name) {
+      let thing = global.get('things')[name]
+      if (!thing) return err(`Unknown thing ${name}`)
+      return thing
+    }
+
     node.on('input', function (msg) {
       if (config.mode != 'in') return err('Process Command mode does not accept input')
       if (!msg.hasOwnProperty('payload')) return err('Input payload is required')
 
       debug(`Input message: ${JSON.stringify(msg)}`)
 
-      const THINGS = global.get('things')
-
       // Name should be set in properties, or provided on input.
       // Property takes precedence.
-      let name = config.name || msg.topic
+      processCommand(config.name || msg.topic, msg.payload)
+    })
 
+    function processCommand(name, origCommand) {
       // Pointer to the thing
-      let thing = THINGS[name]
+      let thing = getThing(name)
+      if (!thing) return
 
-      if (!thing) return err(`Unknown thing ${name}`)
+      // Check if group
+      if (thing.type == 'Group') {
+        debug('Thing is a Group, sending to each:', thing.things)
+        thing.things.forEach(subName => processCommand(subName, origCommand))
+        return
+      }
 
       // Check for proxies
-      let origCommand
+      let passCommand
       let proxy = Object.entries(thing.proxy || {})
       if (proxy.length) {
-        if (typeof msg.payload !== 'object') {
+        if (typeof origCommand !== 'object') {
           // Simple command type (i.e. string, number, boolean) (hopefully not an array!!!)
           let proxied = false
           proxy.forEach(([proxyThingName, { command }]) => command && Object.entries(command).forEach(([thisCommand, thatCommand]) => {
-            if (msg.payload == thisCommand) {
+            if (origCommand == thisCommand) {
               debug(`Using command proxy from ${name} to ${proxyThingName} for '${thisCommand}'=>'${thatCommand}'`)
-              emitCommand({ thing: THINGS[proxyThingName], command: thatCommand, origThing: thing, origCommand: msg.payload })
+              emitCommand({ thing: getThing(proxyThingName), command: thatCommand, origThing: thing, origCommand })
               proxied = true
             }
           }))
           if (proxied) return
+          passCommand = origCommand
         } else {
           // Complex command type (i.e. object)
-          origCommand = { ...msg.payload }
+          passCommand = { ...origCommand }
           let proxiedKeys = []
           proxy.forEach(([proxyThingName, { command }]) => {
             if (command) {
-              let proxyMap = Object.entries(command).filter(([thisCommand]) => msg.payload.hasOwnProperty(thisCommand))
+              let proxyMap = Object.entries(command).filter(([thisCommand]) => origCommand.hasOwnProperty(thisCommand))
 
               if (proxyMap.length) {
                 let proxyCommand = {}
                 proxyMap.forEach(([thisCommand, thatCommand]) => {
-                  proxyCommand[thatCommand] = msg.payload[thisCommand]
+                  proxyCommand[thatCommand] = origCommand[thisCommand]
                   proxiedKeys.push(thisCommand)
                 })
                 debug(`Using command proxy from ${name} to ${proxyThingName} for ${JSON.stringify(proxyCommand)}`)
-                emitCommand({ thing: THINGS[proxyThingName], command: proxyCommand, origThing: thing, origCommand: msg.payload })
+                emitCommand({ thing: getThing(proxyThingName), command: proxyCommand, origThing: thing, origCommand })
               }
             }
           })
-          if (proxiedKeys.length) proxiedKeys.forEach(key => delete msg.payload[key])
-          if (Object.keys(msg.payload).length == 0) return debug('All commands proxied')
+          if (proxiedKeys.length) proxiedKeys.forEach(key => delete passCommand[key])
+          if (Object.keys(passCommand).length == 0) return debug('All commands proxied')
         }
       }
 
-      emitCommand({ thing, command: msg.payload, origCommand })
+      emitCommand({ thing, command: passCommand, origCommand })
 
-    })
+    }
 
     function emitCommand(msg) {
       if (!msg.thing) return
