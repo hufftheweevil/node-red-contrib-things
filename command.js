@@ -50,7 +50,7 @@ module.exports = function (RED) {
       }
 
       // Check for proxies
-      let passCommand
+      let passCommand = origCommand
       let proxy = Object.entries(thing.proxy || {})
       if (proxy.length) {
         if (typeof origCommand !== 'object') {
@@ -64,10 +64,9 @@ module.exports = function (RED) {
             }
           }))
           if (proxied) return
-          passCommand = origCommand
         } else {
           // Complex command type (i.e. object)
-          passCommand = { ...origCommand }
+          passCommand = { ...origCommand }  // Shallow copy, so that keys can be deleted if used by proxy
           let proxiedKeys = []
           proxy.forEach(([proxyThingName, { command }]) => {
             if (command) {
