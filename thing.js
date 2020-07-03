@@ -63,9 +63,10 @@ module.exports = function (RED) {
           //
           // For each proxied thing
           Object.entries(thing.proxy).forEach(([proxyThingName, { state: stateMap }]) => {
+            if (!stateMap) return
             //
             // Link states with getter
-            stateMap && Object.entries(stateMap).forEach(([from, to]) =>
+            Object.entries(stateMap).forEach(([from, to]) =>
               Object.defineProperty(thing.state, from, {
                 // This check for the thing is mostly just in case it attempts to
                 // use this state to update the status before the child has been setup
