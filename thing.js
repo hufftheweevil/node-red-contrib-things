@@ -5,12 +5,6 @@ module.exports = function (RED) {
   // to output when any node of the same name receives an input.
   let bus = new EventEmitter()
 
-  // Temporary storage for parent assignments. This is used if
-  // the a parent is being setup with a proxy, but the child
-  // has not been set up yet. When child is setup, it will
-  // read from here.
-  // let parentAssignment = {}
-
   function ThingNode(config) {
     RED.nodes.createNode(this, config)
 
@@ -71,7 +65,7 @@ module.exports = function (RED) {
           Object.entries(thing.proxy).forEach(([proxyThingName, { state: stateMap }]) => {
             //
             // Link states with getter
-            Object.entries(stateMap).forEach(([from, to]) =>
+            stateMap && Object.entries(stateMap).forEach(([from, to]) =>
               Object.defineProperty(thing.state, from, {
                 // This check for the thing is mostly just in case it attempts to
                 // use this state to update the status before the child has been setup
@@ -80,7 +74,7 @@ module.exports = function (RED) {
                   if (config.debug)
                     node.warn(
                       `Calling getter for '${name}'.state.${from} -- Will return '${
-                        THINGS[proxyThingName] && THINGS[proxyThingName].state[to]
+                      THINGS[proxyThingName] && THINGS[proxyThingName].state[to]
                       }'`
                     )
                   return THINGS[proxyThingName] && THINGS[proxyThingName].state[to]
@@ -201,11 +195,12 @@ module.exports = function (RED) {
 
     // Sends output message
     function output(thing) {
-      node.send({
+      let msg = {
         topic: thing.name,
-        payload: thing.state,
-        thing: config.incThing ? thing : undefined
-      })
+        payload: thing.state
+      }
+      if (config.incThing) msg.thing = thing
+      node.send(msg)
     }
 
     // Initialize status (if thing already exists)

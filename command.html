@@ -1,0 +1,113 @@
+<script type="text/javascript">
+  RED.nodes.registerType('command', {
+    category: 'common',
+    color: '#D8BFD8',
+    defaults: {
+      nodeName: { value: '' },
+      mode: { value: 'in' },
+      name: {
+        value: ''
+      },
+      thingType: {
+        value: '',
+        validate: function (v) {
+          return this.mode != 'out' || v !== ''
+        }
+      },
+      debug: { value: false }
+    },
+    inputs: 1,
+    outputs: 1,
+    icon: function () {
+      return this.mode == 'out' ? 'font-awesome/fa-terminal' : 'font-awesome/fa-paper-plane'
+    },
+    label: function () {
+      return this.nodeName || this.name || this.thingType || 'command'
+    },
+    labelStyle: function () {
+      return this.name ? 'node_label_italic' : ''
+    },
+    oneditprepare: function () {
+      $(document).on('change', '#node-input-mode', function (event) {
+        if (event.target.value == 'in') {
+          $('#row-name').show()
+          $('#row-type').hide()
+        } else {
+          $('#row-name').hide()
+          $('#row-type').show()
+        }
+      })
+    }
+  })
+</script>
+
+<script type="text/html" data-template-name="command">
+  <div class="form-row">
+      <label for="node-input-nodeName"><i class="fa fa-tag"></i> Node Name</label>
+      <input type="text" id="node-input-nodeName" placeholder="Node Name">
+  </div>
+  <div class="form-row">
+    <label for="node-input-mode"><i class="fa fa-list"></i> Mode</label>
+    <select id="node-input-mode">
+      <option value='in'>Request Command</option>
+      <option value='out'>Process Command</option>
+    </select>
+  </div>
+  <div class="form-row" id="row-name">
+      <label for="node-input-name"><i class="fa fa-id-badge"></i> Thing Name</label>
+      <input type="text" id="node-input-name" placeholder="Thing Name">
+  </div>
+  <div class="form-row" id="row-type" style="display: none">
+      <label for="node-input-thingType"><i class="fa fa-cubes"></i> Thing Type</label>
+      <input type="text" id="node-input-thingType" placeholder="Thing Type">
+  </div>
+  <div class="form-row">
+    <label for="node-input-output"><i class="fa fa-bug"></i> Debug</label>
+    <input type="checkbox" id="node-input-debug" style="width:min-content">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="command">
+  <p>A simple, but dynamic, node that combines all commands into one funnel.</p>
+  <p>This node is designed for multiple uses. It has two main purposes:</p>
+    <ol>
+      <li>To send a <i>command</i> to a <i>thing</i>. (Request Command mode)</li>
+      <li>To process all <i>commands</i> of a specific <i>thing type</i>. (Process Command mode)</li>
+    </ol>
+
+  <h3>Properties</h3>
+    <dl class="message-properties">
+      <dt class="required">Mode</dt>
+      <dd> One of the two modes specified above. </dd>
+      <dt class="required">Thing Name</dt>
+      <dd> Only required in Request Command mode. The <i>thing</i> name. If not specified here, must be in <code>topic</code> on input </dd>
+      <dt class="required">Thing Type</dt>
+      <dd> Only required in Process Command mode. A <i>thing</i> type. </dd>
+    </dl>
+
+  <h3>Inputs</h3>
+    <p>Only allowed in Request Command mode.</p>
+    <dl class="message-properties">
+      <dt class="optional">topic <span class="property-type">string</span></dt>
+      <dd> The <i>thing</i> name, if not specified in properties. <b>Note:</b> will NOT override property setting </dd>
+      <dt class="optional">payload <span class="property-type">any</span></dt>
+      <dd> The command (format and type specific to <i>thing type</i>) </dd>
+    </dl>
+
+  <h3>Outputs</h3>
+    <h4>In Request Command Mode</h4>
+    <dl class="message-properties">
+      <dt>topic <span class="property-type">string</span></dt>
+      <dd> The <i>thing</i> name </dd>
+      <dt>payload <span class="property-type">any</span></dt>
+      <dd> The command (same as input) </dd>
+      <b>Note:</b> The node outputs immediately, and output does not indicate success or failure of the command request.
+    </dl>
+    <h4>In Process Command Mode</h4>
+    <dl class="message-properties">
+      <dt>topic <span class="property-type">string</span></dt>
+      <dd> The <i>thing</i> ID </dd>
+      <dt>payload <span class="property-type">any</span></dt>
+      <dd> The command (same as input from respective node) </dd>
+    </dl>
+</script>
