@@ -36,6 +36,8 @@ module.exports = function (RED) {
           return { error: true }
         }
 
+        let oldThing = THINGS[name]
+
         let parents = []
         Object.values(THINGS)
           .filter(t => t.proxy)
@@ -43,15 +45,17 @@ module.exports = function (RED) {
             let proxyDef = possibleParent.proxy[name]
             if (proxyDef && proxyDef.state) parents.push(possibleParent.name)
           })
+
         if (config.debug)
           node.warn(`Setting up ${name} with parents ${parents.length ? parents : '<none>'}`)
+
         // Sets defaults first, then includes the payload from input
         THINGS[name] = {
           id: name,
           name,
           type: '',
           props: {},
-          state: {},
+          state: (oldThing && oldThing.state) || {},
           status: state => ({ text: JSON.stringify(state) }),
           parents: parents.length ? parents : undefined,
           ...newThing
