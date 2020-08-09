@@ -1,0 +1,71 @@
+<script type="text/javascript">
+  RED.nodes.registerType('Thing Command', {
+    paletteLabel: 'command',
+    category: 'things',
+    color: '#D8BFD8',
+    defaults: {
+      nodeName: { value: '' },
+      name: { value: '' },
+      command: { value: '' },
+      commandType: { value: 'str' },
+      debug: { value: false }
+    },
+    inputs: 1,
+    outputs: 0,
+    icon: 'font-awesome/fa-paper-plane',
+    label: function () {
+      return this.nodeName || this.name || 'command'
+    },
+    labelStyle: function () {
+      return this.name ? 'node_label_italic' : ''
+    },
+    oneditprepare: function () {
+      $("#node-input-command").typedInput({
+        default: this.commandType
+      })
+    },
+    oneditsave: function () {
+      this.commandType = $("#node-input-command").typedInput('type')
+    }
+  })
+</script>
+
+<script type="text/html" data-template-name="Thing Command">
+  <div class="form-row">
+      <label for="node-input-nodeName"><i class="fa fa-tag"></i> Node Name</label>
+      <input type="text" id="node-input-nodeName" placeholder="Node Name">
+  </div>
+  <div class="form-row">
+      <label for="node-input-name"><i class="fa fa-id-badge"></i> Thing Name</label>
+      <input type="text" id="node-input-name" placeholder="Thing Name">
+  </div>
+  <div class="form-row">
+    <label for="node-input-command"><i class="fa fa-terminal"></i> Command</label>
+    <input type="text" id="node-input-command">
+  </div>
+  <div class="form-row">
+    <label for="node-input-output"><i class="fa fa-bug"></i> Debug</label>
+    <input type="checkbox" id="node-input-debug" style="width:min-content">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="Thing Command">
+  <p>Routes a command to the proper thing type processor.</p>
+  <p>Automatically handles groups by routing the same command to all <code>things</code> in the group.</p>
+
+  <h3>Properties</h3>
+    <dl class="message-properties">
+      <dt class="required">Thing Name</dt>
+      <dd> If not specified here, must be in <code>topic</code> on input. If specified here, input will NOT override. </dd>
+      <dt class="optional">Command</dt>
+      <dd> If not specified here, must be in <code>payload</code> on input. If specified here, input will NOT override. </dd>
+    </dl>
+
+  <h3>Inputs</h3>
+    <dl class="message-properties">
+      <dt class="optional">topic <span class="property-type">string</span></dt>
+      <dd> The <i>thing</i> name, if not specified in properties. <b>Note:</b> will NOT override property setting </dd>
+      <dt class="optional">payload <span class="property-type">any</span></dt>
+      <dd> The command (format and type are specific to the <i>thing type</i>) </dd>
+    </dl>
+</script>

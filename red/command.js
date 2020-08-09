@@ -1,12 +1,8 @@
-let EventEmitter = require('events')
+let { commandBus, now } = require('./shared')
 
 module.exports = function (RED) {
-  // The bus is used to trigger all nodes with a given thing type
-  // to output when any command node receives a command for a
-  // thing of the same type.
-  let bus = new EventEmitter()
 
-  function CommandNode(config) {
+  function Node(config) {
     RED.nodes.createNode(this, config)
 
     let node = this
@@ -15,7 +11,7 @@ module.exports = function (RED) {
     function debug(msg) {
       if (config.debug) node.warn(msg)
     }
-    function err(msg, onlyIfDebug = false) {
+    function err(msg) {
       node.error(`Input message: ${JSON.stringify(msg)}`)
       return null
     }
@@ -27,14 +23,19 @@ module.exports = function (RED) {
     }
 
     node.on('input', function (msg) {
-      if (config.mode != 'in') return err('Process Command mode does not accept input')
-      if (!msg.hasOwnProperty('payload')) return err('Input payload is required')
-
       debug(`Input message: ${JSON.stringify(msg)}`)
 
-      // Name should be set in properties, or provided on input.
-      // Property takes precedence.
-      processCommand(config.name || msg.topic, msg.payload)
+      let name = config.name || msg.topic
+      let command = config.command || msg.payload
+
+      if (!name) return err(`Thing name not specified in properties or input`)
+      if (typeof command == 'undefined' || command === '') return err(`Command not specified in properties or input`)
+
+      processCommand(name, command)
+
+      node.status({
+        text: `${name} | ${JSON.stringify(command)} | ${now()}`
+      })
     })
 
     function processCommand(name, origCommand) {
@@ -53,8 +54,13 @@ module.exports = function (RED) {
       let passCommand = origCommand
       let proxy = Object.entries(thing.proxy || {})
       if (proxy.length) {
-        if (typeof origCommand !== 'object') {
-          // Simple command type (i.e. string, number, boolean) (hopefully not an array!!!)
+        debug(`Checking proxy for ${name}; Type of original command: ${typeof origCommand}`)
+        if (Array.isArray(origCommand)) {
+          // Unable to deal with array commands at this time
+          node.warn(`Unable to handle proxies for array type commands`)
+        } else if (typeof origCommand !== 'object') {
+          // Simple command type (i.e. string, number, boolean)
+          origCommand = origCommand.toString()  // All proxy commands will be keys of an object, hence must be a string
           let proxied = false
           proxy.forEach(([proxyThingName, { command }]) => command && Object.entries(command).forEach(([thisCommand, thatCommand]) => {
             if (origCommand == thisCommand) {
@@ -64,6 +70,7 @@ module.exports = function (RED) {
             }
           }))
           if (proxied) return
+          debug(`No proxy found for command ${thisCommand}`)
         } else {
           // Complex command type (i.e. object)
           passCommand = { ...origCommand }  // Shallow copy, so that keys can be deleted if used by proxy
@@ -97,35 +104,8 @@ module.exports = function (RED) {
       debug(`Sending command to type ${msg.thing.type}: ${JSON.stringify(msg)}`)
       // Emit to the bus so that all other nodes that
       // are configured for this thing type will output.
-      bus.emit(msg.thing.type, msg)
-    }
-
-    // During node creation, if mode is set to be a
-    // command processor (out mode), need to setup a
-    // listener on the bus to trigger off of any other
-    // node that emits a message with this type.
-    if (config.mode == 'out') {
-
-      // The function to be called when triggered
-      let action = ({ thing, command, origThing, origCommand }) => {
-        debug(`Received command for ${thing.type}/${thing.id}: ${JSON.stringify(command)}`)
-        node.send({
-          topic: thing.id,
-          payload: command,
-          thing,
-          origThing,
-          origCommand
-        })
-      }
-
-      // Listen for command requests for this thing type
-      bus.on(config.thingType, action)
-
-      // When node destroyed, stop listening
-      node.on('close', function () {
-        bus.off(config.thingType, action)
-      })
+      commandBus.emit(msg.thing.type, msg)
     }
   }
-  RED.nodes.registerType('command', CommandNode)
+  RED.nodes.registerType('Thing Command', Node)
 }

@@ -1,0 +1,169 @@
+<script type="text/javascript">
+  RED.nodes.registerType('Thing Trigger', {
+    paletteLabel: 'trigger',
+    category: 'things',
+    color: '#D8BFD8',
+    defaults: {
+      nodeName: { value: '' },
+      name: { value: '', required: true },
+      output: { value: 'change' },
+      outputPath: { value: '' },
+      payload: { value: 'whole' },
+      payloadPath: { value: '' },
+      incThing: { value: false },
+      debug: { value: false }
+    },
+    inputs: 0,
+    outputs: 1,
+    icon: 'trigger.svg',
+    label: function () {
+      return this.nodeName || this.name || 'trigger'
+    },
+    labelStyle: function () {
+      return this.name ? 'node_label_italic' : ''
+    },
+    oneditprepare: function () {
+      let StateType = {
+        value: 'str',
+        label: 'state.',
+        validate: /^[a-zA-Z_\.]*$/
+      }
+
+      // TRIGGER PATH
+      $('#node-input-outputPath').typedInput({
+        types: [StateType]
+      })
+      if (this.output != 'path') {
+        $('#row-outputPath').hide()
+      }
+      $('#node-input-output').change(function () {
+        if ($(this).val() == 'path') {
+          $('#row-outputPath').show()
+        } else {
+          $('#row-outputPath').hide()
+        }
+      })
+      // ------
+
+      // PAYLOAD PATH
+      $('#node-input-payloadPath').typedInput({
+        types: [StateType]
+      })
+      if (this.payload != 'path') {
+        $('#row-payloadPath').hide()
+      }
+      $('#node-input-payload').change(function () {
+        if ($(this).val() == 'path') {
+          $('#row-payloadPath').show()
+        } else {
+          $('#row-payloadPath').hide()
+        }
+      })
+    }
+  })
+</script>
+
+<script type="text/html" data-template-name="Thing Trigger">
+  <div class="form-row">
+      <label for="node-input-nodeName"><i class="fa fa-tag"></i> Node Name</label>
+      <input type="text" id="node-input-nodeName" placeholder="Node Name">
+  </div>
+  <div class="form-row">
+      <label for="node-input-name"><i class="fa fa-id-badge"></i> Thing Name</label>
+      <input type="text" id="node-input-name" placeholder="Thing Name">
+  </div>
+  <div class="form-row">
+      <label for="node-input-output"><i class="fa fa-list"></i> Output...</label>
+      <select id="node-input-output" style="width: 70%">
+        <option value='all'>On all state updates</option>
+        <option value='change'>When any part of the state changes</option>
+        <option value='path'>Only when a part of the state changes...</option>
+      </select>
+  </div>
+  <div class="form-row" id="row-outputPath">
+    <label for="node-input-outputPath">&nbsp;</label>
+    <input type="text" id="node-input-outputPath">
+  </div>
+  <div class="form-row">
+      <label for="node-input-payload"><i class="fa fa-envelope"></i> Payload</label>
+      <select id="node-input-payload">
+        <option value='whole'>Whole State</option>
+        <option value='path'>Specific Path...</option>
+      </select>
+  </div>
+  <div class="form-row" id="row-payloadPath">
+    <label for="node-input-payloadPath">&nbsp;</label>
+    <input type="text" id="node-input-payloadPath">
+  </div>
+  <div class="form-row">
+    <label for="node-input-incThing">&nbsp;</label>
+    <input type="checkbox" id="node-input-incThing" style="display:inline-block; width:15px; vertical-align:baseline;">
+    <span> Include thing in output as <code>msg.thing</code></span>
+  </div>
+  <div class="form-row">
+    <label for="node-input-output"><i class="fa fa-bug"></i> Debug</label>
+    <input type="checkbox" id="node-input-debug" style="width:min-content">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="Thing Trigger">
+  <p>A node that outputs a message when a thing's state changes</p>
+
+  <h3>Properties</h3>
+    <dl class="message-properties">
+      <dt class="optional">Thing Name</dt>
+      <dd> The <i>thing</i> name. If not specified here, must be in <code>topic</code> on input </dd>
+      <dt class="optional">Output</dt>
+      <dd> When to output <i>thing</i> state </dd>
+      <ul>
+        <li><b>On all state updates</b> - Will trigger even if state did not change.</li>
+        <li><b>When any part of the state changes</b> - Comparison is done using <code>JSON.stringify</code></li>
+        <li><b>Only when a part of the state changes</b> - State path must be defined. Comparison is done using <code>JSON.stringify</code></li>
+      </ul>
+      <dt class="optional">Payload</dt>
+      <dd> What to output as <code>msg.payload</code> </dd>
+      <ul>
+        <li><b>Whole State</b></li>
+        <li><b>Specific Path</b> - State path must be defined.</li>
+      </ul>
+    </dl>
+
+  <h3>Outputs</h3>
+    <dl class="message-properties">
+      <dt>topic <span class="property-type">string</span></dt>
+      <dd> The <i>thing</i> name </dd>
+      <dt>payload <span class="property-type">any</span></dt>
+      <dd> As configured in properties </dd>
+      <dt>thing <span class="property-type">object</span></dt>
+      <dd> Only if configured in properties </dd>
+    </dl>
+
+  <h3>Things</h3>
+    <p>A <i>thing</i> is any object/device/entity that you want to keep state on.
+      Each <i>thing</i> has a few standard parts:</p>
+    <dl class="message-properties">
+      <dt>name <span class="property-type">string</span></dt>
+      <dd> <b>Must</b> be included on setup. <b>Must</b> be unique among all other things. </dd>
+      <dt>type <span class="property-type">string</span></dt>
+      <dd> Typically, the platform that it uses, such as Lifx, TP-Link, or Z-Wave. Should be included on setup. Default <code>''</code>. </dd>
+      <dt>id <span class="property-type">string | number</span></dt>
+      <dd> Typically, a unqiue identifier among all things of the same type. Should be included on setup. Defaults to the <code>name</code>. </dd>
+      <dt>props <span class="property-type">object</span></dt>
+      <dd> Static properties that will not change. Should be included on setup. Can be modified later, but not will not cause any state update notices. Default <code>{}</code>. </dd>
+      <dt>state <span class="property-type">object | any</span></dt>
+      <dd> Thing values that will change and, together, represent a complete state of the <i>thing</i>. Can be included on setup. Should be updated after setup. Default <code>{}</code>. Any type can be used, however an object is recommended. </dd>
+      <dt>status <span class="property-type">function</span></dt>
+      <dd> A function that takes in the current <code>(state, props)</code> and outputs a Node-RED node status message, which may include <code>{text, fill, shape}</code>. Should be included on setup. This function will run on every state update. </dd>
+      <dt>proxy <span class="property-type">object</span></dt>
+      <dd> Only exists if included on setup. A map of other <i>things</i> to proxy to (aka <i>child things</i>). The map must be keyed by other <i>things</i>. The values are objects with the following properties:
+        <dl class="message-properties">
+          <dt>state <span class="property-type">object</span></dt>
+          <dd> A map of states to be proxied. The keys are the state properties of this <i>thing</i>. The values are the state properties of the <i>child thing</i>. All state properties of the <i>child thing</i> that are mapped here will be available in the state of the parent <i>thing</i>. </dd>
+          <dt>command <span class="property-type">object</span></dt>
+          <dd> A map of commands to be proxied. The keys are the commands that you want to be available on the parent <i>thing</i>. The values are the relative command to use on the <i>child thing</i>. </dd>
+        </dl>
+      </dd>
+      <dt>parents <span class="property-type">array</span></dt>
+      <dd> Automatically generated. Only exists if <code>proxy</code> included on setup. Array of parent <i>thing</i> names. Used to know what parent <i>things</i> to update status on when child state is updated. </dd>
+    </dl>
+</script>

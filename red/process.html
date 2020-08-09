@@ -1,0 +1,56 @@
+<script type="text/javascript">
+  RED.nodes.registerType('Thing Process', {
+    paletteLabel: 'process',
+    category: 'things',
+    color: '#D8BFD8',
+    defaults: {
+      nodeName: { value: '' },
+      thingType: { value: '' },
+      debug: { value: false }
+    },
+    inputs: 0,
+    outputs: 1,
+    icon: function () {
+      return 'font-awesome/fa-terminal'
+    },
+    label: function () {
+      return this.nodeName || this.thingType || 'process'
+    },
+    labelStyle: function () {
+      return this.thingType ? 'node_label_italic' : ''
+    }
+  })
+</script>
+
+<script type="text/html" data-template-name="Thing Process">
+  <div class="form-row">
+      <label for="node-input-nodeName"><i class="fa fa-tag"></i> Node Name</label>
+      <input type="text" id="node-input-nodeName" placeholder="Node Name">
+  </div>
+  <div class="form-row" id="row-type">
+      <label for="node-input-thingType"><i class="fa fa-cubes"></i> Thing Type</label>
+      <input type="text" id="node-input-thingType" placeholder="Thing Type">
+  </div>
+  <div class="form-row">
+    <label for="node-input-output"><i class="fa fa-bug"></i> Debug</label>
+    <input type="checkbox" id="node-input-debug" style="width:min-content">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="Thing Process">
+  <p>A node to catch all commands intended to go to a specific <code>thing type</code>. This node should be followed by a node that will send the actual command to the physical thing.</p>
+
+  <h3>Properties</h3>
+    <dl class="message-properties">
+      <dt class="required">Thing Type</dt>
+      <dd> Only required in Process Command mode. A <i>thing</i> type. </dd>
+    </dl>
+
+  <h3>Outputs</h3>
+    <dl class="message-properties">
+      <dt>topic <span class="property-type">string</span></dt>
+      <dd> The <i>thing</i> ID </dd>
+      <dt>payload <span class="property-type">any</span></dt>
+      <dd> The command (as provided from the <code>command</code> node) </dd>
+    </dl>
+</script>
