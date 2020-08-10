@@ -37,7 +37,7 @@
       }
       $('#node-input-output').change(function () {
         if ($(this).val() == 'type') {
-          $('#node-input-thingType').val('')
+          if ($('#node-input-thingType').val() == 'all') $('#node-input-thingType').val('')
           $('#row-thingType').show()
         } else {
           $('#node-input-thingType').val('all')
