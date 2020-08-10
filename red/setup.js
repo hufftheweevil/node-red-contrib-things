@@ -63,8 +63,8 @@ module.exports = function (RED) {
           id,
           name,
           type: config.thingType,
-          props: newThing.props || {},
-          state: (oldThing && oldThing.state) || newThing.state || {},
+          props: newThing.props ? JSON.parse(newThing.props) : {},
+          state: (oldThing && oldThing.state) || (newThing.state ? JSON.parse(newThing.state) : {}),
           status: config.statusFunction
             ? new Function('state', 'props', config.statusFunction)
             : state => ({ text: JSON.stringify(state) }),
@@ -76,11 +76,12 @@ module.exports = function (RED) {
         if (newThing.proxy) {
           //
           // For each proxied thing
-          Object.entries(newThing.proxy).forEach(([proxyThingName, { state: stateMap }]) => {
+          Object.entries(JSON.parse(newThing.proxy)).forEach(([proxyThingName, { state: stateMap }]) => {
             if (!stateMap) return
             //
             // Link states with getter
-            Object.entries(stateMap).forEach(([from, to]) =>
+            Object.entries(stateMap).forEach(([from, to]) => {
+              delete thing.state[from] // Clear it first if it exists
               Object.defineProperty(thing.state, from, {
                 get: () => {
                   // This check for the thing is mostly just in case it attempts to
@@ -94,9 +95,10 @@ module.exports = function (RED) {
                     )
                   return THINGS[proxyThingName] && THINGS[proxyThingName].state[to]
                 },
-                enumerable: true
+                enumerable: true,
+                configurable: true
               })
-            )
+            })
 
             // Find proxied thing (i.e. the child)
             let proxyThing = THINGS[proxyThingName]
