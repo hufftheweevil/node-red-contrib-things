@@ -68,7 +68,7 @@ module.exports = function (RED) {
           status: config.statusFunction
             ? new Function('state', 'props', config.statusFunction)
             : state => ({ text: JSON.stringify(state) }),
-          parents: parents.length ? parents : undefined
+          parents: parents.length ? parents : []
         }
         let thing = THINGS[name]
 
