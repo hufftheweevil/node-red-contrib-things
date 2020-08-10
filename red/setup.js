@@ -34,6 +34,7 @@ module.exports = function (RED) {
 
         THINGS[name] = {
           name,
+          type: 'Group',
           things
         }
 
