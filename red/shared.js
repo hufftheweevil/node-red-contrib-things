@@ -13,9 +13,11 @@ function pushUnique(array, item) {
   if (!array.includes(item)) array.push(item)
 }
 
-function _get(object, path, defval = null) {
-  if (typeof path === "string") path = path.split(".");
-  return path.reduce((xs, x) => (xs && xs[x] ? xs[x] : defval), object);
+function _get(object, keys, defaultVal = null) {
+  keys = Array.isArray(keys) ? keys : keys.replace(/(\[(\d)\])/g, '.$2').split('.')
+  object = object[keys[0]]
+  if (object && keys.length > 1) return _get(object, keys.slice(1), defaultVal)
+  return object === undefined ? defaultVal : object
 }
 
 let p = n => ('' + n).padStart(2, '0')
