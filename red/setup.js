@@ -69,7 +69,8 @@ module.exports = function (RED) {
           status: config.statusFunction
             ? new Function('state', 'props', config.statusFunction)
             : state => ({ text: JSON.stringify(state) }),
-          parents: parents.length ? parents : []
+          proxy: JSON.parse(newThing.proxy || null) || undefined,
+          parents
         }
         let thing = THINGS[name]
 
@@ -104,8 +105,8 @@ module.exports = function (RED) {
             // Find proxied thing (i.e. the child)
             let proxyThing = THINGS[proxyThingName]
             if (proxyThing) {
+              // If it is already setup, note parent in proxied thing
               if (config.debug) node.warn(`Adding parent ${name} to proxy child ${proxyThing.name}`)
-              // If already setup, note parent in proxied thing
               pushUnique(proxyThing.parents, name)
             }
           })
