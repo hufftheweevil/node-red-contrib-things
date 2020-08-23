@@ -18,21 +18,28 @@ module.exports = function (RED) {
     // output a message (if configured as such)
 
     // Keep last known state (only used when config.output != 'all')
-    let lastKnownState = ''
+    let lastKnownState = stringifyState()
+
+    // Helper to retrieve thing
+    let getThing = () => global.get('things')[config.name]
+
+    // Helper to get state (or part of state) as string
+    let stringifyState = () => {
+      let thing = getThing()
+      return thing && JSON.stringify(
+        config.output == 'path' ? _get(thing.state, config.outputPath) : thing.state
+      )
+    }
 
     // The function to be called when triggered
     let action = () => {
-      // Get thing
-      const THINGS = global.get('things')
-      let thing = THINGS[config.name]
+      let thing = getThing()
       if (!thing) return
 
       updateStatus()
 
       // Serialize latest state (or specific path, if configured)
-      let latestState = JSON.stringify(
-        config.output == 'path' ? _get(thing.state, config.outputPath) : thing.state
-      )
+      let latestState = stringifyState()
 
       // Output state message accordingly
       if (config.output == 'all' || lastKnownState != latestState)
@@ -55,9 +62,7 @@ module.exports = function (RED) {
 
     // Updates the node status
     function updateStatus() {
-      // Get THINGS again, just to be sure we're pointing to the correct reference
-      const THINGS = global.get('things')
-      let thing = THINGS[config.name]
+      let thing = getThing()
       if (!thing) return
 
       // Catch any errors that occur when running the thing.status function
