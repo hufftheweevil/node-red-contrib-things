@@ -194,7 +194,11 @@ An example of a proxy object: Let's suppose there are two things defined in setu
 }
 ```
 
- This means `TV` will have `state.power` that will be in-sync with `TV Power`'s `state.on`. When `TV Power`'s state changes, it will also trigger `TV`'s state to change. When the `on` or `off` command is sent to `TV`, it will actually be forwarded to `TV Power` as `true` or `false`, respectively.
+This means `TV` will have `state.power` that will be in-sync with `TV Power`'s `state.on`. When `TV Power`'s state changes, it will also trigger `TV`'s state to change. When the `on` or `off` command is sent to `TV`, it will actually be forwarded to `TV Power` as `true` or `false`, respectively.
+
+## Groups
+
+There is a special thing type for groups. During setup, use type "Group" and the Things input matrix will switch into a list-style input. Specify the group name and then list each thing in the group. Currently, groups are only used when sending commands. Sending a command to a group will automatically propogate the same command to all things in the group, regardless of those things' types. Groups can also be nested, as command forwading is recursive. The *update* and *trigger* nodes have no affect on Group type things.
 
 ## Bugs and Feedback
 
