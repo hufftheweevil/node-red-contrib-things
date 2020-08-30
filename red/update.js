@@ -21,6 +21,13 @@ module.exports = function (RED) {
       // Pointer to the thing
       let thing = THINGS[name]
 
+      // If not found and thing type is set, Try finding by ID (assuming topic is ID)
+      if (!thing && config.thingType && msg.topic) {
+        thing = Object.values(THINGS).find(t => t.type == config.thingType && t.id == msg.topic)
+        if (thing) name = thing.name
+      }
+
+      // If still not found, error
       if (!thing) return node.error(`Unknown thing ${name}`)
 
       // Update state accordingly
@@ -36,7 +43,7 @@ module.exports = function (RED) {
       stateBus.emit(name)
 
       // If configured with `type`, update status
-      if (config.type) {
+      if (config.thingType) {
         pushUnique(heardFrom, name)
 
         let waitingOn = Object.values(THINGS)
