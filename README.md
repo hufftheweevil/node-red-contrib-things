@@ -1,6 +1,6 @@
 # Things for Node-RED
 
-A set of [Node-RED](https://github.com/node-red/node-red) nodes that uses an agnostic state management system to keep IOT device states and provide a uniform command and control system.
+A set of [Node-RED](https://github.com/node-red/node-red) nodes that uses an agnostic state management system to keep IOT device states and provide a uniform control system.
 
 ### Purpose
 
