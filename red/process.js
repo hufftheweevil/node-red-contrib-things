@@ -14,8 +14,13 @@ module.exports = function (RED) {
     // The function to be called when triggered
     let action = ({ thing, command, origThing, origCommand }) => {
       debug(`Received command for ${thing.type}/${thing.id}: ${JSON.stringify(command)}`)
+
+      let topic = typeof config.topic !== 'string' ? thing.id // Default
+        : config.topic.startsWith('$') ? thing[config.topic.slice(1)] // Property
+          : config.topic  // Custom string
+
       node.send({
-        topic: thing.id,
+        topic,
         payload: command,
         thing,
         origThing,
