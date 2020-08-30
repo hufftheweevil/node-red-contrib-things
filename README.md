@@ -95,7 +95,7 @@ An action-type node that will update a thing's state, potentially causing a sepa
 
 | Key | Type | Info |
 |---|---|---|
-| `topic` | *string* | Thing name. Only used if not specified in properties. **Note:** will *not* override property setting
+| `topic` | *string* | Thing name. Only used if not specified in properties. **Note:** will *not* override property setting. Alternatively, if the node is configured with a <code>thing type</code>, then the <i>thing</i> ID can be used as the topic.
 | `payload` | *object* | The state update. Will be shallow merged with the current state.
 | `replace` | *boolean* | Optional. If `true`, `payload` will completely replace current state instead of being merged.
 
