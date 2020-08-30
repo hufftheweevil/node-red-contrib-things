@@ -12,13 +12,10 @@ module.exports = function (RED) {
       // Future use
     })
 
-    // Setup a listener on the bus to trigger
+    // This will setup a listener on the bus to trigger
     // off of any update node that updates this thing's
     // state. This will change the node's status and
     // output a message (if configured as such)
-
-    // Keep last known state (only used when config.output != 'all')
-    let lastKnownState = stringifyState()
 
     // Helper to retrieve thing
     let getThing = () => global.get('things')[config.name]
@@ -30,6 +27,9 @@ module.exports = function (RED) {
         config.output == 'path' ? _get(thing.state, config.outputPath) : thing.state
       )
     }
+
+    // Keep last known state (only used when config.output != 'all')
+    let lastKnownState = stringifyState()
 
     // The function to be called when triggered
     let action = () => {
