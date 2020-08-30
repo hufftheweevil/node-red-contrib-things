@@ -19,5 +19,7 @@
   "keywords": [
     "node-red",
     "iot"
-  ]
+  ],
+  "homepage": "https://github.com/hufftheweevil/node-red-contrib-things",
+  "repository": "github:hufftheweevil/node-red-contrib-things"
 }
