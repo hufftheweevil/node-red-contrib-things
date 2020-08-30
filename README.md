@@ -122,11 +122,9 @@ A node that will output when conditions are met after input into a respective *u
 
 ### command
 
-An action node that will initiate the sending of a command to a thing or multiple things. Note that this node does not provide any communication to the outside. It will only relay messages to repsective *process* nodes. On input, this node proceeds through a few steps:
+An action node that will initiate the sending of a command to a thing or multiple things. Note that this node does not provide any communication to the outside. It will only relay messages to respective *process* nodes.
 
-1. Check if the Thing is a group. If so, repeat this process for each Thing in the group.
-2. Check for command proxies and forward as appropriate. (See below for more info)
-3. Determine Thing type and forward to the respective *process* node(s).
+The node will recurse through any groups and proxies before determining Thing type, then forward to the respective *process* node(s).
 
 ##### Properties 
 

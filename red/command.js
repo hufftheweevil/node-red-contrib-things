@@ -67,8 +67,8 @@ module.exports = function (RED) {
           proxy.forEach(([proxyThingName, { command: commandMap }]) => commandMap && Object.entries(commandMap).forEach(([thisCommand, thatCommand]) => {
             if (command == thisCommand) {
               debug(`Using command proxy from ${name} to ${proxyThingName} for '${thisCommand}'=>'${thatCommand}'`)
-              // emitCommand({ thing: getThing(proxyThingName), command: thatCommand, origThing: thing, origCommand: command })
               handleCommand(proxyThingName, thatCommand, { origThing: thing, origCommand: command })
+              // TODO: If proxied more than once, will lose true original thing/command. Should be passed in a tree or something
               proxied = true
             }
           }))
@@ -89,8 +89,8 @@ module.exports = function (RED) {
                   proxiedKeys.push(thisCommand)
                 })
                 debug(`Using command proxy from ${name} to ${proxyThingName} for ${JSON.stringify(proxyCommand)}`)
-                // emitCommand({ thing: getThing(proxyThingName), command: proxyCommand, origThing: thing, origCommand: command })
                 handleCommand(proxyThingName, proxyCommand, { origThing: thing, origCommand: command })
+                // TODO: If proxied more than once, will lose true original thing/command. Should be passed in a tree or something
               }
             }
           })
