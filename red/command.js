@@ -31,14 +31,16 @@ module.exports = function (RED) {
       if (!name) return err(`Thing name not specified in properties or input`)
       if (typeof command == 'undefined' || command === '') return err(`Command not specified in properties or input`)
 
-      processCommand(name, command)
+      handleCommand(name, command)
 
       node.status({
         text: `${name} | ${JSON.stringify(command)} | ${now()}`
       })
     })
 
-    function processCommand(name, origCommand) {
+    // This function is fully recursive; It handles all groups and proxy commands
+    // until no more pathes to follow, then calls emitCommand()
+    function handleCommand(name, command, meta = {}) {
       // Pointer to the thing
       let thing = getThing(name)
       if (!thing) return
@@ -46,26 +48,27 @@ module.exports = function (RED) {
       // Check if group
       if (thing.type == 'Group') {
         debug('Thing is a Group, sending to each:', thing.things)
-        thing.things.forEach(subName => processCommand(subName, origCommand))
+        thing.things.forEach(subName => handleCommand(subName, command))
         return
       }
 
       // Check for proxies
-      let passCommand = origCommand
+      let passCommand = command
       let proxy = Object.entries(thing.proxy || {})
       if (proxy.length) {
-        debug(`Checking proxy for ${name}; Type of original command: ${typeof origCommand}`)
-        if (Array.isArray(origCommand)) {
+        debug(`Checking proxy for ${name}; Type of original command: ${typeof command}`)
+        if (Array.isArray(command)) {
           // Unable to deal with array commands at this time
           node.warn(`Unable to handle proxies for array type commands`)
-        } else if (typeof origCommand !== 'object') {
+        } else if (typeof command !== 'object') {
           // Simple command type (i.e. string, number, boolean)
-          origCommand = origCommand.toString()  // All proxy commands will be keys of an object, hence must be a string
+          command = command.toString()  // All proxy commands will be keys of an object, hence must be a string
           let proxied = false
-          proxy.forEach(([proxyThingName, { command }]) => command && Object.entries(command).forEach(([thisCommand, thatCommand]) => {
-            if (origCommand == thisCommand) {
+          proxy.forEach(([proxyThingName, { command: commandMap }]) => commandMap && Object.entries(commandMap).forEach(([thisCommand, thatCommand]) => {
+            if (command == thisCommand) {
               debug(`Using command proxy from ${name} to ${proxyThingName} for '${thisCommand}'=>'${thatCommand}'`)
-              emitCommand({ thing: getThing(proxyThingName), command: thatCommand, origThing: thing, origCommand })
+              // emitCommand({ thing: getThing(proxyThingName), command: thatCommand, origThing: thing, origCommand: command })
+              handleCommand(proxyThingName, thatCommand, { origThing: thing, origCommand: command })
               proxied = true
             }
           }))
@@ -73,20 +76,21 @@ module.exports = function (RED) {
           debug(`No proxy found for command ${thisCommand}`)
         } else {
           // Complex command type (i.e. object)
-          passCommand = { ...origCommand }  // Shallow copy, so that keys can be deleted if used by proxy
+          passCommand = { ...command }  // Shallow copy, so that keys can be deleted if used by proxy
           let proxiedKeys = []
-          proxy.forEach(([proxyThingName, { command }]) => {
-            if (command) {
-              let proxyMap = Object.entries(command).filter(([thisCommand]) => origCommand.hasOwnProperty(thisCommand))
+          proxy.forEach(([proxyThingName, { command: commandMap }]) => {
+            if (commandMap) {
+              let proxyMap = Object.entries(commandMap).filter(([thisCommand]) => command.hasOwnProperty(thisCommand))
 
               if (proxyMap.length) {
                 let proxyCommand = {}
                 proxyMap.forEach(([thisCommand, thatCommand]) => {
-                  proxyCommand[thatCommand] = origCommand[thisCommand]
+                  proxyCommand[thatCommand] = command[thisCommand]
                   proxiedKeys.push(thisCommand)
                 })
                 debug(`Using command proxy from ${name} to ${proxyThingName} for ${JSON.stringify(proxyCommand)}`)
-                emitCommand({ thing: getThing(proxyThingName), command: proxyCommand, origThing: thing, origCommand })
+                // emitCommand({ thing: getThing(proxyThingName), command: proxyCommand, origThing: thing, origCommand: command })
+                handleCommand(proxyThingName, proxyCommand, { origThing: thing, origCommand: command })
               }
             }
           })
@@ -95,7 +99,7 @@ module.exports = function (RED) {
         }
       }
 
-      emitCommand({ thing, command: passCommand, origCommand })
+      emitCommand({ thing, command: passCommand, ...meta })
 
     }
 
