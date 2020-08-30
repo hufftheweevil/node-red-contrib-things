@@ -35,7 +35,9 @@ module.exports = function (RED) {
         THINGS[name] = {
           name,
           type: 'Group',
-          things
+          things,
+          status: () => { } // Placeholder; TODO: Somehow combine status of all things in group
+          // TODO: Can have more features for groups
         }
 
       } else { // config.thingType != 'Group'
