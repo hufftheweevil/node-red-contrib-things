@@ -1,0 +1,251 @@
+[
+  {
+    "id": "e6b171d.ddd209",
+    "type": "Thing Setup",
+    "z": "f4e7c667.e29cf8",
+    "thingType": "TV",
+    "things": [
+      {
+        "name": "Bedroom TV",
+        "id": "",
+        "props": "",
+        "state": "",
+        "proxy": "{\"Bedroom TV Power\":{\"state\":{\"on\":\"on\"},\"command\":{\"true\":\"true\",\"false\":\"false\"}}}"
+      }
+    ],
+    "statusFunction": "if (state.on === undefined) return null\n\nreturn {\n    fill: state.on ? 'green' : 'grey',\n    text: state.on ? `On` : 'Off'\n}",
+    "debug": false,
+    "x": 140,
+    "y": 1160,
+    "wires": []
+  },
+  {
+    "id": "8772a9d.c2dac58",
+    "type": "Thing Setup",
+    "z": "f4e7c667.e29cf8",
+    "thingType": "Kasa",
+    "things": [
+      {
+        "name": "Bedroom TV Power",
+        "id": "192.168.1.245",
+        "props": "",
+        "state": "",
+        "proxy": ""
+      }
+    ],
+    "statusFunction": "",
+    "debug": false,
+    "x": 150,
+    "y": 1220,
+    "wires": []
+  },
+  {
+    "id": "d7b55e66.10243",
+    "type": "comment",
+    "z": "f4e7c667.e29cf8",
+    "name": "Proxy Simple",
+    "info": "This example has two Things:\n- Bedroom TV\n- Bedroom TV Power\n\nLet's assume that _Bedroom TV_ is a device that cannot be controlled directly, but can through other means. In this case, through a Kasa power outlet.\n\n_Bedroom TV_ is setup as its own device. With the proxy, it will \"inherit\" the `on` state of _Bedroom TV Power_. So when the Kasa node `update`s _Bedroom TV Power_, then an update will also `trigger` for _Bedroom TV_.\n\nLikewise, when commands `true` and `false` are sent to _Bedroom TV_, they will actually be forwarded to _Bedroom TV Power_, and therefore will be processed by the Kasa `process` node.",
+    "x": 110,
+    "y": 1100,
+    "wires": []
+  },
+  {
+    "id": "2cfe0293.aed48e",
+    "type": "Thing Command",
+    "z": "f4e7c667.e29cf8",
+    "nodeName": "",
+    "name": "Bedroom TV",
+    "command": "",
+    "commandType": "str",
+    "debug": false,
+    "x": 570,
+    "y": 1160,
+    "wires": []
+  },
+  {
+    "id": "1bec1206.0b3e0e",
+    "type": "inject",
+    "z": "f4e7c667.e29cf8",
+    "name": "On",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "true",
+    "payloadType": "bool",
+    "x": 350,
+    "y": 1140,
+    "wires": [
+      [
+        "2cfe0293.aed48e"
+      ]
+    ]
+  },
+  {
+    "id": "b5703305.0f",
+    "type": "inject",
+    "z": "f4e7c667.e29cf8",
+    "name": "Off",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "false",
+    "payloadType": "bool",
+    "x": 350,
+    "y": 1180,
+    "wires": [
+      [
+        "2cfe0293.aed48e"
+      ]
+    ]
+  },
+  {
+    "id": "8005fb66.d24438",
+    "type": "Thing Trigger",
+    "z": "f4e7c667.e29cf8",
+    "nodeName": "",
+    "name": "Bedroom TV",
+    "output": "change",
+    "outputPath": "",
+    "payload": "whole",
+    "payloadPath": "",
+    "incThing": false,
+    "debug": false,
+    "x": 370,
+    "y": 1240,
+    "wires": [
+      [
+        "f5cdd60a.fbaf48"
+      ]
+    ]
+  },
+  {
+    "id": "f5cdd60a.fbaf48",
+    "type": "debug",
+    "z": "f4e7c667.e29cf8",
+    "name": "Bedroom TV Changed",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 600,
+    "y": 1240,
+    "wires": []
+  },
+  {
+    "id": "d999336.f6f84d",
+    "type": "function",
+    "z": "f4e7c667.e29cf8",
+    "name": "Parse",
+    "func": "let {topic, payload} = msg\n\nlet thing = Object.values(global.get('things'))\n            .find(t => t.type == \"Kasa\" && t.id == topic)\n\nif (!thing) return node.warn(`Unable to find Kasa thing ${topic}`)\n\nreturn {\n    topic: thing.name,\n    payload: {\n        on: payload.state\n    }\n}",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "x": 610,
+    "y": 1380,
+    "wires": [
+      [
+        "d03980c7.4cf54"
+      ]
+    ]
+  },
+  {
+    "id": "35510925.c71b46",
+    "type": "function",
+    "z": "f4e7c667.e29cf8",
+    "name": "Initialize",
+    "func": "Object.values(global.get('things'))\n.filter(thing => thing.type == 'Kasa')\n.forEach(thing => {\n    node.send({\n        topic: thing.id,\n        payload: 'getInfo'\n    })\n    node.send({\n        topic: thing.id,\n        payload: 'startPowerEvents'\n    })\n})",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "x": 320,
+    "y": 1380,
+    "wires": [
+      [
+        "86e6477c.d69bb8"
+      ]
+    ]
+  },
+  {
+    "id": "86e6477c.d69bb8",
+    "type": "kasa",
+    "z": "f4e7c667.e29cf8",
+    "name": "",
+    "device": "",
+    "interval": 60000,
+    "eventInterval": 15000,
+    "payload": "getInfo",
+    "payloadType": "info",
+    "debug": false,
+    "x": 470,
+    "y": 1380,
+    "wires": [
+      [
+        "d999336.f6f84d"
+      ]
+    ]
+  },
+  {
+    "id": "d03980c7.4cf54",
+    "type": "Thing Update",
+    "z": "f4e7c667.e29cf8",
+    "nodeName": "",
+    "name": "",
+    "thingType": "Kasa",
+    "debug": false,
+    "x": 790,
+    "y": 1380,
+    "wires": []
+  },
+  {
+    "id": "cfbb2b5.3bc0ed8",
+    "type": "Thing Ready",
+    "z": "f4e7c667.e29cf8",
+    "nodeName": "",
+    "output": "type",
+    "thingType": "Kasa",
+    "props": [],
+    "x": 160,
+    "y": 1380,
+    "wires": [
+      [
+        "35510925.c71b46"
+      ]
+    ]
+  },
+  {
+    "id": "4f35e728.a04078",
+    "type": "Thing Process",
+    "z": "f4e7c667.e29cf8",
+    "nodeName": "",
+    "thingType": "Kasa",
+    "topic": "$id",
+    "debug": false,
+    "x": 330,
+    "y": 1320,
+    "wires": [
+      [
+        "86e6477c.d69bb8"
+      ]
+    ]
+  }
+]

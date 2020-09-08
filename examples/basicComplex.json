@@ -1,0 +1,245 @@
+[
+  {
+    "id": "5f4bcead.05532",
+    "type": "Thing Setup",
+    "z": "f4e7c667.e29cf8",
+    "thingType": "Kasa",
+    "things": [
+      {
+        "name": "TV Power",
+        "id": "192.168.1.243",
+        "props": "",
+        "state": "",
+        "proxy": ""
+      },
+      {
+        "name": "Hallway",
+        "id": "192.168.1.244",
+        "props": "",
+        "state": "",
+        "proxy": ""
+      },
+      {
+        "name": "Garage Light",
+        "id": "192.168.1.245",
+        "props": "",
+        "state": "",
+        "proxy": ""
+      }
+    ],
+    "statusFunction": "if (state.on === undefined) return null\nlet text = state.on ? 'On' : 'Off'\nif (state.hasOwnProperty('brightness') && state.on)\n    text += ` ${state.brightness < 1 ? state.brightness * 100 : state.brightness}%`\nreturn {\n    fill: state.on ? 'yellow' : 'grey',\n    shape: 'dot',\n    text\n}",
+    "debug": false,
+    "x": 150,
+    "y": 420,
+    "wires": []
+  },
+  {
+    "id": "a54e4769.701e98",
+    "type": "function",
+    "z": "f4e7c667.e29cf8",
+    "name": "Parse",
+    "func": "let {topic, payload} = msg\n\nlet thing = Object.values(global.get('things'))\n            .find(t => t.type == \"Kasa\" && t.id == topic)\n\nif (!thing) return node.warn(`Unable to find Kasa thing ${topic}`)\n\nreturn {\n    topic: thing.name,\n    payload: {\n        on: payload.state\n    }\n}",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "x": 790,
+    "y": 420,
+    "wires": [
+      [
+        "d541b74c.176aa8"
+      ]
+    ]
+  },
+  {
+    "id": "a69f3eb9.8ef56",
+    "type": "function",
+    "z": "f4e7c667.e29cf8",
+    "name": "Initialize",
+    "func": "Object.values(global.get('things'))\n.filter(thing => thing.type == 'Kasa')\n.forEach(thing => {\n    node.send({\n        topic: thing.id,\n        payload: 'getInfo'\n    })\n    node.send({\n        topic: thing.id,\n        payload: 'startPowerEvents'\n    })\n})",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "x": 500,
+    "y": 420,
+    "wires": [
+      [
+        "d628e7ac.1d1688"
+      ]
+    ]
+  },
+  {
+    "id": "d628e7ac.1d1688",
+    "type": "kasa",
+    "z": "f4e7c667.e29cf8",
+    "name": "",
+    "device": "",
+    "interval": 60000,
+    "eventInterval": 15000,
+    "payload": "getInfo",
+    "payloadType": "info",
+    "debug": false,
+    "x": 650,
+    "y": 420,
+    "wires": [
+      [
+        "a54e4769.701e98"
+      ]
+    ]
+  },
+  {
+    "id": "d541b74c.176aa8",
+    "type": "Thing Update",
+    "z": "f4e7c667.e29cf8",
+    "nodeName": "",
+    "name": "",
+    "thingType": "Kasa",
+    "debug": false,
+    "x": 970,
+    "y": 420,
+    "wires": []
+  },
+  {
+    "id": "3d01b67d.94cc7a",
+    "type": "Thing Ready",
+    "z": "f4e7c667.e29cf8",
+    "nodeName": "",
+    "output": "type",
+    "thingType": "Kasa",
+    "props": [],
+    "x": 340,
+    "y": 420,
+    "wires": [
+      [
+        "a69f3eb9.8ef56"
+      ]
+    ]
+  },
+  {
+    "id": "9e6df4ec.bc95e8",
+    "type": "Thing Process",
+    "z": "f4e7c667.e29cf8",
+    "nodeName": "",
+    "thingType": "Kasa",
+    "topic": "$id",
+    "debug": false,
+    "x": 510,
+    "y": 360,
+    "wires": [
+      [
+        "d628e7ac.1d1688"
+      ]
+    ]
+  },
+  {
+    "id": "12f1fcf1.add7a3",
+    "type": "comment",
+    "z": "f4e7c667.e29cf8",
+    "name": "Basic Complex",
+    "info": "This example uses the Kasa/TP-Link platform. Because the Kasa node works differently than the Lifx node, it requires a little manipulation of the messages in and out of the main I/O node.",
+    "x": 120,
+    "y": 360,
+    "wires": []
+  },
+  {
+    "id": "94b0ce13.7d7ad",
+    "type": "Thing Trigger",
+    "z": "f4e7c667.e29cf8",
+    "nodeName": "",
+    "name": "TV Power",
+    "output": "change",
+    "outputPath": "",
+    "payload": "whole",
+    "payloadPath": "",
+    "incThing": false,
+    "debug": false,
+    "x": 520,
+    "y": 520,
+    "wires": [
+      [
+        "5ac74cdb.ba1024"
+      ]
+    ]
+  },
+  {
+    "id": "5ac74cdb.ba1024",
+    "type": "debug",
+    "z": "f4e7c667.e29cf8",
+    "name": "TV Power Changed",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 730,
+    "y": 520,
+    "wires": []
+  },
+  {
+    "id": "6e930b42.5b4a34",
+    "type": "Thing Command",
+    "z": "f4e7c667.e29cf8",
+    "nodeName": "",
+    "name": "TV Power",
+    "command": "",
+    "commandType": "str",
+    "debug": false,
+    "x": 340,
+    "y": 520,
+    "wires": []
+  },
+  {
+    "id": "b13b130b.2d623",
+    "type": "inject",
+    "z": "f4e7c667.e29cf8",
+    "name": "",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "true",
+    "payloadType": "bool",
+    "x": 150,
+    "y": 500,
+    "wires": [
+      [
+        "6e930b42.5b4a34"
+      ]
+    ]
+  },
+  {
+    "id": "587dd910.52df98",
+    "type": "inject",
+    "z": "f4e7c667.e29cf8",
+    "name": "",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "false",
+    "payloadType": "bool",
+    "x": 150,
+    "y": 540,
+    "wires": [
+      [
+        "6e930b42.5b4a34"
+      ]
+    ]
+  }
+]

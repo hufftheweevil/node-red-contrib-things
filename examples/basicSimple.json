@@ -1,0 +1,210 @@
+[
+  {
+    "id": "ed876b6c.e43528",
+    "type": "Thing Setup",
+    "z": "f4e7c667.e29cf8",
+    "thingType": "Lifx",
+    "things": [
+      {
+        "name": "Bathroom Light",
+        "id": "d073d7ad76e5",
+        "props": "",
+        "state": "",
+        "proxy": ""
+      },
+      {
+        "name": "Living Room Light",
+        "id": "d0769d63e4a6",
+        "props": "",
+        "state": "",
+        "proxy": ""
+      },
+      {
+        "name": "Kitchen Light",
+        "id": "d07a632ea96c",
+        "props": "",
+        "state": "",
+        "proxy": ""
+      }
+    ],
+    "statusFunction": "if (state.on === undefined) return null\nlet text = state.on ? 'On' : 'Off'\nif (state.hasOwnProperty('brightness') && state.on)\n    text += ` ${state.brightness < 1 ? state.brightness * 100 : state.brightness}%`\nreturn {\n    fill: state.on ? 'yellow' : 'grey',\n    shape: 'dot',\n    text\n}",
+    "debug": false,
+    "x": 140,
+    "y": 100,
+    "wires": []
+  },
+  {
+    "id": "7ff930cd.b3296",
+    "type": "lifx in",
+    "z": "f4e7c667.e29cf8",
+    "server": "9b46df63.c4c44",
+    "name": "",
+    "lightID": "",
+    "x": 290,
+    "y": 100,
+    "wires": [
+      [
+        "7d505bde.df4254"
+      ]
+    ]
+  },
+  {
+    "id": "7d505bde.df4254",
+    "type": "Thing Update",
+    "z": "f4e7c667.e29cf8",
+    "nodeName": "",
+    "name": "",
+    "thingType": "Lifx",
+    "debug": false,
+    "x": 470,
+    "y": 100,
+    "wires": []
+  },
+  {
+    "id": "8bfc2f13.1e8e6",
+    "type": "lifx out",
+    "z": "f4e7c667.e29cf8",
+    "server": "9b46df63.c4c44",
+    "name": "",
+    "lightID": "",
+    "x": 810,
+    "y": 100,
+    "wires": []
+  },
+  {
+    "id": "d0eea84c.b46138",
+    "type": "Thing Process",
+    "z": "f4e7c667.e29cf8",
+    "nodeName": "",
+    "thingType": "Lifx",
+    "topic": "$id",
+    "debug": false,
+    "x": 670,
+    "y": 100,
+    "wires": [
+      [
+        "8bfc2f13.1e8e6"
+      ]
+    ]
+  },
+  {
+    "id": "464d11c5.6d1b5",
+    "type": "Thing Trigger",
+    "z": "f4e7c667.e29cf8",
+    "nodeName": "",
+    "name": "Kitchen Light",
+    "output": "change",
+    "outputPath": "",
+    "payload": "whole",
+    "payloadPath": "",
+    "incThing": false,
+    "debug": false,
+    "x": 530,
+    "y": 200,
+    "wires": [
+      [
+        "1e4e617e.247a5f"
+      ]
+    ]
+  },
+  {
+    "id": "1e4e617e.247a5f",
+    "type": "debug",
+    "z": "f4e7c667.e29cf8",
+    "name": "Kitchen Light Changed",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 740,
+    "y": 200,
+    "wires": []
+  },
+  {
+    "id": "29c85b88.abdbe4",
+    "type": "Thing Command",
+    "z": "f4e7c667.e29cf8",
+    "nodeName": "",
+    "name": "Kitchen Light",
+    "command": "",
+    "commandType": "str",
+    "debug": false,
+    "x": 350,
+    "y": 200,
+    "wires": []
+  },
+  {
+    "id": "3087e467.1280bc",
+    "type": "inject",
+    "z": "f4e7c667.e29cf8",
+    "name": "",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "true",
+    "payloadType": "bool",
+    "x": 150,
+    "y": 180,
+    "wires": [
+      [
+        "29c85b88.abdbe4"
+      ]
+    ]
+  },
+  {
+    "id": "429039ed.3dc428",
+    "type": "inject",
+    "z": "f4e7c667.e29cf8",
+    "name": "",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "false",
+    "payloadType": "bool",
+    "x": 150,
+    "y": 220,
+    "wires": [
+      [
+        "29c85b88.abdbe4"
+      ]
+    ]
+  },
+  {
+    "id": "3ab68b34.7a79d4",
+    "type": "comment",
+    "z": "f4e7c667.e29cf8",
+    "name": "Basic Simple",
+    "info": "This example uses the Lifx platform. The Lifx node works well with the thing nodes, as it requires no initization to receive inbound messages. And the Lifx node already uses the MAC address as the message topic, so the Lifx Things are setup with the MAC address as their ID.",
+    "x": 110,
+    "y": 40,
+    "wires": []
+  },
+  {
+    "id": "9b46df63.c4c44",
+    "type": "lifx server",
+    "z": "",
+    "name": "Lifx Server",
+    "address": "192.168.1.55",
+    "broadcast": "",
+    "lights": "",
+    "interval": "10000"
+  }
+]

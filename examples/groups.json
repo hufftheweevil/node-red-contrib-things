@@ -1,0 +1,203 @@
+[
+  {
+    "id": "55a1fe82.20a8d",
+    "type": "Thing Setup",
+    "z": "f4e7c667.e29cf8",
+    "thingType": "Group",
+    "things": [
+      {
+        "name": "Living Room Lights",
+        "things": [
+          "Living Room 1",
+          "Living Room 2"
+        ]
+      },
+      {
+        "name": "Downstairs Lights",
+        "things": [
+          "Living Room Lights",
+          "Kitchen Light",
+          "Garage Light"
+        ]
+      }
+    ],
+    "statusFunction": "",
+    "debug": false,
+    "x": 150,
+    "y": 900,
+    "wires": []
+  },
+  {
+    "id": "97431ac2.de3708",
+    "type": "comment",
+    "z": "f4e7c667.e29cf8",
+    "name": "Groups",
+    "info": "This example does not include the `process` nodes that would enable this flow to work properly. Check the basic examples to see how those works.\n\nAny command sent to a group will propogate to all things in the group. Groups can be nested, and commands will continue to propogate through each level.\n\nThings in each group do not need to be of the same type/platform. When the command is forwarded to the `process` nodes, the correct type will be used for each thing in the group.",
+    "x": 90,
+    "y": 720,
+    "wires": []
+  },
+  {
+    "id": "f16ac565.946f38",
+    "type": "Thing Setup",
+    "z": "f4e7c667.e29cf8",
+    "thingType": "Lifx",
+    "things": [
+      {
+        "name": "Bathroom Light",
+        "id": "d073d7ad76e5",
+        "props": "",
+        "state": "",
+        "proxy": ""
+      },
+      {
+        "name": "Living Room 1",
+        "id": "d0769d63e4a6",
+        "props": "",
+        "state": "",
+        "proxy": ""
+      },
+      {
+        "name": "Living Room 2",
+        "id": "d0769d63e4a4",
+        "props": "",
+        "state": "",
+        "proxy": ""
+      },
+      {
+        "name": "Kitchen Light",
+        "id": "d07a632ea96c",
+        "props": "",
+        "state": "",
+        "proxy": ""
+      }
+    ],
+    "statusFunction": "if (state.on === undefined) return null\nlet text = state.on ? 'On' : 'Off'\nif (state.hasOwnProperty('brightness') && state.on)\n    text += ` ${state.brightness < 1 ? state.brightness * 100 : state.brightness}%`\nreturn {\n    fill: state.on ? 'yellow' : 'grey',\n    shape: 'dot',\n    text\n}",
+    "debug": false,
+    "x": 140,
+    "y": 780,
+    "wires": []
+  },
+  {
+    "id": "7c8297a5.15e208",
+    "type": "Thing Setup",
+    "z": "f4e7c667.e29cf8",
+    "thingType": "Kasa",
+    "things": [
+      {
+        "name": "TV Power",
+        "id": "192.168.1.243",
+        "props": "",
+        "state": "",
+        "proxy": ""
+      },
+      {
+        "name": "Hallway",
+        "id": "192.168.1.244",
+        "props": "",
+        "state": "",
+        "proxy": ""
+      },
+      {
+        "name": "Garage Light",
+        "id": "192.168.1.245",
+        "props": "",
+        "state": "",
+        "proxy": ""
+      }
+    ],
+    "statusFunction": "if (state.on === undefined) return null\nlet text = state.on ? 'On' : 'Off'\nif (state.hasOwnProperty('brightness') && state.on)\n    text += ` ${state.brightness < 1 ? state.brightness * 100 : state.brightness}%`\nreturn {\n    fill: state.on ? 'yellow' : 'grey',\n    shape: 'dot',\n    text\n}",
+    "debug": false,
+    "x": 150,
+    "y": 840,
+    "wires": []
+  },
+  {
+    "id": "dce107d3.a483d8",
+    "type": "Thing Command",
+    "z": "f4e7c667.e29cf8",
+    "nodeName": "",
+    "name": "Downstairs Lights",
+    "command": "",
+    "commandType": "str",
+    "debug": false,
+    "x": 610,
+    "y": 840,
+    "wires": []
+  },
+  {
+    "id": "f245b34.232605",
+    "type": "inject",
+    "z": "f4e7c667.e29cf8",
+    "name": "On",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "true",
+    "payloadType": "bool",
+    "x": 350,
+    "y": 800,
+    "wires": [
+      [
+        "dce107d3.a483d8"
+      ]
+    ]
+  },
+  {
+    "id": "7c77695f.e84148",
+    "type": "inject",
+    "z": "f4e7c667.e29cf8",
+    "name": "Off",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "false",
+    "payloadType": "bool",
+    "x": 350,
+    "y": 840,
+    "wires": [
+      [
+        "dce107d3.a483d8"
+      ]
+    ]
+  },
+  {
+    "id": "6b15ecba.4e5c04",
+    "type": "inject",
+    "z": "f4e7c667.e29cf8",
+    "name": "50% Brightness",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "{\"brightness\":50}",
+    "payloadType": "json",
+    "x": 380,
+    "y": 880,
+    "wires": [
+      [
+        "dce107d3.a483d8"
+      ]
+    ]
+  }
+]
