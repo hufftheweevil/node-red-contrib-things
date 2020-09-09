@@ -73,7 +73,7 @@ module.exports = function (RED) {
             }
           }))
           if (proxied) return
-          debug(`No proxy found for command ${thisCommand}`)
+          debug(`No proxy found for command ${command}`)
         } else {
           // Complex command type (i.e. object)
           passCommand = { ...command }  // Shallow copy, so that keys can be deleted if used by proxy
