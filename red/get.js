@@ -13,6 +13,17 @@ module.exports = function (RED) {
       let name = config.name || msg.topic
       let thing = this.context().global.get('things')[name]
 
+      // Check for thing
+      if (!thing) {
+        node.error(`Thing '${name}' not found`)
+        node.status({
+          fill: 'red',
+          shape: 'ring',
+          text: 'Thing not found'
+        })
+        return
+      }
+
       // For each prop configured...
       config.props.forEach(({ msgProp, thingProp, path }) => {
 
@@ -28,9 +39,16 @@ module.exports = function (RED) {
         }
       })
 
+      // Output or error
       if (errors.length) {
         node.error(errors.join('; '), msg)
+        node.status({
+          fill: 'red',
+          shape: 'dot',
+          text: 'Error during parsing; See log'
+        })
       } else {
+        node.status(thing.status(thing.state, thing.props))
         node.send(msg)
       }
     })
