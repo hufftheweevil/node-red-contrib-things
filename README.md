@@ -45,14 +45,14 @@ Each thing is represented using a javascript object with a few specific properti
 | `type` | The platform that it uses, such as Lifx, TP-Link, or Z-Wave. Exact formatting is up to you, but it must remain consistent throughout your flows.
 | `id` | Typically, a unqiue identifier among all things of the same type. Does not need to be unique among all things. If not set, defaults to the `name`. Common uses could be IP or MAC address.
 | `props` | An object of static properties that will not change, typically set during setup. They can be modified later, but it not will not cause any state update notices. Defaults to `{}`.
-| `state` | An object of variable properties that will change and, together, represent a complete state of the thing. Can be included on setup, but is typically not, allowing the flows to update as necessary. Defaults to {}.
+| `state` | An object of variable properties that will change and, together, represent a complete state of the thing. Can be included on setup, but is typically not, allowing the flows to update as necessary. Defaults to `{}`.
 | `status` | A function that takes in the current `state` and `props` and outputs a Node-RED node status message. This function will run on every state update and the status will be applied to any `trigger` nodes that are configured for this thing. 
 | `proxy` | An optional object map that defines any state and/or command proxies. State proxies are linked to a child thing and causes this thing to update when the child thing updates. Command proxies forward any commands from this thing to another thing.
 | `parents` | Automatically generated. Array of parent thing names, or any thing that has a state proxy.
 
 ## Nodes
 
-There are 6 nodes included: *setup*, *ready*, *update*, *trigger*, *command*, and *process*.
+There are 7 nodes included: *setup*, *ready*, *update*, *trigger*, *get*, *command*, and *process*.
 
 ### setup
 
@@ -95,7 +95,7 @@ An action-type node that will update a thing's state, potentially causing a sepa
 
 | Key | Type | Info |
 |---|---|---|
-| `topic` | *string* | Thing name. Only used if not specified in properties. **Note:** will *not* override property setting. Alternatively, if the node is configured with a <code>thing type</code>, then the <i>thing</i> ID can be used as the topic.
+| `topic` | *string* | Thing name. Only used if not specified in properties. **Note:** will *not* override property setting. Alternatively, if the node is configured with a `thing type`, then the *thing* ID can be used as the topic.
 | `payload` | *object* | The state update. Will be shallow merged with the current state.
 | `replace` | *boolean* | Optional. If `true`, `payload` will completely replace current state instead of being merged.
 
@@ -115,9 +115,24 @@ A node that will output when conditions are met after input into a respective *u
 
 | Key | Type | Info |
 |---|---|---|
-| `topic` | *string* | Thing name.
-| `payload` | any | Depends on Payload property.
-| `thing` | *object* | The entire thing object, only if specified in properties.
+| `topic` | *string* | Thing name
+| `payload` | any | Depends on Payload property
+| `thing` | *object* | The entire thing object, only if specified in properties
+
+### get
+
+A node that will append specified values of a *thing* to a message.
+
+##### Properties 
+
+| Property | Info |
+|---|---|
+| Thing Name | The thing to reference
+| Message | Similar to the built-in inject node
+
+##### Output
+
+Same message from input, with specified properties changed/added.
 
 
 ### command
