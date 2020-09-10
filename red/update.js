@@ -1,4 +1,4 @@
-let { stateBus, pushUnique } = require('./shared')
+let { stateBus, pushUnique, now } = require('./shared')
 
 module.exports = function (RED) {
 
@@ -55,6 +55,11 @@ module.exports = function (RED) {
 
         node.status({
           text: `${config.thingType} ${waitingOn.length ? `waiting on (${waitingOn.length}) ${waitingOn.join(', ')}` : 'ready'}`
+        })
+      } else {
+        // Not configured with `type`, so show status of this update
+        node.status({
+          text: `${thing.name} | ${JSON.stringify(msg.payload)} | ${now()}`
         })
       }
     })
