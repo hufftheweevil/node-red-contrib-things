@@ -42,6 +42,9 @@ module.exports = function (RED) {
       // will be triggered. (And update their status)
       stateBus.emit(name)
 
+      // Check for parents and emit for them too
+      thing.parents && thing.parents.forEach(parent => stateBus.emit(parent))
+
       // If configured with `type`, update status
       if (config.thingType) {
         pushUnique(heardFrom, name)

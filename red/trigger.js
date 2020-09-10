@@ -47,9 +47,6 @@ module.exports = function (RED) {
 
       // Update last known state
       lastKnownState = latestState
-
-      // Check for parents and trigger
-      thing.parents && thing.parents.forEach(parent => stateBus.emit(parent))
     }
 
     // Listen for state updates for this thing
