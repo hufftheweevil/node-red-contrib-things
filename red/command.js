@@ -26,7 +26,8 @@ module.exports = function (RED) {
       debug(`Input message: ${JSON.stringify(msg)}`)
 
       let name = config.name || msg.topic
-      let command = config.command || msg.payload
+      let command = config.command === '' ? msg.payload
+        : RED.util.evaluateNodeProperty(config.command, config.commandType, node, msg)
 
       if (!name) return err(`Thing name not specified in properties or input`)
       if (typeof command == 'undefined' || command === '') return err(`Command not specified in properties or input`)
