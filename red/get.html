@@ -1,0 +1,149 @@
+<script type="text/javascript">
+
+  RED.nodes.registerType('Thing Get', {
+    paletteLabel: 'get',
+    category: 'things',
+    color: '#D8BFD8',
+    defaults: {
+      nodeName: { value: '' },
+      name: { value: '' },
+      props: { value: [{ msgProp: "payload", thingProp: "state", path: "" }] },
+    },
+    inputs: 1,
+    outputs: 1,
+    icon: 'db.png',
+    label: function () {
+      return this.nodeName || `Get ${this.name}`
+    },
+    labelStyle: function () {
+      return this.nodeName || this.name ? 'node_label_italic' : ''
+    },
+    oneditresize: function (size) {
+      var rows = $("#dialog-form>div:not(.node-input-property-container-row):visible")
+      var height = size.height
+      for (var i = 0; i < rows.length; i++) {
+        height -= $(rows[i]).outerHeight(true)
+      }
+      var editorRow = $("#dialog-form>div.node-input-property-container-row")
+      height -= (parseInt(editorRow.css("marginTop")) + parseInt(editorRow.css("marginBottom")))
+      height += 16
+      $("#node-input-property-container").editableList('height', height)
+    },
+    oneditprepare: function () {
+      let types = [
+        {
+          value: 'name',
+          label: 'name',
+          hasValue: false
+        },
+        {
+          value: 'id',
+          label: 'id',
+          hasValue: false
+        },
+        {
+          value: 'type',
+          label: 'type',
+          hasValue: false
+        },
+        {
+          value: 'props',
+          label: 'props.',
+          validate: /^[a-zA-Z_\.]*$/
+        },
+        {
+          value: 'state',
+          label: 'state.',
+          validate: /^[a-zA-Z_\.]*$/
+        },
+        {
+          value: 'parents',
+          label: 'parents',
+          hasValue: false
+        }
+      ]
+
+      $('#node-input-property-container').css('min-height', '120px').css('min-width', '450px').editableList({
+        addItem: function (container, i, prop) {
+          container.css({
+            overflow: 'hidden',
+            whiteSpace: 'nowrap'
+          })
+          let row = $('<div/>').appendTo(container)
+
+          let setter = $('<input/>', { class: "node-input-prop-property-name", type: "text" })
+            .css("width", "30%")
+            .appendTo(row)
+            .typedInput({ types: ['msg'] })
+
+          $('<div/>', { style: 'display:inline-block; padding:0px 6px;' })
+            .text('=')
+            .appendTo(row)
+
+          let getter = $('<input/>', { class: "node-input-prop-property-value", type: "text" })
+            .css("width", "calc(70% - 30px)")
+            .appendTo(row)
+            .typedInput({ default: 'state', types })
+
+          setter.typedInput('value', prop.msgProp)
+          getter.typedInput('type', prop.thingProp)
+          getter.typedInput('value', prop.path)
+        },
+        removable: true,
+        sortable: true
+      })
+
+      this.props.forEach(prop => $("#node-input-property-container").editableList('addItem', prop))
+    },
+    oneditsave: function () {
+      let props = $("#node-input-property-container").editableList('items')
+      let node = this
+      node.props = []
+      props.each(function (i) {
+        let propItem = $(this)
+        let prop = {
+          msgProp: propItem.find(".node-input-prop-property-name").typedInput('value'),
+          thingProp: propItem.find(".node-input-prop-property-value").typedInput('type'),
+          path: propItem.find(".node-input-prop-property-value").typedInput('value')
+        }
+        node.props.push(prop)
+      })
+    }
+  })
+</script>
+
+<script type="text/html" data-template-name="Thing Get">
+  <div class="form-row">
+      <label for="node-input-nodeName"><i class="fa fa-tag"></i> Node Name</label>
+      <input type="text" id="node-input-nodeName" placeholder="Node Name">
+  </div>
+  <div class="form-row">
+      <label for="node-input-name"><i class="fa fa-id-badge"></i> Thing Name</label>
+      <input type="text" id="node-input-name" placeholder="Thing Name">
+  </div>
+  <div class="form-row node-input-property-container-row">
+    <ol id="node-input-property-container"></ol>
+  </div>
+</script>
+
+<script type="text/html" data-help-name="Thing Get">
+  <p>A node that appends a message with specified values from a <i>thing</i>.</p>
+
+  <h3>Properties</h3>
+  <dl class="message-properties">
+    <dt class="optional">Thing Name</dt>
+    <dd> The <i>thing</i> name. If not specified here, must be in <code>topic</code> on input. If specified, will not be overriden by input. </dd>
+    <dt class="optional">Props</dt>
+    <dd> Specify what part of the <i>thing</i> to append to what part of the message. Leave <code>state.</code> or <code>props.</code> blank to include the entire respective object.</dd>
+  </dl>
+
+  <h3>Inputs</h3>
+  <dl class="message-properties">
+    <dt>topic <span class="property-type">string</span></dt>
+    <dd> The <i>thing</i> name, if not specified in properties. Will NOT override properties. </dd>
+  </dl>
+
+  <h3>Outputs</h3>
+  <p>Input message will be passed through, with the specified properties added/modified</p>
+  <p>Note that messages will <b>only</b> output from this node on input. That means if any part of the <i>thing</i> changes, it will <b>not</b> automatically cause an output. To trigger from <i>thing</i> state changes, use the <code>trigger</code> node.</p>
+</script>

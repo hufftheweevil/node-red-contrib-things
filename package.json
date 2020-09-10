@@ -12,6 +12,7 @@
       "ready": "red/ready.js",
       "update": "red/update.js",
       "trigger": "red/trigger.js",
+      "get": "red/get.js",
       "command": "red/command.js",
       "process": "red/process.js"
     }
