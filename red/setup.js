@@ -93,8 +93,7 @@ module.exports = function (RED) {
                   const THINGS = global.get('things')
                   if (config.debug)
                     node.warn(
-                      `Calling getter for '${name}'.state.${from} -- Will return '${
-                      THINGS[proxyThingName] && THINGS[proxyThingName].state[to]
+                      `Calling getter for '${name}'.state.${from} -- Will return '${THINGS[proxyThingName] && THINGS[proxyThingName].state[to]
                       }'`
                     )
                   return THINGS[proxyThingName] && THINGS[proxyThingName].state[to]
@@ -141,7 +140,7 @@ module.exports = function (RED) {
       if (otherConfig.type != 'Thing Setup' || otherConfig.id == this.id) return
 
       let otherNode = RED.nodes.getNode(otherConfig.id)
-      if (!otherNode || !otherNode.context().get('complete')) {
+      if (otherNode && !otherNode.context().get('complete')) {
         allReady = false
         if (otherConfig.thingType == config.thingType) thisTypeReady = false
       }
