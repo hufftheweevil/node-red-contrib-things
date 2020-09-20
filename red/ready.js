@@ -7,12 +7,10 @@ module.exports = function (RED) {
 
     let node = this
 
-    node.on('input', function (msg) {
-      // Future use
-    })
-
     // The function to be called when ready
-    function onReady() {
+    function onReady(type) {
+      if (type != config.thingType) return  // Also works for 'all', if applicable
+
       let msg = {}
 
       let errors = []
@@ -55,7 +53,7 @@ module.exports = function (RED) {
 
     // Check if ready now, if not listen for when ready
     if (ready.has(config.thingType)) {
-      onReady()
+      onReady(config.thingType)
 
     } else {
       systemBus.on('ready', onReady)

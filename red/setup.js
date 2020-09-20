@@ -157,7 +157,7 @@ module.exports = function (RED) {
       systemBus.emit('ready', 'all')
     }
     if (thisTypeReady) {
-      systemBus.emit(`ready`, config.thingType)
+      systemBus.emit('ready', config.thingType)
     }
 
     node.on('close', () => {
