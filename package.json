@@ -22,8 +22,5 @@
     "iot"
   ],
   "homepage": "https://github.com/hufftheweevil/node-red-contrib-things",
-  "repository": "github:hufftheweevil/node-red-contrib-things",
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com/"
-  }
+  "repository": "github:hufftheweevil/node-red-contrib-things"
 }
