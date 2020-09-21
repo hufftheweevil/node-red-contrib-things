@@ -24,7 +24,7 @@ module.exports = function (RED) {
       }
       get thing() {
         let things = GLOBAL.get('things')
-        return things ? things[this.name] : {}  // Placeholder if called before setup in single mode
+        return things ? things[this.name] : { state: {} }  // Placeholder if called before setup in single mode
       }
       getState() {
         return this.thing && JSON.stringify(this.pathOrWhole(config.output, config.outputPath))
