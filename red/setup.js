@@ -146,17 +146,33 @@ module.exports = function (RED) {
       }
     })
 
-    // If all complete, emit ready (should only happen once per deployment)
     if (allReady) {
+
       // Sort things first (only for ease of access in UI)
       const THINGS = global.get('things')
       const ABC_THINGS = {}
       Object.keys(THINGS).sort().forEach(key => ABC_THINGS[key] = THINGS[key])
       global.set('things', ABC_THINGS)
+
       // Then emit ready
       systemBus.emit('ready', 'all')
     }
+
     if (thisTypeReady) {
+
+      // Garbage collect any things of this type that are no longer in any setup node
+      let allThingsThisType = []
+      RED.nodes.eachNode(otherConfig => {
+        if (otherConfig.type == 'Thing Setup' && otherConfig.thingType == config.thingType)
+          allThingsThisType.push(...otherConfig.things.map(t => t.name))
+      })
+      console.log(allThingsThisType)
+      let things = global.get('things')
+      Object.values(things)
+        .filter(t => t.type == config.thingType && !allThingsThisType.includes(t.name))
+        .forEach(t => delete things[t.name])
+
+      // Then emit ready
       systemBus.emit('ready', config.thingType)
     }
 
