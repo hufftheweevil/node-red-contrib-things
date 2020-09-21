@@ -1,92 +1,121 @@
-let { stateBus, _get } = require('./shared')
+let { systemBus, stateBus } = require('./shared')
 
 module.exports = function (RED) {
 
   function Node(config) {
     RED.nodes.createNode(this, config)
 
-    let node = this
-    let global = this.context().global
-
-    node.on('input', function (msg) {
-      // Future use
-    })
+    const node = this
+    const GLOBAL = this.context().global
 
     // This will setup a listener on the bus to trigger
     // off of any update node that updates this thing's
     // state. This will change the node's status and
     // output a message (if configured as such)
 
-    // Helper to retrieve thing
-    let getThing = () => global.get('things')[config.name]
+    // In multi mode, each thing that matches the conditions
+    // will be added to the `watchers` list to track each
+    // one individually. In single mode, only one is used.
+    class ThingWatcher {
+      constructor(thingName) {
+        this.name = thingName
+        this.lastKnownState = this.getState()
+        this.callback = this.callback.bind(this)
+      }
+      get thing() {
+        let things = GLOBAL.get('things')
+        return things ? things[this.name] : {}  // Placeholder if called before setup in single mode
+      }
+      getState() {
+        return this.thing && JSON.stringify(this.pathOrWhole(config.output, config.outputPath))
+      }
+      pathOrWhole(flag, path) {
+        return flag == 'path' ? RED.util.getObjectProperty(this.thing.state, path) : this.thing.state
+      }
+      callback() {
+        let thing = this.thing
 
-    // Helper to get state (or part of state) as string
-    let stringifyState = () => {
-      let thing = getThing()
-      return thing && JSON.stringify(
-        config.output == 'path' ? _get(thing.state, config.outputPath) : thing.state
-      )
+        // Serialize latest state (or specific path, if configured)
+        let latestState = this.getState()
+
+        // Output state message accordingly
+        if (config.output == 'all' || this.lastKnownState != latestState) {
+          let msg = {
+            topic: this.name,
+            payload: this.pathOrWhole(config.payload, config.payloadPath)
+          }
+          if (config.incThing) msg.thing = thing
+          node.send(msg)
+        }
+
+        // Update last known state
+        this.lastKnownState = latestState
+
+        // Update status (single mode only)
+        if (!config.multi) {
+          try {
+            let statusMsg = thing.status(thing.state, thing.props) || {
+              fill: 'red',
+              shape: 'ring',
+              text: 'Unknown'
+            }
+            node.status(statusMsg)
+          } catch (err) {
+            node.warn(`Unable to set status for ${this.name}: ${err}`)
+          }
+        }
+      }
     }
 
-    // Keep last known state (only used when config.output != 'all')
-    let lastKnownState = stringifyState()
+    let watchers = []
 
-    // The function to be called when triggered
-    let action = () => {
-      let thing = getThing()
-      if (!thing) return
+    if (!config.multiMode) {
+      // Can immediately create watcher and register
+      watchers = [new ThingWatcher(config.name)]
+      registerThingListeners()
 
-      updateStatus()
+    } else {
+      // Wait for all setup to be complete
+      // This will also run if any setup node is re-deployed
+      let onReady = type => {
+        if (type !== 'all') return
 
-      // Serialize latest state (or specific path, if configured)
-      let latestState = stringifyState()
+        // Clear all previous listeners, if there were any
+        removeAllListeners()
 
-      // Output state message accordingly
-      if (config.output == 'all' || lastKnownState != latestState)
-        output(thing)
+        // Determine all things that match config
+        watchers = Object.values(GLOBAL.get('things'))
+          .filter(thing => {
+            let thingValue = RED.util.getObjectProperty(thing, config.multiKey)
+            let compareValue = RED.util.evaluateNodeProperty(config.multiValue, config.multiTest)
 
-      // Update last known state
-      lastKnownState = latestState
+            let test = value => value instanceof RegExp ? value.test(thingValue) : thingValue == value
+
+            return config.multiKey == 'parents' ? thingValue.some(test) : test(compareValue)
+          })
+          .map(thing => new ThingWatcher(thing.name))
+
+        // Listen for state updates for each thing
+        registerThingListeners()
+      }
+      systemBus.on('ready', onReady)
+      node.on('close', function () {
+        systemBus.removeListener('ready', onReady)
+      })
     }
 
-    // Listen for state updates for this thing
-    stateBus.on(config.name, action)
+    function registerThingListeners() {
+      watchers.forEach(({ name, callback }) => stateBus.on(name, callback))
+    }
+    function removeAllListeners() {
+      watchers.forEach(({ name, callback }) => stateBus.removeListener(name, callback))
+    }
 
     // When node destroyed, stop listening
     node.on('close', function () {
-      stateBus.removeListener(config.name, action)
+      removeAllListeners()
     })
 
-    // Updates the node status
-    function updateStatus() {
-      let thing = getThing()
-      if (!thing) return
-
-      // Catch any errors that occur when running the thing.status function
-      try {
-        let statusMsg = thing.status(thing.state, thing.props) || {
-          fill: 'red',
-          shape: 'ring',
-          text: 'Unknown'
-        }
-        node.status(statusMsg)
-      } catch (err) {
-        node.warn(`Unable to set status for ${thing.name}: ${err}`)
-      }
-    }
-
-    // Sends output message
-    function output(thing) {
-      let msg = {
-        topic: thing.name,
-        payload: config.payload == 'path' ? _get(thing.state, config.payloadPath) : thing.state
-      }
-      if (config.incThing) msg.thing = thing
-      node.send(msg)
-    }
-
-    // Initialize status (if thing already exists)
-    updateStatus()
   }
   RED.nodes.registerType('Thing Trigger', Node)
 }
