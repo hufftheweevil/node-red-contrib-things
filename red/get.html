@@ -13,7 +13,7 @@
     outputs: 1,
     icon: 'db.png',
     label: function () {
-      return this.nodeName || `Get ${this.name}`
+      return this.nodeName || (this.name ? `Get ${this.name}` : 'get')
     },
     labelStyle: function () {
       return this.nodeName || this.name ? 'node_label_italic' : ''
