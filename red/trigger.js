@@ -52,7 +52,7 @@ module.exports = function (RED) {
         this.lastKnownState = latestState
 
         // Update status (single mode only)
-        if (!config.multi) {
+        if (!config.multiMode) {
           try {
             let statusMsg = thing.status(thing.state, thing.props) || {
               fill: 'red',
