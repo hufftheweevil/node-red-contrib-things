@@ -166,7 +166,6 @@ module.exports = function (RED) {
         if (otherConfig.type == 'Thing Setup' && otherConfig.thingType == config.thingType)
           allThingsThisType.push(...otherConfig.things.map(t => t.name))
       })
-      console.log(allThingsThisType)
       let things = global.get('things')
       Object.values(things)
         .filter(t => t.type == config.thingType && !allThingsThisType.includes(t.name))
