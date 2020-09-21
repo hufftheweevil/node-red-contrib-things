@@ -61,33 +61,4 @@
       <dt class="optional">replace <span class="property-type">boolean</span></dt>
       <dd> If true, <code>payload</code> will completely replace state. Otherwise it will be merged, top-level only. </dd>
     </dl>
-
-  <h3>Things</h3>
-    <p>A <i>thing</i> is any object/device/entity that you want to keep state on.
-      Each <i>thing</i> has a few standard parts:</p>
-    <dl class="message-properties">
-      <dt>name <span class="property-type">string</span></dt>
-      <dd> <b>Must</b> be included on setup. <b>Must</b> be unique among all other things. </dd>
-      <dt>type <span class="property-type">string</span></dt>
-      <dd> Typically, the platform that it uses, such as Lifx, TP-Link, or Z-Wave. Should be included on setup. Default <code>''</code>. </dd>
-      <dt>id <span class="property-type">string | number</span></dt>
-      <dd> Typically, a unqiue identifier among all things of the same type. Should be included on setup. Defaults to the <code>name</code>. </dd>
-      <dt>props <span class="property-type">object</span></dt>
-      <dd> Static properties that will not change. Should be included on setup. Can be modified later, but not will not cause any state update notices. Default <code>{}</code>. </dd>
-      <dt>state <span class="property-type">object | any</span></dt>
-      <dd> Thing values that will change and, together, represent a complete state of the <i>thing</i>. Can be included on setup. Should be updated after setup. Default <code>{}</code>. Any type can be used, however an object is recommended. </dd>
-      <dt>status <span class="property-type">function</span></dt>
-      <dd> A function that takes in the current <code>(state, props)</code> and outputs a Node-RED node status message, which may include <code>{text, fill, shape}</code>. Should be included on setup. This function will run on every state update. </dd>
-      <dt>proxy <span class="property-type">object</span></dt>
-      <dd> Only exists if included on setup. A map of other <i>things</i> to proxy to (aka <i>child things</i>). The map must be keyed by other <i>things</i>. The values are objects with the following properties:
-        <dl class="message-properties">
-          <dt>state <span class="property-type">object</span></dt>
-          <dd> A map of states to be proxied. The keys are the state properties of this <i>thing</i>. The values are the state properties of the <i>child thing</i>. All state properties of the <i>child thing</i> that are mapped here will be available in the state of the parent <i>thing</i>. </dd>
-          <dt>command <span class="property-type">object</span></dt>
-          <dd> A map of commands to be proxied. The keys are the commands that you want to be available on the parent <i>thing</i>. The values are the relative command to use on the <i>child thing</i>. </dd>
-        </dl>
-      </dd>
-      <dt>parents <span class="property-type">array</span></dt>
-      <dd> Automatically generated. Only exists if <code>proxy</code> included on setup. Array of parent <i>thing</i> names. Used to know what parent <i>things</i> to update status on when child state is updated. </dd>
-    </dl>
 </script>
