@@ -9,7 +9,6 @@
   "node-red": {
     "nodes": {
       "setup": "red/setup.js",
-      "ready": "red/ready.js",
       "update": "red/update.js",
       "trigger": "red/trigger.js",
       "get": "red/get.js",

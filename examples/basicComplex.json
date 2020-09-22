@@ -70,25 +70,6 @@
     ]
   },
   {
-    "id": "d628e7ac.1d1688",
-    "type": "kasa",
-    "z": "f4e7c667.e29cf8",
-    "name": "",
-    "device": "",
-    "interval": 60000,
-    "eventInterval": 15000,
-    "payload": "getInfo",
-    "payloadType": "info",
-    "debug": false,
-    "x": 650,
-    "y": 420,
-    "wires": [
-      [
-        "a54e4769.701e98"
-      ]
-    ]
-  },
-  {
     "id": "d541b74c.176aa8",
     "type": "Thing Update",
     "z": "f4e7c667.e29cf8",
@@ -99,22 +80,6 @@
     "x": 970,
     "y": 420,
     "wires": []
-  },
-  {
-    "id": "3d01b67d.94cc7a",
-    "type": "Thing Ready",
-    "z": "f4e7c667.e29cf8",
-    "nodeName": "",
-    "output": "type",
-    "thingType": "Kasa",
-    "props": [],
-    "x": 340,
-    "y": 420,
-    "wires": [
-      [
-        "a69f3eb9.8ef56"
-      ]
-    ]
   },
   {
     "id": "9e6df4ec.bc95e8",
@@ -239,6 +204,44 @@
     "wires": [
       [
         "6e930b42.5b4a34"
+      ]
+    ]
+  },
+  {
+    "id": "d628e7ac.1d1688",
+    "type": "kasa",
+    "z": "f4e7c667.e29cf8",
+    "name": "",
+    "device": "",
+    "interval": 60000,
+    "eventInterval": 15000,
+    "payload": "getInfo",
+    "payloadType": "info",
+    "debug": false,
+    "x": 650,
+    "y": 420,
+    "wires": [
+      [
+        "a54e4769.701e98"
+      ]
+    ]
+  },
+  {
+    "id": "da4fdb64.cdcf78",
+    "type": "inject",
+    "z": "f4e7c667.e29cf8",
+    "name": "",
+    "props": [],
+    "repeat": "",
+    "crontab": "",
+    "once": true,
+    "onceDelay": 0.1,
+    "topic": "",
+    "x": 330,
+    "y": 420,
+    "wires": [
+      [
+        "a69f3eb9.8ef56"
       ]
     ]
   }

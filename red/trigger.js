@@ -1,4 +1,4 @@
-let { systemBus, stateBus } = require('./shared')
+let { stateBus } = require('./shared')
 
 module.exports = function (RED) {
 
@@ -45,7 +45,7 @@ module.exports = function (RED) {
             payload: this.pathOrWhole(config.payload, config.payloadPath)
           }
           if (config.incThing) msg.thing = thing
-          node.send(msg)
+          setTimeout(() => node.send(msg), 1)
         }
 
         // Update last known state
@@ -70,20 +70,16 @@ module.exports = function (RED) {
     let watchers = []
 
     if (!config.multiMode) {
-      // Can immediately create watcher and register
+
+      // Create watcher and register
       watchers = [new ThingWatcher(config.name)]
       registerThingListeners()
 
     } else {
-      // Wait for all setup to be complete
-      // This will also run if any setup node is re-deployed
-      let onReady = type => {
-        if (type !== 'all') return
+      // Instant timeout causes this to run async (after all setup)
+      setTimeout(() => {
 
-        // Clear all previous listeners, if there were any
-        removeAllListeners()
-
-        // Determine all things that match config
+        // Generate list of things that match conditions
         watchers = Object.values(GLOBAL.get('things'))
           .filter(thing => {
             let thingValue = RED.util.getObjectProperty(thing, config.multiKey)
@@ -97,11 +93,7 @@ module.exports = function (RED) {
 
         // Listen for state updates for each thing
         registerThingListeners()
-      }
-      systemBus.on('ready', onReady)
-      node.on('close', function () {
-        systemBus.removeListener('ready', onReady)
-      })
+      }, 0)
     }
 
     function registerThingListeners() {

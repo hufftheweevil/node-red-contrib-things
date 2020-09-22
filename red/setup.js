@@ -129,56 +129,25 @@ module.exports = function (RED) {
       text: errors ? 'Errors during setup, see debug log' : 'Complete'
     })
 
+    setTimeout(() => {
 
-    // This setup node complete
-    this.context().set('complete', true)
-
-    // Check if all other setup nodes are complete
-    let allReady = true
-    let thisTypeReady = true
-    RED.nodes.eachNode(otherConfig => {
-      if (otherConfig.type != 'Thing Setup' || otherConfig.id == this.id) return
-
-      let otherNode = RED.nodes.getNode(otherConfig.id)
-      if (otherNode && !otherNode.context().get('complete')) {
-        allReady = false
-        if (otherConfig.thingType == config.thingType) thisTypeReady = false
-      }
-    })
-
-    if (allReady) {
-
-      // Sort things first (only for ease of access in UI)
-      const THINGS = global.get('things')
-      const ABC_THINGS = {}
-      Object.keys(THINGS).sort().forEach(key => ABC_THINGS[key] = THINGS[key])
-      global.set('things', ABC_THINGS)
-
-      // Then emit ready
-      systemBus.emit('ready', 'all')
-    }
-
-    if (thisTypeReady) {
-
-      // Garbage collect any things of this type that are no longer in any setup node
+      // Make list of all active things of this type
       let allThingsThisType = []
       RED.nodes.eachNode(otherConfig => {
-        if (otherConfig.type == 'Thing Setup' && otherConfig.thingType == config.thingType)
+        if (RED.nodes.getNode(otherConfig.id)
+          && otherConfig.type == 'Thing Setup'
+          && otherConfig.thingType == config.thingType
+        )
           allThingsThisType.push(...otherConfig.things.map(t => t.name))
       })
-      let things = global.get('things')
-      Object.values(things)
+
+      // Garbage collect inactive things of this type
+      Object.values(THINGS)
         .filter(t => t.type == config.thingType && !allThingsThisType.includes(t.name))
-        .forEach(t => delete things[t.name])
+        .forEach(t => delete THINGS[t.name])
 
-      // Then emit ready
-      systemBus.emit('ready', config.thingType)
-    }
+    }, 0)
 
-    node.on('close', () => {
-      systemBus.emit('not-ready')
-      this.context().set('complete', false)
-    })
   }
   RED.nodes.registerType('Thing Setup', Node)
 }

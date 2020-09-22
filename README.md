@@ -52,7 +52,7 @@ Each thing is represented using a javascript object with a few specific properti
 
 ## Nodes
 
-There are 7 nodes included: *setup*, *ready*, *update*, *trigger*, *get*, *command*, and *process*.
+There are 7 nodes included: *setup*, *update*, *trigger*, *get*, *command*, and *process*.
 
 ### setup
 
@@ -67,18 +67,7 @@ Start with the *setup* node. It is required for all things. Use a different *set
 
 ### ready
 
-A trigger-type node that will output when the system has been initialized. The node will also trigger on each re-deployment of any related *setup* nodes.
-
-##### Properties 
-
-| Property | Info |
-|---|---|
-| Output... | Trigger when all things have been fully loaded, or when all things of a certain type have been fully loaded.
-| Message | Similar to the built-in inject node.
-
-##### Output
-
-As specified in properties.
+**No longer provided.** Use the built-in *inject* node.
 
 ### update
 
@@ -176,7 +165,7 @@ A trigger-type node that will listen for messages from *command* nodes for a spe
 
 ## Usage
 
-Exact usage can vary depending on your use-case. However, this system was designed with the following general concept in mind. This is an over simplified representation. The three connections down the middle represent all of the inner-workings of this system.
+Exact usage can vary depending on your use-case. However, this system was designed with the following general concept in mind. This is an over simplified representation. The two connections down in the middle represent all of the inner-workings of this system.
 
 ![General usage overview](images/usage-overview.png)
 
@@ -211,7 +200,7 @@ This means `TV` will have `state.power` that will be in-sync with `TV Power`'s `
 
 ## Groups
 
-There is a special thing type for groups. During setup, use type "Group" and the Things input matrix will switch into a list-style input. Specify the group name and then list each thing in the group. Currently, groups are only used when sending commands. Sending a command to a group will automatically propogate the same command to all things in the group, regardless of those things' types. Groups can also be nested, as command forwading is recursive. The *update* and *trigger* nodes have no affect on Group type things.
+There is a special thing type for groups. During setup, use type "Group" and the Things input matrix will switch into a list-style input. Specify the group name and then list each thing in the group. Currently, groups are only used when sending commands. Sending a command to a group will automatically propogate the same command to all things in the group, regardless of those things' types. Groups can also be nested, as command forwading is recursive. The *update* and *trigger* nodes have no effect on Group type things.
 
 ## Bugs and Feedback
 

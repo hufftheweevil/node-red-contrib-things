@@ -217,22 +217,6 @@
     "wires": []
   },
   {
-    "id": "cfbb2b5.3bc0ed8",
-    "type": "Thing Ready",
-    "z": "f4e7c667.e29cf8",
-    "nodeName": "",
-    "output": "type",
-    "thingType": "Kasa",
-    "props": [],
-    "x": 160,
-    "y": 1380,
-    "wires": [
-      [
-        "35510925.c71b46"
-      ]
-    ]
-  },
-  {
     "id": "4f35e728.a04078",
     "type": "Thing Process",
     "z": "f4e7c667.e29cf8",
@@ -245,6 +229,25 @@
     "wires": [
       [
         "86e6477c.d69bb8"
+      ]
+    ]
+  },
+  {
+    "id": "a9d2aca6.9a09c",
+    "type": "inject",
+    "z": "f4e7c667.e29cf8",
+    "name": "",
+    "props": [],
+    "repeat": "",
+    "crontab": "",
+    "once": true,
+    "onceDelay": 0.1,
+    "topic": "",
+    "x": 170,
+    "y": 1380,
+    "wires": [
+      [
+        "35510925.c71b46"
       ]
     ]
   }
