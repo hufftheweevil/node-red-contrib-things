@@ -44,7 +44,12 @@ module.exports = function (RED) {
       if (errors.length) {
         node.error(errors.join('; '), msg)
       } else {
-        node.send(msg)
+        // Timeout required (actually runs with a timeout of 1ms)
+        // because if done synchronously, then the next node may not
+        // be defined yet, and so the msg will never be delivered.
+        // Handling asynchronously allows the next node to be loaded
+        // so we can ensure the message is received.
+        setTimeout(() => node.send(msg), 0)
         node.status({
           text: `Triggered at ${now()}`
         })
