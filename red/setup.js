@@ -121,6 +121,13 @@ module.exports = function (RED) {
       stateBus.emit(newThing.name)
     })
 
+    // Sort things first (only for ease of access in UI)
+    const ABC_THINGS = {}
+    Object.keys(THINGS)
+      .sort()
+      .forEach(key => (ABC_THINGS[key] = THINGS[key]))
+    global.set('things', ABC_THINGS)
+
     node.status({
       shape: 'dot',
       fill: errors ? 'red' : 'green',
@@ -140,15 +147,10 @@ module.exports = function (RED) {
       })
 
       // Garbage collect inactive things of this type
+      const THINGS = global.get('things')
       Object.values(THINGS)
         .filter(t => t.type == config.thingType && !allThingsThisType.includes(t.name))
         .forEach(t => delete THINGS[t.name])
-
-      //         // Sort things first (only for ease of access in UI)
-      // const THINGS = global.get('things')
-      // const ABC_THINGS = {}
-      // Object.keys(THINGS).sort().forEach(key => ABC_THINGS[key] = THINGS[key])
-      // global.set('things', ABC_THINGS)
     }, 0)
   }
   RED.nodes.registerType('Thing Setup', Node)
