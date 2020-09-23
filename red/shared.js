@@ -1,5 +1,4 @@
 let EventEmitter = require('events')
-let systemBus = new EventEmitter()
 let stateBus = new EventEmitter()
 let commandBus = new EventEmitter()
 
@@ -12,7 +11,9 @@ let p = n => ('' + n).padStart(2, '0')
 function now() {
   let d = new Date()
 
-  return `${d.getMonth() + 1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
+  return `${d.getMonth() + 1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}:${p(
+    d.getSeconds()
+  )}`
 }
 
-module.exports = { systemBus, stateBus, commandBus, pushUnique, now }
+module.exports = { stateBus, commandBus, pushUnique, now }
