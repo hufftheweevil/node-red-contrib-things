@@ -32,7 +32,9 @@ module.exports = function (RED) {
           name,
           type: 'Group',
           things,
-          status: () => {} // Placeholder; TODO: Somehow combine status of all things in group
+          status: () => {}, // Placeholder; TODO: Somehow combine status of all things in group
+          state: {}, // Placeholder (without it, can cause crash)
+          props: {} // Placeholder (without it, can cause crash)
         }
       } else {
         // config.thingType != 'Group'
