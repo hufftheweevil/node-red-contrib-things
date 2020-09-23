@@ -12,6 +12,7 @@
       "update": "red/update.js",
       "trigger": "red/trigger.js",
       "get": "red/get.js",
+      "test": "red/test.js",
       "command": "red/command.js",
       "process": "red/process.js"
     }

@@ -1,0 +1,366 @@
+<script type="text/html" data-template-name="Thing Test">
+  <div class="form-row">
+    <label for="node-input-nodeName"><i class="fa fa-tag"></i> Node Name</label>
+    <input type="text" id="node-input-nodeName" placeholder="Node Name" />
+  </div>
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-id-badge"></i> Thing Name</label>
+    <input type="text" id="node-input-name" placeholder="Thing Name" />
+  </div>
+  <div class="form-row node-input-rule-container-row">
+    <ol id="node-input-rule-container"></ol>
+  </div>
+</script>
+
+<script type="text/javascript">
+  let operators = [
+    { v: 'eq', t: '==' },
+    { v: 'neq', t: '!=' },
+    { v: 'lt', t: '<' },
+    { v: 'lte', t: '<=' },
+    { v: 'gt', t: '>' },
+    { v: 'gte', t: '>=' },
+    { v: 'hask', t: 'has key' },
+    { v: 'btwn', t: 'is between' },
+    { v: 'cont', t: 'contains' },
+    { v: 'regex', t: 'matches regex' },
+    { v: 'true', t: 'is true' },
+    { v: 'false', t: 'is false' },
+    { v: 'null', t: 'is null' },
+    { v: 'nnull', t: 'is not null' },
+    { v: 'istype', t: 'is of type' },
+    { v: 'empty', t: 'is empty' },
+    { v: 'nempty', t: 'is not empty' }
+  ]
+
+  let thingPropsTypes = [
+    {
+      value: 'name',
+      label: 'name',
+      hasValue: false,
+      ops: ['eq', 'neq', 'regex']
+    },
+    {
+      value: 'id',
+      label: 'id',
+      hasValue: false,
+      ops: ['eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'regex', 'is empty', 'is not empty']
+    },
+    {
+      value: 'type',
+      label: 'type',
+      hasValue: false,
+      ops: ['eq', 'neq', 'regex']
+    },
+    {
+      value: 'props',
+      label: 'props.',
+      validate: /^[0-9a-zA-Z_\.]*$/
+    },
+    {
+      value: 'state',
+      label: 'state.',
+      validate: /^[0-9a-zA-Z_\.]*$/
+    },
+    {
+      value: 'parents',
+      label: 'parents',
+      hasValue: false,
+      ops: ['incl']
+    }
+  ]
+
+  let basicTypes = ['msg', 'flow', 'global', 'str', 'num', 'env']
+
+  let typeTypes = [
+    {
+      value: 'string',
+      label: RED._('common.type.string'),
+      hasValue: false,
+      icon: 'red/images/typedInput/az.png'
+    },
+    {
+      value: 'number',
+      label: RED._('common.type.number'),
+      hasValue: false,
+      icon: 'red/images/typedInput/09.png'
+    },
+    {
+      value: 'boolean',
+      label: RED._('common.type.boolean'),
+      hasValue: false,
+      icon: 'red/images/typedInput/bool.png'
+    },
+    {
+      value: 'array',
+      label: RED._('common.type.array'),
+      hasValue: false,
+      icon: 'red/images/typedInput/json.png'
+    },
+    {
+      value: 'buffer',
+      label: RED._('common.type.buffer'),
+      hasValue: false,
+      icon: 'red/images/typedInput/bin.png'
+    },
+    {
+      value: 'object',
+      label: RED._('common.type.object'),
+      hasValue: false,
+      icon: 'red/images/typedInput/json.png'
+    },
+    {
+      value: 'json',
+      label: RED._('common.type.jsonString'),
+      hasValue: false,
+      icon: 'red/images/typedInput/json.png'
+    },
+    { value: 'undefined', label: RED._('common.type.undefined'), hasValue: false },
+    { value: 'null', label: RED._('common.type.null'), hasValue: false }
+  ]
+
+  RED.nodes.registerType('Thing Test', {
+    paletteLabel: 'test',
+    category: 'things',
+    color: '#D8BFD8',
+    defaults: {
+      nodeName: { value: '' },
+      name: { value: '' },
+      rules: { value: [{ thingProp: 'state', compare: 'eq', value: '', valType: 'str' }] }
+    },
+    inputs: 1,
+    outputs: 1,
+    icon: 'font-awesome/fa-check-square-o',
+    label: function () {
+      return this.nodeName || this.name || 'test'
+    },
+    labelStyle: function () {
+      return this.nodeName || this.name ? 'node_label_italic' : ''
+    },
+    oneditprepare: function () {
+      let node = this
+
+      function resizeRule(rule) {
+        let newWidth = rule.width()
+        let selectField = rule.find('select')
+        let type = selectField.val() || ''
+        let valueField = rule.find('.node-input-rule-value')
+        let value2Field = rule.find('.node-input-rule-value2')
+        let selectWidth = type.length < 4 ? 60 : type === 'regex' ? 147 : 120
+        selectField.width(selectWidth)
+        let remainingWidth = newWidth - selectWidth - 170
+        if (type === 'btwn') {
+          valueField.typedInput('width', remainingWidth / 2)
+          value2Field.typedInput('width', remainingWidth / 2)
+        } else if (!/true|false|null|nnull|empty|nempty/.test(type)) {
+          if (type === 'regex') remainingWidth -= 80
+          valueField.typedInput('width', remainingWidth)
+        }
+      }
+
+      $('#node-input-rule-container')
+        .css('min-height', '150px')
+        .css('min-width', '450px')
+        .editableList({
+          addItem: function (container, i, rule) {
+            // Defaults
+            rule.thingProp = rule.thingProp || 'state'
+            rule.compare = rule.compare || 'eq'
+
+            container.css({
+              overflow: 'hidden',
+              whiteSpace: 'nowrap'
+            })
+
+            let row = $('<div/>').appendTo(container)
+
+            let propField = $('<input/>', {
+              class: 'node-input-rule-thingProp',
+              type: 'text',
+              style: 'width: 200px; margin-left: 5px'
+            })
+              .appendTo(row)
+              .typedInput({
+                default: 'state',
+                types: thingPropsTypes
+              })
+
+            let selectField = $('<select/>', {
+              style: 'width:120px; margin-left: 5px; text-align: center;'
+            }).appendTo(row)
+            operators.forEach(({ v, t }) =>
+              selectField.append($('<option></option>').val(v).text(t))
+            )
+
+            let valueField = $('<input/>', {
+              class: 'node-input-rule-value',
+              type: 'text',
+              style: 'margin-left: 5px'
+            })
+              .appendTo(row)
+              .typedInput({
+                default: 'str',
+                types: basicTypes
+              })
+
+            let value2Field = $('<input/>', {
+              class: 'node-input-rule-value2',
+              type: 'text',
+              style: 'margin-left:2px; width: 0'
+            })
+              .appendTo(row)
+              .typedInput({
+                default: 'num',
+                types: basicTypes
+              })
+
+            let caseSensitive = $('<div/>', {
+              style: 'display: inline-flex'
+            }).appendTo(row)
+            let caseSensitiveBox = $('<input/>', {
+              id: 'node-input-rule-case-' + i,
+              class: 'node-input-rule-case',
+              type: 'checkbox',
+              stype: 'width: fit-content; margin: 5px'
+            }).appendTo(caseSensitive)
+            $('<label/>', { for: 'node-input-rule-case-' + i, style: 'font-size: smaller' })
+              .text('ignore case')
+              .appendTo(caseSensitive)
+
+            selectField.on('change', function () {
+              let type = selectField.val()
+
+              if (!/true|false|null|nnull|empty|nempty/.test(type)) {
+                valueField.typedInput('show')
+                valueField.typedInput('types', type === 'istype' ? typeTypes : basicTypes)
+                valueField.typedInput('type', /lt|lte|gt|gte|btwn/.test(type) ? 'num' : 'str') // Default
+              } else {
+                valueField.typedInput('hide')
+              }
+
+              if (type === 'btwn') {
+                value2Field.typedInput('show')
+                value2Field.typedInput('types', basicTypes)
+                value2Field.typedInput('type', 'num') // Default
+              } else {
+                value2Field.typedInput('hide')
+              }
+
+              if (type === 'regex') {
+                caseSensitive.show()
+              } else {
+                caseSensitive.hide()
+              }
+
+              resizeRule(container)
+            })
+
+            // Load current config...
+
+            let [x, root, path] = rule.thingProp.match(/([^.]+)(?:\.(.+))?/)
+            propField.typedInput('type', root)
+            if (path) propField.typedInput('value', path)
+
+            selectField.val(rule.compare)
+            selectField.change() // Ensure proper types are listed before loading types and values
+
+            valueField.typedInput('type', rule.valType)
+            if (rule.compare !== 'istype') valueField.typedInput('value', rule.value)
+
+            if (rule.compare == 'btwn') {
+              value2Field.typedInput('type', rule.valType2)
+              value2Field.typedInput('value', rule.value2)
+            }
+            if (rule.compare == 'regex') caseSensitiveBox.prop('checked', rule.case)
+          },
+          sortable: true,
+          removable: true
+        })
+
+      this.rules.forEach(rule => $('#node-input-rule-container').editableList('addItem', rule))
+    },
+    oneditsave: function () {
+      let rules = $('#node-input-rule-container').editableList('items')
+      let node = this
+      node.rules = []
+      rules.each(function (i) {
+        let ruleData = $(this).data('data')
+        let rule = $(this)
+        let type = rule.find('select').val()
+
+        // Create config based on inputs
+
+        let r = { compare: type }
+
+        r.thingProp = rule.find('.node-input-rule-thingProp').typedInput('type')
+        let canHavePath = thingPropsTypes.find(tpt => tpt.value == r.thingProp).label.endsWith('.')
+        let path = rule.find('.node-input-rule-thingProp').typedInput('value')
+        if (canHavePath && path) r.thingProp += '.' + path
+
+        if (!/true|false|null|nnull|empty|nempty/.test(type)) {
+          let typeOrValue = type === 'istype' ? 'type' : 'value'
+          r.value = rule.find('.node-input-rule-value').typedInput(typeOrValue)
+          r.valType = rule.find('.node-input-rule-value').typedInput('type')
+
+          if (type === 'btwn') {
+            r.value2 = rule.find('.node-input-rule-value2').typedInput('value')
+            r.valType2 = rule.find('.node-input-rule-value2').typedInput('type')
+          }
+
+          if (type === 'regex') {
+            r.case = rule.find('.node-input-rule-case').prop('checked')
+          }
+        }
+        node.rules.push(r)
+      })
+      this.propertyType = $('#node-input-property').typedInput('type')
+    },
+    oneditresize: function (size) {
+      var rows = $('#dialog-form>div:not(.node-input-rule-container-row)')
+      var height = size.height
+      for (var i = 0; i < rows.length; i++) {
+        height -= $(rows[i]).outerHeight(true)
+      }
+      var editorRow = $('#dialog-form>div.node-input-rule-container-row')
+      height -= parseInt(editorRow.css('marginTop')) + parseInt(editorRow.css('marginBottom'))
+      height += 16
+      $('#node-input-rule-container').editableList('height', height)
+    }
+  })
+</script>
+
+<script type="text/html" data-help-name="Thing Test">
+  <p>
+    A node that allows a message to pass based on specified conditions related to a <i>thing</i>.
+    The message will not be modified.
+  </p>
+
+  <h3>Properties</h3>
+  <dl class="message-properties">
+    <dt class="optional">Thing Name</dt>
+    <dd>
+      The <i>thing</i> name. If not specified here, must be in <code>topic</code> on input. If
+      specified, will not be overriden by input.
+    </dd>
+    <dt class="optional">Conditions</dt>
+    <dd>Specify what conditions must be met to allow the message to pass through.</dd>
+  </dl>
+
+  <h3>Inputs</h3>
+  <dl class="message-properties">
+    <dt>topic <span class="property-type">string</span></dt>
+    <dd>The <i>thing</i> name, if not specified in properties. Will NOT override properties.</dd>
+  </dl>
+
+  <h3>Outputs</h3>
+  <p>Input message will be passed through</p>
+  <p>
+    Note that messages will <b>only</b> output from this node on input. That means if any part of
+    the <i>thing</i> changes, it will <b>not</b> automatically cause an output. To trigger from
+    <i>thing</i> state changes, use the <code>trigger</code> node.
+  </p>
+  <p>
+    Node status will reflect the <i>thing</i> status at the point that the node was last used. It
+    may not reflect the current status of the <i>thing</i>.
+  </p>
+</script>
