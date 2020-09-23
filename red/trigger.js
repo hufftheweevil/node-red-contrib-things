@@ -1,7 +1,6 @@
 let { stateBus } = require('./shared')
 
 module.exports = function (RED) {
-
   function Node(config) {
     RED.nodes.createNode(this, config)
 
@@ -24,13 +23,15 @@ module.exports = function (RED) {
       }
       get thing() {
         let things = GLOBAL.get('things')
-        return things ? things[this.name] : { state: {} }  // Placeholder if called before setup in single mode
+        return things ? things[this.name] : { state: {} } // Placeholder if called before setup in single mode
       }
       getState() {
         return this.thing && JSON.stringify(this.pathOrWhole(config.output, config.outputPath))
       }
       pathOrWhole(flag, path) {
-        return flag == 'path' ? RED.util.getObjectProperty(this.thing.state, path) : this.thing.state
+        return flag == 'path'
+          ? RED.util.getObjectProperty(this.thing.state, path)
+          : this.thing.state
       }
       callback() {
         let thing = this.thing
@@ -70,22 +71,20 @@ module.exports = function (RED) {
     let watchers = []
 
     if (!config.multiMode) {
-
       // Create watcher and register
       watchers = [new ThingWatcher(config.name)]
       registerThingListeners()
-
     } else {
       // Instant timeout causes this to run async (after all setup)
       setTimeout(() => {
-
         // Generate list of things that match conditions
         watchers = Object.values(GLOBAL.get('things'))
           .filter(thing => {
             let thingValue = RED.util.getObjectProperty(thing, config.multiKey)
             let compareValue = RED.util.evaluateNodeProperty(config.multiValue, config.multiTest)
 
-            let test = value => value instanceof RegExp ? value.test(thingValue) : thingValue == value
+            let test = value =>
+              value instanceof RegExp ? value.test(thingValue) : thingValue == value
 
             return config.multiKey == 'parents' ? thingValue.some(test) : test(compareValue)
           })
@@ -107,7 +106,6 @@ module.exports = function (RED) {
     node.on('close', function () {
       removeAllListeners()
     })
-
   }
   RED.nodes.registerType('Thing Trigger', Node)
 }
