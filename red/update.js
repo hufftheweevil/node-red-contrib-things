@@ -1,7 +1,6 @@
 let { stateBus, pushUnique, now } = require('./shared')
 
 module.exports = function (RED) {
-
   function Node(config) {
     RED.nodes.createNode(this, config)
 
@@ -54,7 +53,9 @@ module.exports = function (RED) {
           .map(t => t.name)
 
         node.status({
-          text: `${config.thingType} ${waitingOn.length ? `waiting on (${waitingOn.length}) ${waitingOn.join(', ')}` : 'ready'}`
+          text: `${config.thingType} ${
+            waitingOn.length ? `waiting on (${waitingOn.length}) ${waitingOn.join(', ')}` : 'ready'
+          }`
         })
       } else {
         // Not configured with `type`, so show status of this update
@@ -63,7 +64,6 @@ module.exports = function (RED) {
         })
       }
     })
-
   }
   RED.nodes.registerType('Thing Update', Node)
 }
