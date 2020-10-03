@@ -73,7 +73,7 @@
         $(
           `<tr class="red-ui-help-info-row" style="font-weight: bold">
               <td class="red-ui-sidebar-context-property">Thing</td>
-              <td style="vertical-align: top; border-right: 1px solid #ddd; padding: 3px 3px 3px 6px; overflow-y: hidden; color: #555">State</td>
+              <td style="vertical-align: top; padding: 3px 3px 3px 6px; overflow-y: hidden">State</td>
               <td>Props</td>
             </tr>`
         ).appendTo(table)
@@ -96,13 +96,15 @@
       let thingRow = $(
         `<tr class="red-ui-help-info-row" id="Thing__${thing.name.replace(/ /g, '__')}">
             <td class="red-ui-sidebar-context-property"></td>
-            <td style="vertical-align: top; border-right: 1px solid #ddd; padding: 3px 3px 3px 6px; overflow-y: hidden; color: #555"></td>
+            <td style="vertical-align: top; padding: 3px 3px 3px 6px; overflow-y: hidden"></td>
             <td></td>
           </tr>`
       )
+      let identCol = $(thingRow.children()[0])
+      let stateCol = $(thingRow.children()[1])
+      let propsCol = $(thingRow.children()[2])
 
       // IDENT COLUMN
-      let identCol = $(thingRow.children()[0])
       identCol.text(thing.name)
       $('<span>', { class: 'red-ui-sidebar-context-property-storename' })
         .text(`${thing.type} : ${thing.id || ''}`)
@@ -142,23 +144,19 @@
           }
           RED.utils
             .createObjectElement(value, { key, tools, sourceId: `state.${key}` })
-            .appendTo(thingRow.children()[1])
+            .appendTo(stateCol)
         })
       } else {
-        $('<span class="red-ui-debug-msg-type-meta">none</span>').appendTo(thingRow.children()[1])
+        $('<span class="red-ui-debug-msg-type-meta">none</span>').appendTo(stateCol)
       }
 
       // PROPS COLUMN
       let props = Object.entries(thing.props)
-      if (props.length) {
+      if (props.length)
         props.forEach(([key, value]) =>
-          RED.utils
-            .createObjectElement(value, { key, sourceId: `props.${key}` })
-            .appendTo(thingRow.children()[2])
+          RED.utils.createObjectElement(value, { key, sourceId: `props.${key}` }).appendTo(propsCol)
         )
-      } else {
-        $('<span class="red-ui-debug-msg-type-meta">none</span>').appendTo(thingRow.children()[2])
-      }
+      else $('<span class="red-ui-debug-msg-type-meta">none</span>').appendTo(propsCol)
 
       return thingRow
     }
