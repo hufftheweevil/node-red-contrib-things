@@ -1,6 +1,6 @@
 <script type="text/javascript">
   let sidebar = (function () {
-    let socket = new WebSocket('ws://localhost:8120/')
+    let socket = new WebSocket(`ws://${window.location.hostname}:8120/`)
     socket.onopen = () => socket.send('list')
     socket.onmessage = event => {
       let { topic, payload } = JSON.parse(event.data)
