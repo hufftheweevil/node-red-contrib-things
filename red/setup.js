@@ -1,4 +1,7 @@
 let { stateBus, pushUnique } = require('./shared')
+const { wss, sendToWs } = require('../ws')
+
+let thingsRef = {} // Set just in case no setup nodes are enabled
 
 module.exports = function (RED) {
   function Node(config) {
@@ -16,6 +19,7 @@ module.exports = function (RED) {
     const global = this.context().global
     if (!global.get('things')) global.set('things', {})
     const THINGS = global.get('things')
+    thingsRef = THINGS
 
     let errors = 0
 
@@ -154,4 +158,17 @@ module.exports = function (RED) {
     }, 0)
   }
   RED.nodes.registerType('Thing Setup', Node)
+
+  // -------------------------------------------------------------
+
+  wss.on('connection', socket => {
+    socket.on('message', message => {
+      if (message == 'list') socket.send(JSON.stringify({ topic: 'list', payload: thingsRef }))
+    })
+  })
+
+  RED.events.on('runtime-event', event => {
+    console.log(event)
+    if (event.id == 'runtime-deploy') sendToWs({ topic: 'list', payload: thingsRef })
+  })
 }

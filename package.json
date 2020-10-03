@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-things",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "A set of Node-RED nodes that uses an agnostic state management system to keep IOT device states and provide a uniform control system.",
   "main": "index.js",
   "scripts": {},
@@ -22,5 +22,8 @@
     "iot"
   ],
   "homepage": "https://github.com/hufftheweevil/node-red-contrib-things",
-  "repository": "github:hufftheweevil/node-red-contrib-things"
+  "repository": "github:hufftheweevil/node-red-contrib-things",
+  "dependencies": {
+    "ws": "^7.3.1"
+  }
 }

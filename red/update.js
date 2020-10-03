@@ -1,4 +1,5 @@
 let { stateBus, pushUnique, now } = require('./shared')
+let { sendToWs } = require('../ws')
 
 module.exports = function (RED) {
   function Node(config) {
@@ -40,6 +41,9 @@ module.exports = function (RED) {
       // are configured to output on changes/updates
       // will be triggered. (And update their status)
       stateBus.emit(name)
+
+      // Send to websockets to update sidebar
+      sendToWs({ topic: 'update', payload: thing })
 
       // Check for parents and emit for them too
       thing.parents && thing.parents.forEach(parent => stateBus.emit(parent))
