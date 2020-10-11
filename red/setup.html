@@ -4,15 +4,29 @@
     socket.onopen = () => socket.send('list')
     socket.onmessage = event => {
       let { topic, payload } = JSON.parse(event.data)
-      console.log({ topic, payload })
       switch (topic) {
         case 'list':
-          fullRefresh(Object.values(payload))
+          fullRefresh(payload)
           break
         case 'update':
-          $(`#Thing__${payload.name.replace(/ /g, '__')}`).replaceWith(makeThingRow(payload))
+          let newRow = makeThingRow(payload)
+          $(`#Thing__${payload.name.replace(/ /g, '__')}`).replaceWith(newRow)
+          fixBorder(newRow)
           break
       }
+    }
+
+    let statusColors = {
+      red: '#c00',
+      green: '#5a8',
+      yellow: '#F9DF31',
+      blue: '#53A3F3',
+      grey: '#d3d3d3'
+    }
+
+    function fixBorder(row) {
+      // Fixes border color for non-standard themes
+      $(row.children()[1]).css('border-right-color', $(row.children()[0]).css('border-right-color'))
     }
 
     function init() {
@@ -23,17 +37,32 @@
 
       // Header...
 
-      let header = $('<div>').css({ float: 'right', padding: 5 }).appendTo(content)
+      let header = $('<div>').appendTo(content)
 
-      $('<span id="things-last-updated">&nbsp;</span>')
-        .addClass('red-ui-sidebar-context-updated')
+      $('<select id="things-type-filter">')
+        .css({ float: 'left', height: 28, margin: 2, fontSize: 12 })
+        .change(function ({ target: { value } }) {
+          if (value == '') {
+            $(`#things-table tr`).show()
+            $(`#things-type-filter [value='']`).text('Filter type...')
+          } else {
+            $(`#things-table tr`).not(`.thing-row-type-${value}`).not(`:first-child`).hide()
+            $(`#things-table tr.thing-row-type-${value}`).show()
+            $(`#things-type-filter [value='']`).text('xxxx Clear Filter xxxx')
+          }
+        })
+        .html('<option value="">Filter type...</option>')
         .appendTo(header)
 
+      let refresh = $('<div>').css({ float: 'right', padding: 5 }).appendTo(header)
+      $('<span id="things-last-updated">&nbsp;</span>')
+        .addClass('red-ui-sidebar-context-updated')
+        .appendTo(refresh)
       let refreshButton = $('<button>')
         .addClass('red-ui-button red-ui-button-small')
         .css({ marginLeft: 4 })
         .html('<i class="fa fa-refresh"></i>')
-        .appendTo(header)
+        .appendTo(refresh)
         .on('click', function (evt) {
           evt.stopPropagation()
           evt.preventDefault()
@@ -70,45 +99,77 @@
 
       if (things.length) {
         // Header Row
-        $(
-          `<tr class="red-ui-help-info-row" style="font-weight: bold">
-              <td class="red-ui-sidebar-context-property">Thing</td>
-              <td style="vertical-align: top; padding: 3px 3px 3px 6px; overflow-y: hidden">State</td>
-              <td>Props</td>
-            </tr>`
-        ).appendTo(table)
+        let headerRow = $(`<tr class="red-ui-help-info-row" style="font-weight: bold">
+          <td class="red-ui-sidebar-context-property">Thing</td>
+          <td style="vertical-align: top; padding: 3px 3px 3px 6px; overflow-y: hidden; border-right: solid 1px #ddd">State</td>
+          <td>Props</td>
+        </tr>`).appendTo(table)
+        fixBorder(headerRow)
+
         // Each thing row
         things.forEach(thing => {
           let thingRow = makeThingRow(thing)
           thingRow.appendTo(table)
+          fixBorder(thingRow)
         })
       } else {
         // No things
-        $('<tr>')
+        let row = $('<tr>')
           .addClass('red-ui-help-info-row red-ui-search-empty blank')
           .html('<td colspan="3">No things setup</td>')
           .appendTo(table)
       }
-      $('#things-last-updated').text(`Last full refresh at ${new Date().toLocaleString()}`)
+      $('#things-last-updated').text(new Date().toLocaleString())
     }
 
     function makeThingRow(thing) {
       let thingRow = $(
-        `<tr class="red-ui-help-info-row" id="Thing__${thing.name.replace(/ /g, '__')}">
+        `<tr class="red-ui-help-info-row thing-row-type-${
+          thing.type
+        }" id="Thing__${thing.name.replace(/ /g, '__')}">
             <td class="red-ui-sidebar-context-property"></td>
-            <td style="vertical-align: top; padding: 3px 3px 3px 6px; overflow-y: hidden"></td>
+            <td style="vertical-align: top; padding: 3px 3px 3px 6px; overflow-y: hidden; border-right: solid 1px #ddd"></td>
             <td></td>
           </tr>`
       )
+
       let identCol = $(thingRow.children()[0])
       let stateCol = $(thingRow.children()[1])
       let propsCol = $(thingRow.children()[2])
+
+      if (!$(`#things-type-filter [value='${thing.type}']`).length)
+        $(`<option value=${thing.type}>${thing.type}</option>`).appendTo($('#things-type-filter'))
 
       // IDENT COLUMN
       identCol.text(thing.name)
       $('<span>', { class: 'red-ui-sidebar-context-property-storename' })
         .text(`${thing.type} : ${thing.id || ''}`)
         .appendTo(identCol)
+      if (thing.status) {
+        let status = $('<div>').css({ display: 'flex', alignItems: 'center' }).appendTo(identCol)
+
+        if (thing.status.shape) {
+          let color = statusColors[thing.status.fill]
+          let svg = $('<div>')
+            .css({
+              marginRight: 5,
+              width: 6,
+              height: 6,
+              backgroundColor: thing.status.shape == 'dot' ? color : 'transparent',
+              borderStyle: 'solid',
+              borderColor: color,
+              borderWidth: 3,
+              borderRadius: 2
+            })
+            .appendTo(status)
+        }
+
+        if (thing.status.text != '{}')
+          $('<span>', { class: 'red-ui-flow-node-status-label' })
+            .css({ color: '#888' })
+            .text(thing.status.text)
+            .appendTo(status)
+      }
 
       // STATE COLUMN
       let proxiedStates = Object.entries(thing.proxy || {}).reduce(

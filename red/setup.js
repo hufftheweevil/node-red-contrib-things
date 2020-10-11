@@ -1,5 +1,5 @@
 let { stateBus, pushUnique } = require('./shared')
-const { wss, sendToWs } = require('../ws')
+const { wss, sendToWs, stringifyStatus } = require('../ws')
 
 let thingsRef = {} // Set just in case no setup nodes are enabled
 
@@ -161,13 +161,15 @@ module.exports = function (RED) {
 
   // -------------------------------------------------------------
 
+  let getThingsList = () => ({ topic: 'list', payload: Object.values(thingsRef) })
+
   wss.on('connection', socket => {
     socket.on('message', message => {
-      if (message == 'list') socket.send(JSON.stringify({ topic: 'list', payload: thingsRef }))
+      if (message == 'list') socket.send(JSON.stringify(getThingsList(), stringifyStatus))
     })
   })
 
   RED.events.on('runtime-event', event => {
-    if (event.id == 'runtime-deploy') sendToWs({ topic: 'list', payload: thingsRef })
+    if (event.id == 'runtime-deploy') sendToWs(getThingsList())
   })
 }
