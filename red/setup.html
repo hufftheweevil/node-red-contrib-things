@@ -32,7 +32,8 @@
     function init() {
       let content = $('<div>').addClass('red-ui-sidebar-context red-ui-sidebar-context-stack').css({
         position: 'relative',
-        height: '100%'
+        height: '100%',
+        overflowY: 'hidden'
       })
 
       // Header...
@@ -72,10 +73,14 @@
 
       // Table...
 
+      let tableCont = $('<div>')
+        .css({ clear: 'both', overflowY: 'scroll', height: 'calc(100% - 30px)' })
+        .appendTo(content)
+
       let table = $('<table>')
         .addClass('red-ui-info-table')
         .html('<tbody id="things-table"></tbody>')
-        .appendTo(content)
+        .appendTo(tableCont)
 
       // Add tab
       RED.sidebar.addTab({
