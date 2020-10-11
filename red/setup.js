@@ -168,7 +168,6 @@ module.exports = function (RED) {
   })
 
   RED.events.on('runtime-event', event => {
-    console.log(event)
     if (event.id == 'runtime-deploy') sendToWs({ topic: 'list', payload: thingsRef })
   })
 }
