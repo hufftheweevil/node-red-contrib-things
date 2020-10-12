@@ -12,9 +12,12 @@
           let newRow = makeThingRow(payload)
           $(`#Thing__${payload.name.replace(/ /g, '__')}`).replaceWith(newRow)
           fixBorder(newRow)
+          if (filterType && filterType != payload.type) newRow.hide()
           break
       }
     }
+
+    let filterType
 
     let statusColors = {
       red: '#c00',
@@ -44,9 +47,11 @@
         .css({ float: 'left', height: 28, margin: 2, fontSize: 12 })
         .change(function ({ target: { value } }) {
           if (value == '') {
+            filterType = null
             $(`#things-table tr`).show()
             $(`#things-type-filter [value='']`).text('Filter type...')
           } else {
+            filterType = value
             $(`#things-table tr`).not(`.thing-row-type-${value}`).not(`:first-child`).hide()
             $(`#things-table tr.thing-row-type-${value}`).show()
             $(`#things-type-filter [value='']`).text('xxxx Clear Filter xxxx')
