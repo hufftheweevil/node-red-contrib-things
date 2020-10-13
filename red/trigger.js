@@ -3,7 +3,6 @@ let { stateBus, TESTS } = require('./shared')
 module.exports = function (RED) {
   function Node(config) {
     RED.nodes.createNode(this, config)
-    console.log(config)
 
     const node = this
     const GLOBAL = this.context().global
@@ -21,6 +20,7 @@ module.exports = function (RED) {
         this.name = thingName
         this.lastKnownState = this.getState()
         this.callback = this.callback.bind(this)
+        this.init = true
       }
       get thing() {
         let things = GLOBAL.get('things')
@@ -46,16 +46,21 @@ module.exports = function (RED) {
 
         // Determine if need to output
         let shouldOutput = config.output == 'all' || this.lastKnownState != latestState
-        if (shouldOutput && config.output == 'path' && config.outputTest) {
-          try {
-            let a = RED.util.getObjectProperty(this.thing.state, config.outputPath)
-            let b = RED.util.evaluateNodeProperty(config.outputTest.value, config.outputTest.type, node)
-            let test = TESTS[config.outputTest.compare]
-            shouldOutput = test(a, b)
-          } catch (err) {
-            node.warn(`Error during test: ${err}`)
-            shouldOutput = false
+        if (shouldOutput && config.output == 'path') {
+          // Extra checks if using path-mode
+          if (this.init && config.ignoreInit) shouldOutput = false
+          else if (config.outputTest) {
+            try {
+              let a = RED.util.getObjectProperty(thing.state, config.outputPath)
+              let b = RED.util.evaluateNodeProperty(config.outputTest.value, config.outputTest.type, node)
+              let test = TESTS[config.outputTest.compare]
+              shouldOutput = test(a, b)
+            } catch (err) {
+              node.warn(`Error during test: ${err}`)
+              shouldOutput = false
+            }
           }
+          this.init = false // Used for path config only
         }
 
         // Output state message accordingly

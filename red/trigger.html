@@ -13,6 +13,7 @@
       output: { value: 'change' }, // What causes the node to trigger an output msg
       outputPath: { value: '' },
       outputTest: { value: null },
+      ignoreInit: { value: false },
       payload: { value: 'whole' }, // What is sent in the payload of the output msg
       payloadPath: { value: '' },
       incThing: { value: false },
@@ -81,10 +82,8 @@
         $('#node-input-multi-2').typedInput({ types: typesForNonProps })
       }
       $('#node-input-multi-1').on('change', function (xx, valType) {
-        $('#node-input-multi-2').typedInput(
-          'types',
-          valType == 'props.' ? typesForProps : typesForNonProps
-        )
+        let newTypes = valType == 'props.' ? typesForProps : typesForNonProps
+        $('#node-input-multi-2').typedInput('types', newTypes)
       })
 
       $('#node-input-multi-2').typedInput('type', this.multiTest)
@@ -96,7 +95,7 @@
       $('#node-input-outputTest-for')
         .typedInput({ types: basicTypes, default: 'str' })
         .typedInput('width', '140px')
-      if (this.output != 'path') $('#row-outputPath, #row-outputTest').hide()
+      if (this.output != 'path') $('#row-outputPath, #row-outputTest, #row-ignoreInit').hide()
 
       if (this.outputTest) {
         $('#node-input-outputTest-checkbox').prop('checked', true)
@@ -108,7 +107,7 @@
       }
       $('#node-input-output').change(function () {
         let hideShow = $(this).val() == 'path' ? 'show' : 'hide'
-        $('#row-outputPath, #row-outputTest')[hideShow]()
+        $('#row-outputPath, #row-outputTest, #row-ignoreInit')[hideShow]()
       })
       $('#node-input-outputTest-compare').change(function () {
         let hideShow = /true|false|null|nnull|empty|nempty/.test($(this).val()) ? 'hide' : 'show'
@@ -117,18 +116,11 @@
 
       // PAYLOAD PATH
 
-      $('#node-input-payloadPath').typedInput({
-        types: [StateType]
-      })
-      if (this.payload != 'path') {
-        $('#row-payloadPath').hide()
-      }
+      $('#node-input-payloadPath').typedInput({ types: [StateType] })
+      if (this.payload != 'path') $('#row-payloadPath').hide()
       $('#node-input-payload').change(function () {
-        if ($(this).val() == 'path') {
-          $('#row-payloadPath').show()
-        } else {
-          $('#row-payloadPath').hide()
-        }
+        let hideShow = $(this).val() == 'path' ? 'show' : 'hide'
+        $('#row-payloadPath')[hideShow]()
       })
     },
     oneditsave: function () {
@@ -219,6 +211,15 @@
       <input type="text" id="node-input-outputTest-for" />
     </div>
   </div>
+  <div class="form-row" id="row-ignoreInit">
+    <label for="node-input-ignoreInit">&nbsp;</label>
+    <input
+      type="checkbox"
+      id="node-input-ignoreInit"
+      style="display:inline-block; width:15px; vertical-align:baseline;"
+    />
+    <span> Ignore initialization</span>
+  </div>
   <div class="form-row">
     <label for="node-input-payload"><i class="fa fa-envelope"></i> Payload</label>
     <select id="node-input-payload">
@@ -269,7 +270,12 @@
       </li>
       <li>
         <b>Only when a part of the state changes</b> - State path must be defined. Comparison is
-        done using <code>JSON.stringify</code>
+        done using
+        <code
+          >JSON.stringify. Can optionally be configured to test value and only trigger if condition
+          is met. Enabling <b>Ignore initialization</b> will prevent output when Node-RED first
+          starts/reboots (but does <i>not</i> ignore on redeployment).
+        </code>
       </li>
     </ul>
     <dt class="optional">Payload</dt>
