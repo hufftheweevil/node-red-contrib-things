@@ -4,7 +4,7 @@ module.exports = function (RED) {
   function Node(config) {
     RED.nodes.createNode(this, config)
 
-    let node = this
+    const node = this
 
     node.on('input', function (msg) {
       // Get reference to thing
@@ -23,11 +23,7 @@ module.exports = function (RED) {
       }
 
       // Set status
-      try {
-        node.status(thing.status(thing.state, thing.props))
-      } catch (err) {
-        node.warn('Error calling status function:', err)
-      }
+      node.status(thing.status)
 
       // Check all rules
       let pass = config.rules.every(rule => {

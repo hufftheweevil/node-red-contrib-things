@@ -77,18 +77,7 @@ module.exports = function (RED) {
         this.lastKnownState = latestState
 
         // Update status (single mode only)
-        if (!config.multiMode) {
-          try {
-            let statusMsg = thing.status(thing.state, thing.props) || {
-              fill: 'red',
-              shape: 'ring',
-              text: 'Unknown'
-            }
-            node.status(statusMsg)
-          } catch (err) {
-            node.warn(`Unable to set status for ${this.name}: ${err}`)
-          }
-        }
+        if (!config.multiMode) node.status(thing.status)
       }
     }
 

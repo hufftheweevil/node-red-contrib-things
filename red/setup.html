@@ -195,13 +195,11 @@
       let state = Object.entries(thing.state)
       if (state.length) {
         state.forEach(([key, value]) => {
-          let tools
-          if (proxiedStates[key]) {
-            tools = $('<span class="button-group"></span>')
+          let tools = $('<span class="button-group"></span>')
 
-            let proxyInfo = $(
-              '<button class="red-ui-button red-ui-button-small"><i class="fa fa-chain"></i></button>'
-            )
+          if (proxiedStates[key]) {
+            let proxyInfo = $('<button class="red-ui-button red-ui-button-small">')
+              .html('<i class="fa fa-chain"></i>')
               .appendTo(tools)
               .on('click', function (e) {
                 e.preventDefault()
@@ -210,9 +208,20 @@
             let { theirKey, proxyThingName } = proxiedStates[key]
             RED.popover.tooltip(
               proxyInfo,
-              `Proxy<br/>Thing: ${proxyThingName}<br/>State Key: ${theirKey}`
+              `Proxy Info<br/>Thing: ${proxyThingName}<br/>State Key: ${theirKey}`
             )
           }
+
+          // let delButton = $('<button class="red-ui-button red-ui-button-small">')
+          //   .html('<i class="fa fa-trash"></i>')
+          //   .appendTo(tools)
+          //   .on('click', function (e) {
+          //     e.preventDefault()
+          //     e.stopPropagation()
+
+          //   })
+          // RED.popover.tooltip(delButton, 'Delete key')
+
           RED.utils
             .createObjectElement(value, { key, tools, sourceId: `state.${key}` })
             .appendTo(stateCol)

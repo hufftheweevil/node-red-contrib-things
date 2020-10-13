@@ -1,5 +1,5 @@
 let { stateBus, pushUnique } = require('./shared')
-const { wss, sendToWs, stringifyStatus } = require('../ws')
+const { wss, sendToWs } = require('../ws')
 
 let thingsRef = {} // Set just in case no setup nodes are enabled
 
@@ -41,7 +41,7 @@ module.exports = function (RED) {
           props: {} // Placeholder (without it, can cause crash)
         }
       } else {
-        // config.thingType != 'Group'
+        // This means config.thingType != 'Group'
 
         let { name, id } = newThing
 
@@ -62,20 +62,38 @@ module.exports = function (RED) {
         if (config.debug)
           node.warn(`Setting up ${name} with parents ${parents.length ? parents : '<none>'}`)
 
-        // Sets defaults first, then includes the payload from input
+        // Create thing
         THINGS[name] = {
           id,
           name,
           type: config.thingType,
-          props: newThing.props ? JSON.parse(newThing.props) : {},
           state: (oldThing && oldThing.state) || (newThing.state ? JSON.parse(newThing.state) : {}),
-          status: config.statusFunction
+          props: newThing.props ? JSON.parse(newThing.props) : {},
+          _status: config.statusFunction
             ? new Function('state', 'props', config.statusFunction)
-            : state => ({ text: JSON.stringify(state) }),
+            : (function () { return { text: JSON.stringify(this.state) } }),
           proxy: JSON.parse(newThing.proxy || null) || undefined,
           parents
         }
         let thing = THINGS[name]
+
+        // Make status getter
+        Object.defineProperty(thing, 'status', {
+          get: function () {
+            try {
+              return this._status(RED.util.cloneMessage(this.state), RED.util.cloneMessage(this.props)) || {
+                fill: 'red',
+                shape: 'ring',
+                text: 'Unknown'
+              }
+            } catch (err) {
+              node.warn(`Unable to generate status for type ${config.thingType}: ${err}`)
+              return {}
+            }
+          },
+          enumerable: true,
+          configurable: true
+        })
 
         // If proxies are specified
         if (newThing.proxy) {
@@ -165,7 +183,7 @@ module.exports = function (RED) {
 
   wss.on('connection', socket => {
     socket.on('message', message => {
-      if (message == 'list') socket.send(JSON.stringify(getThingsList(), stringifyStatus))
+      if (message == 'list') socket.send(JSON.stringify(getThingsList()))
     })
   })
 
