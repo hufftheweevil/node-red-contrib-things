@@ -76,17 +76,18 @@ An action-type node that will update a thing's state, potentially causing a sepa
 
 ##### Properties
 
-| Property   | Info                                                                                                                                                                                                                |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Thing Name | When specified, all input messages will be directed to this thing. If not provided, the input message must include thing name.                                                                                      |
-| Thing Type | When specified, the node will watch for all things of the type and update its status with any missing things. If not provided, the node will not display a status. Does not affect anything other than node status. |
+| Property          | Info                                                                                                                                                                                                                |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Thing Name        | When specified, all input messages will be directed to this thing. If not provided, the input message must include thing name.                                                                                      |
+| Update Properties | The state keys/values to be updated. If any updates are configured, then input payload will be ignored. To use input payload as the state update, the update proprties list must be empty.                          |
+| Thing Type        | When specified, the node will watch for all things of the type and update its status with any missing things. If not provided, the node will not display a status. Does not affect anything other than node status. |
 
 ##### Input
 
 | Key       | Type      | Info                                                                                                                                                                                                              |
 | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `topic`   | _string_  | Thing name. Only used if not specified in properties. **Note:** will _not_ override property setting. Alternatively, if the node is configured with a `thing type`, then the _thing_ ID can be used as the topic. |
-| `payload` | _object_  | The state update. Will be shallow merged with the current state.                                                                                                                                                  |
+| `payload` | _object_  | The state update. Will be shallow merged with the current state. Ignored if any updates are set in properties.                                                                                                    |
 | `replace` | _boolean_ | Optional. If `true`, `payload` will completely replace current state instead of being merged.                                                                                                                     |
 
 ### trigger
@@ -95,11 +96,11 @@ A node that will output when conditions are met after input into a respective _u
 
 ##### Properties
 
-| Property   | Info                                                                                                                                                                                                                                                                                                  |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Thing Name | The thing to trigger from                                                                                                                                                                                                                                                                             |
-| Output...  | Choose from 1. On all state updates (will output whenever an update node has finished, even if the state did not change); 2. When any part of the state changes; 3. Only when a part of the state changes. If the 3rd option is selected, set the state property (or path to a nested state property) |
-| Payload    | Choose from 1. Whole state; 2. Specific path. If 2nd option is selected, set the state property (or path to a nested state property)                                                                                                                                                                  |
+| Property   | Info                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Thing Name | The thing to trigger from                                                                                                                                                                                                                                                                                                                                                                                   |
+| Output...  | Choose from 1. On all state updates (will output whenever an update node has finished, even if the state did not change); 2. When any part of the state changes; 3. Only when a part of the state changes.<br/>If the 3rd option is selected:<br/>- set the state property (or path to a nested state property)<br/>- optionally set a condition to test first<br/>- optionally ignore initialization value |
+| Payload    | Choose from 1. Whole state; 2. Specific path.<br/>If 2nd option is selected, set the state property (or path to a nested state property)                                                                                                                                                                                                                                                                    |
 
 ##### Output
 
@@ -130,10 +131,11 @@ A node that allows a message to pass based on specified conditions related to a 
 
 ##### Properties
 
-| Property   | Info                                                                  |
-| ---------- | --------------------------------------------------------------------- |
-| Thing Name | The thing to reference                                                |
-| Conditions | The conditions that must be met to allow the message to pass through. |
+| Property   | Info                                                                                 |
+| ---------- | ------------------------------------------------------------------------------------ |
+| Thing Name | The thing to reference                                                               |
+| Conditions | The conditions that must be met to allow the message to pass through.                |
+| 2nd Output | Optionally choose to have a 2nd output that will pass the message if the test fails. |
 
 ##### Input
 
