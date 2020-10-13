@@ -27,7 +27,6 @@
       return this.name ? 'node_label_italic' : ''
     },
     oneditprepare: function () {
-
       // MULTI-MODE KEY
       if (this.multiMode) {
         $('#row-thingName').hide()
@@ -35,7 +34,7 @@
         $('#row-thingTest').hide()
       }
       $('#node-input-multiMode').change(function () {
-        if ($(this).prop("checked")) {
+        if ($(this).prop('checked')) {
           $('#row-thingName').hide()
           $('#row-thingTest').show()
         } else {
@@ -44,7 +43,7 @@
         }
       })
 
-      $("#node-input-multi-1").typedInput({
+      $('#node-input-multi-1').typedInput({
         default: this.multiKey || 'name',
         types: [
           { value: 'name', label: 'name', hasValue: false },
@@ -55,28 +54,32 @@
         ]
       })
       let typesForProps = ['str', 'num', 'bool', 're']
-      let typesForNonProps = [{
-        value: 'str',
-        icon: 'red/images/typedInput/az.png',
-        label: 'exact'
-      }, 're']
+      let typesForNonProps = [
+        {
+          value: 'str',
+          icon: 'red/images/typedInput/az.png',
+          label: 'exact'
+        },
+        're'
+      ]
 
       if (this.multiKey.startsWith('props.')) {
-        $("#node-input-multi-1").typedInput('type', 'props.')
-        $("#node-input-multi-1").typedInput('value', this.multiKey.slice(6))
+        $('#node-input-multi-1').typedInput('type', 'props.')
+        $('#node-input-multi-1').typedInput('value', this.multiKey.slice(6))
 
-        $("#node-input-multi-2").typedInput({ types: typesForProps })
+        $('#node-input-multi-2').typedInput({ types: typesForProps })
       } else {
-        $("#node-input-multi-2").typedInput({ types: typesForNonProps })
+        $('#node-input-multi-2').typedInput({ types: typesForNonProps })
       }
-      $("#node-input-multi-1").on('change', function (xx, valType) {
-        $("#node-input-multi-2").typedInput('types', valType == 'props.' ? typesForProps : typesForNonProps)
+      $('#node-input-multi-1').on('change', function (xx, valType) {
+        $('#node-input-multi-2').typedInput(
+          'types',
+          valType == 'props.' ? typesForProps : typesForNonProps
+        )
       })
 
-      $("#node-input-multi-2").typedInput('type', this.multiTest)
-      $("#node-input-multi-2").typedInput('value', this.multiValue)
-
-
+      $('#node-input-multi-2').typedInput('type', this.multiTest)
+      $('#node-input-multi-2').typedInput('value', this.multiValue)
 
       let StateType = {
         value: 'str',
@@ -117,66 +120,73 @@
     },
     oneditsave: function () {
       if ($('#node-input-multiMode').val()) {
-        this.multiKey = $("#node-input-multi-1").typedInput('type')
-        if (this.multiKey == 'props.')
-          this.multiKey += $("#node-input-multi-1").typedInput('value')
+        this.multiKey = $('#node-input-multi-1').typedInput('type')
+        if (this.multiKey == 'props.') this.multiKey += $('#node-input-multi-1').typedInput('value')
       }
-      this.multiTest = $("#node-input-multi-2").typedInput('type')
-      this.multiValue = $("#node-input-multi-2").typedInput('value')
+      this.multiTest = $('#node-input-multi-2').typedInput('type')
+      this.multiValue = $('#node-input-multi-2').typedInput('value')
     }
   })
 </script>
 
 <script type="text/html" data-template-name="Thing Trigger">
   <div class="form-row">
-      <label for="node-input-nodeName"><i class="fa fa-tag"></i> Node Name</label>
-      <input type="text" id="node-input-nodeName" placeholder="Node Name">
+    <label for="node-input-nodeName"><i class="fa fa-tag"></i> Node Name</label>
+    <input type="text" id="node-input-nodeName" placeholder="Node Name" />
   </div>
   <div class="form-row">
     <label for="node-input-multiMode">&nbsp;</label>
-    <input type="checkbox" id="node-input-multiMode" style="display:inline-block; width:15px; vertical-align:baseline;">
+    <input
+      type="checkbox"
+      id="node-input-multiMode"
+      style="display:inline-block; width:15px; vertical-align:baseline;"
+    />
     <span> Use multi-<i>thing</i> mode</span>
   </div>
   <div class="form-row" id="row-thingName">
-      <label for="node-input-name"><i class="fa fa-id-badge"></i> Thing Name</label>
-      <input type="text" id="node-input-name" placeholder="Thing Name">
+    <label for="node-input-name"><i class="fa fa-id-badge"></i> Thing Name</label>
+    <input type="text" id="node-input-name" placeholder="Thing Name" />
   </div>
   <div class="form-row" id="row-thingTest">
-      <label for="node-input-name"><i class="fa fa-copy"></i> Thing Test</label>
-      <input type="text" id="node-input-multi-1" style="width: 35%">
-      <input type="text" id="node-input-multi-2" style="width: 40%">
+    <label for="node-input-name"><i class="fa fa-copy"></i> Thing Test</label>
+    <input type="text" id="node-input-multi-1" style="width: 35%" />
+    <input type="text" id="node-input-multi-2" style="width: 40%" />
   </div>
   <div class="form-row">
-      <label for="node-input-output"><i class="fa fa-list"></i> Output...</label>
-      <select id="node-input-output" style="width: 70%">
-        <option value='all'>On all state updates</option>
-        <option value='change'>When any part of the state changes</option>
-        <option value='path'>Only when a part of the state changes...</option>
-      </select>
+    <label for="node-input-output"><i class="fa fa-list"></i> Output...</label>
+    <select id="node-input-output" style="width: 70%">
+      <option value="all">On all state updates</option>
+      <option value="change">When any part of the state changes</option>
+      <option value="path">Only when a part of the state changes...</option>
+    </select>
   </div>
   <div class="form-row" id="row-outputPath">
     <label for="node-input-outputPath">&nbsp;</label>
-    <input type="text" id="node-input-outputPath">
+    <input type="text" id="node-input-outputPath" />
   </div>
   <div class="form-row">
-      <label for="node-input-payload"><i class="fa fa-envelope"></i> Payload</label>
-      <select id="node-input-payload">
-        <option value='whole'>Whole State</option>
-        <option value='path'>Specific Path...</option>
-      </select>
+    <label for="node-input-payload"><i class="fa fa-envelope"></i> Payload</label>
+    <select id="node-input-payload">
+      <option value="whole">Whole State</option>
+      <option value="path">Specific Path...</option>
+    </select>
   </div>
   <div class="form-row" id="row-payloadPath">
     <label for="node-input-payloadPath">&nbsp;</label>
-    <input type="text" id="node-input-payloadPath">
+    <input type="text" id="node-input-payloadPath" />
   </div>
   <div class="form-row">
     <label for="node-input-incThing">&nbsp;</label>
-    <input type="checkbox" id="node-input-incThing" style="display:inline-block; width:15px; vertical-align:baseline;">
+    <input
+      type="checkbox"
+      id="node-input-incThing"
+      style="display:inline-block; width:15px; vertical-align:baseline;"
+    />
     <span> Include thing in output as <code>msg.thing</code></span>
   </div>
   <div class="form-row">
-    <label for="node-input-output"><i class="fa fa-bug"></i> Debug</label>
-    <input type="checkbox" id="node-input-debug" style="width:min-content">
+    <label for="node-input-debug"><i class="fa fa-bug"></i> Debug</label>
+    <input type="checkbox" id="node-input-debug" style="width:min-content" />
   </div>
 </script>
 
@@ -184,33 +194,44 @@
   <p>A node that outputs a message when a thing's state changes</p>
 
   <h3>Properties</h3>
-    <dl class="message-properties">
-      <dt class="optional">Multi-thing Mode</dt>
-      <dd> When enabled, allows multiple <i>things</i> to trigger this node. Can be configured to check against any static attributes: <i>name</i>, <i>id</i>, <i>type</i>, any key in <i>props</i>, list of <i>parents</i>. List of matching <i>things</i> is made immediately after setup and is not updated until nodes are re-deployed. Each thing is tracked individually. </dd>
-      <dt class="optional">Thing Name</dt>
-      <dd> Required if not using multi mode </dd>
-      <dt class="optional">Output</dt>
-      <dd> When to output <i>thing</i> state </dd>
-      <ul>
-        <li><b>On all state updates</b> - Will trigger even if state did not change.</li>
-        <li><b>When any part of the state changes</b> - Comparison is done using <code>JSON.stringify</code></li>
-        <li><b>Only when a part of the state changes</b> - State path must be defined. Comparison is done using <code>JSON.stringify</code></li>
-      </ul>
-      <dt class="optional">Payload</dt>
-      <dd> What to output as <code>msg.payload</code> </dd>
-      <ul>
-        <li><b>Whole State</b></li>
-        <li><b>Specific Path</b> - State path must be defined.</li>
-      </ul>
-    </dl>
+  <dl class="message-properties">
+    <dt class="optional">Multi-thing Mode</dt>
+    <dd>
+      When enabled, allows multiple <i>things</i> to trigger this node. Can be configured to check
+      against any static attributes: <i>name</i>, <i>id</i>, <i>type</i>, any key in <i>props</i>,
+      list of <i>parents</i>. List of matching <i>things</i> is made immediately after setup and is
+      not updated until nodes are re-deployed. Each thing is tracked individually.
+    </dd>
+    <dt class="optional">Thing Name</dt>
+    <dd>Required if not using multi mode</dd>
+    <dt class="optional">Output</dt>
+    <dd>When to output <i>thing</i> state</dd>
+    <ul>
+      <li><b>On all state updates</b> - Will trigger even if state did not change.</li>
+      <li>
+        <b>When any part of the state changes</b> - Comparison is done using
+        <code>JSON.stringify</code>
+      </li>
+      <li>
+        <b>Only when a part of the state changes</b> - State path must be defined. Comparison is
+        done using <code>JSON.stringify</code>
+      </li>
+    </ul>
+    <dt class="optional">Payload</dt>
+    <dd>What to output as <code>msg.payload</code></dd>
+    <ul>
+      <li><b>Whole State</b></li>
+      <li><b>Specific Path</b> - State path must be defined.</li>
+    </ul>
+  </dl>
 
   <h3>Outputs</h3>
-    <dl class="message-properties">
-      <dt>topic <span class="property-type">string</span></dt>
-      <dd> The <i>thing</i> name </dd>
-      <dt>payload <span class="property-type">any</span></dt>
-      <dd> As configured in properties </dd>
-      <dt>thing <span class="property-type">object</span></dt>
-      <dd> Only if configured in properties </dd>
-    </dl>
+  <dl class="message-properties">
+    <dt>topic <span class="property-type">string</span></dt>
+    <dd>The <i>thing</i> name</dd>
+    <dt>payload <span class="property-type">any</span></dt>
+    <dd>As configured in properties</dd>
+    <dt>thing <span class="property-type">object</span></dt>
+    <dd>Only if configured in properties</dd>
+  </dl>
 </script>
