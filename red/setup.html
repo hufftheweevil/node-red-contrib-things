@@ -379,7 +379,8 @@
               }
             },
             removable: true,
-            sortable: true
+            sortable: true,
+            addButton: 'add thing'
           })
 
         $('#node-input-thing-container').editableList('empty')
@@ -470,9 +471,14 @@
   <div class="form-row">
     <label for="node-input-thingType"><i class="fa fa-cubes"></i> Thing Type</label>
     <input type="text" id="node-input-thingType" placeholder="Thing Type" />
-  </div>
-  <div class="form-row">
-    <label style="width: 200px"><i class="fa fa-cube"></i> Things</label>
+    <label for="node-input-output" style="float: right; width: 75px">
+      <i class="fa fa-bug"></i> Debug
+    </label>
+    <input
+      type="checkbox"
+      id="node-input-debug"
+      style="width:min-content; float: right; margin-right: 5px"
+    />
   </div>
   <div id="row-header" style="display: flex; padding-left: 31px; padding-right: 46px">
     <span style="flex: 2">Name</span>
@@ -487,14 +493,10 @@
   <div class="form-row" id="row-statusFunction">
     <label style="width: 200px"><i class="fa fa-info-circle"></i> Status Function</label>
     <div
-      style="height: 150px; min-height:150px"
+      style="height: 200px; min-height:200px"
       class="node-text-editor"
       id="node-input-editor"
     ></div>
-  </div>
-  <div class="form-row">
-    <label for="node-input-output"><i class="fa fa-bug"></i> Debug</label>
-    <input type="checkbox" id="node-input-debug" style="width:min-content" />
   </div>
 </script>
 

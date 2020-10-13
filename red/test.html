@@ -284,7 +284,8 @@
             if (rule.compare == 'regex') caseSensitiveBox.prop('checked', rule.case)
           },
           sortable: true,
-          removable: true
+          removable: true,
+          addButton: 'add rule'
         })
 
       this.rules.forEach(rule => $('#node-input-rule-container').editableList('addItem', rule))
