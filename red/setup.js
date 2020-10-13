@@ -111,13 +111,10 @@ module.exports = function (RED) {
                     // This check for the thing is mostly just in case it attempts to
                     // use this state to update the status before the child has been setup
                     const THINGS = global.get('things')
+                    let value = THINGS[proxyThingName] && THINGS[proxyThingName].state[to]
                     if (config.debug)
-                      node.warn(
-                        `Calling getter for '${name}'.state.${from} -- Will return '${
-                          THINGS[proxyThingName] && THINGS[proxyThingName].state[to]
-                        }'`
-                      )
-                    return THINGS[proxyThingName] && THINGS[proxyThingName].state[to]
+                      node.warn(`Calling getter for '${name}'.state.${from} -- Will return '${value}'`)
+                    return value
                   },
                   enumerable: true,
                   configurable: true
@@ -143,7 +140,7 @@ module.exports = function (RED) {
       stateBus.emit(newThing.name)
     })
 
-    // Sort things first (only for ease of access in UI)
+    // Sort things first (only for ease of access in context tab)
     const ABC_THINGS = {}
     Object.keys(THINGS)
       .sort()
@@ -155,25 +152,6 @@ module.exports = function (RED) {
       fill: errors ? 'red' : 'green',
       text: errors ? 'Errors during setup, see debug log' : 'Complete'
     })
-
-    setTimeout(() => {
-      // Make list of all active things of this type
-      let allThingsThisType = []
-      RED.nodes.eachNode(otherConfig => {
-        if (
-          RED.nodes.getNode(otherConfig.id) &&
-          otherConfig.type == 'Thing Setup' &&
-          otherConfig.thingType == config.thingType
-        )
-          allThingsThisType.push(...otherConfig.things.map(t => t.name))
-      })
-
-      // Garbage collect inactive things of this type
-      const THINGS = global.get('things')
-      Object.values(THINGS)
-        .filter(t => t.type == config.thingType && !allThingsThisType.includes(t.name))
-        .forEach(t => delete THINGS[t.name])
-    }, 0)
   }
   RED.nodes.registerType('Thing Setup', Node)
 
@@ -183,11 +161,29 @@ module.exports = function (RED) {
 
   wss.on('connection', socket => {
     socket.on('message', message => {
+
+      // When client requests list of things, send it back
       if (message == 'list') socket.send(JSON.stringify(getThingsList()))
     })
   })
 
   RED.events.on('runtime-event', event => {
-    if (event.id == 'runtime-deploy') sendToWs(getThingsList())
+    
+    // On re-deployment
+    if (event.id == 'runtime-deploy') {
+      
+      // Cleanup list of things
+      let allThingsSetup = []
+      RED.nodes.eachNode(setupConfig => {
+        if (RED.nodes.getNode(setupConfig.id) && setupConfig.type == 'Thing Setup')
+          allThingsSetup.push(...setupConfig.things.map(t => t.name))
+      })
+      Object.values(thingsRef)
+        .filter(t => !allThingsSetup.includes(t.name))
+        .forEach(t => delete thingsRef[t.name])
+
+      // Send list of things to any connected clients
+      sendToWs(getThingsList())
+    }
   })
 }
