@@ -22,8 +22,8 @@ module.exports = function (RED) {
         return
       }
 
-      // Set status
-      node.status(thing.status)
+      // Set status (only if configured for specific thing)
+      if (config.name) node.status(thing.status)
 
       // Check all rules
       let pass = config.rules.every(rule => {
