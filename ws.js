@@ -4,7 +4,12 @@ const wss = new ws.Server({ port: 8120 })
 
 function genStatus(thing) {
   if (!thing.status) return thing
-  return { ...thing, status: thing.status(thing.state, thing.props) }
+  try {
+    let status = thing.status(thing.state, thing.props)
+    return { ...thing, status }
+  } catch (err) {
+    return thing
+  }
 }
 
 function stringifyStatus(key, val) {

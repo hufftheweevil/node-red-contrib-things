@@ -48,7 +48,9 @@ module.exports = function (RED) {
           text: 'Error during parsing; See log'
         })
       } else {
-        node.status(thing.status(thing.state, thing.props))
+        try {
+          node.status(thing.status(thing.state, thing.props))
+        } catch (err){}
         node.send(msg)
       }
     })
