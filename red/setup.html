@@ -391,11 +391,29 @@
       // Setup Status Function editor
       this.editor = RED.editor.createEditor({
         id: 'node-input-editor',
-        mode: 'ace/mode/nrjavascript',
         value: this.statusFunction
       })
 
-      function showHide() {}
+      // Add extra color highlighting for 'state' and 'props'
+      let session = this.editor.session
+      session.setMode(`ace/mode/nrjavascript`, function () {
+        let rules = session.$mode.$highlightRules.getRules()
+        Object.values(rules).forEach(rule => {
+          rule.unshift({
+            token: 'state_props',
+            regex: 'state|props'
+          })
+        })
+        // Force recreation of tokenizer
+        session.$mode.$tokenizer = null
+        session.bgTokenizer.setTokenizer(session.$mode.getTokenizer())
+        // Force re-highlight whole document
+        session.bgTokenizer.start(0)
+      })
+      $('<style>')
+        .prop('type', 'text/css')
+        .html(`.ace_state_props {color: #b900ff}`)
+        .appendTo('head')
 
       // Initialize
       redraw()
