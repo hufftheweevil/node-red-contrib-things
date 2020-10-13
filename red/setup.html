@@ -15,6 +15,10 @@
           if (filterType && filterType != payload.type) newRow.hide()
           break
       }
+      // Sort filter-by-type list
+      let list = $('#things-type-filter :not(:first-child)')
+      list.sort((a, b) => a.innerHTML.localeCompare(b.innerHTML))
+      $('#things-type-filter').append(list)
     }
 
     let filterType
