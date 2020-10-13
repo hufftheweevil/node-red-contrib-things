@@ -48,7 +48,7 @@ module.exports = function (RED) {
         let shouldOutput = config.output == 'all' || this.lastKnownState != latestState
         if (shouldOutput && config.output == 'path') {
           // Extra checks if using path-mode
-          if (this.init && config.ignoreInit) shouldOutput = false
+          if (config.ignoreInit && this.lastKnownState == undefined) shouldOutput = false
           else if (config.outputTest) {
             try {
               let a = RED.util.getObjectProperty(thing.state, config.outputPath)

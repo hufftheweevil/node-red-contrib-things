@@ -186,7 +186,11 @@
   <div class="form-row" id="row-outputTest">
     <label for="node-input-outputTest">&nbsp;</label>
     <div style="display: inline">
-      <input type="checkbox" id="node-input-outputTest-checkbox" style="width: 20px" />
+      <input
+        type="checkbox"
+        id="node-input-outputTest-checkbox"
+        style="width: 14px; margin-bottom: 5px"
+      />
       <span>And value</span>
       <select id="node-input-outputTest-compare" style="width: 110px">
         <option value="eq">==</option>
@@ -270,12 +274,9 @@
       </li>
       <li>
         <b>Only when a part of the state changes</b> - State path must be defined. Comparison is
-        done using
-        <code
-          >JSON.stringify. Can optionally be configured to test value and only trigger if condition
-          is met. Enabling <b>Ignore initialization</b> will prevent output when Node-RED first
-          starts/reboots (but does <i>not</i> ignore on redeployment).
-        </code>
+        done using <code>JSON.stringify.</code> Can optionally be configured to test value and only
+        trigger if condition is met. Enabling <b>Ignore initialization</b> will prevent output when
+        the key is first initialized (i.e. old value is <code>undefined</code>).
       </li>
     </ul>
     <dt class="optional">Payload</dt>
