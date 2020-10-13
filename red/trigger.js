@@ -75,6 +75,8 @@ module.exports = function (RED) {
       watchers = [new ThingWatcher(config.name)]
       registerThingListeners()
     } else {
+      // Erase status
+      node.status({})
       // Instant timeout causes this to run async (after all setup)
       setTimeout(() => {
         // Generate list of things that match conditions
