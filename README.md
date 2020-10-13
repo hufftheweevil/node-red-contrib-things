@@ -8,12 +8,12 @@ First, what these nodes do **not** do: These nodes have no connection outside of
 
 This is an internal system that will help manage your Node-RED project better, minimizing overhead and simplying flows. You provide the outside connections, wire them up correctly to these nodes, and you will have a super charged version of Node-RED. The system is designed to be as minimalistic as possible, while allowing for just about any use case.
 
-The core concept is to reduce all IOT devices into one common "langauge". With that, flows are more sensible and changes are easier. To facility the abstractness of this library, it is broken into four main segments/nodes.
+The core concept is to reduce all IOT devices into one common "langauge". With that, flows are more sensible and changes are easier. To facilitate the abstractness of this library, it is broken into four main segments/nodes.
 
-- The inputs from various platforms of your choice are linked into the _update_ node, which will route to...
-- The _trigger_ node, which will link into your logic.
-- Your logic may link into a _command_ node, which will route to...
-- The _process_ node, which will link back to the various platforms.
+- The inputs from various platforms of your choice are linked into the **_update_** node, which will route to...
+- The **_trigger_** node, which will link into your logic.
+- Your logic may link into a **_command_** node, which will route to...
+- The **_process_** node, which will link back to the various platforms.
 
 The exact uses of these nodes can be customized to fit your needs.
 
@@ -25,19 +25,19 @@ A lot of the ideas used in this library are based off of a standard state manage
 
 I also tried to use as much built-in functionality as possible, to keep with the themes of Node-RED. For example, the _ready_ node works very similar to the built-in _inject_ node. And many other properties are formed using Node-RED style inputs.
 
-Lastly, I used node status, as much as possible, to assist with debugging. I've found that nodes with some sort of useful status are much more powerful than those without.
+Lastly, I used node status, as much as possible, to assist with debugging. I've found that nodes with some sort of useful status are much more powerful than those without. Debug options are also available on most nodes.
 
 ### What is a Thing?
 
-A _thing_, as used in this library, is any device or entity that you want to either keep state on, trigger off state changes, or control in Node-RED. These things could be simple devices such as lights and sensors, or they could be more complex devices such as thermostats and entertainment devices, or even abstract things, such as people.
+A **_thing_**, as used in this library, is any device or entity in Node-RED that you want to either keep state on, trigger off state changes, and/or control. These things could be simple devices such as lights and sensors, or they could be more complex devices such as thermostats and entertainment devices, or even abstract things, such as people.
 
 This library of nodes does not actually connect to any of the devices; it only acts as a state management system. All things will need to be connected to Node-RED via another node(s). For example, if using Lifx lights, you will need one of the Lifx Node-RED libraries.
 
 ---
 
-A directory of all things is stored in the global context. While it is not recommended to reference things directly via the context, it can be done.
+After things are setup, they are listed in the **Things Directory** sidebar tab.
 
-Each thing is represented using a javascript object with a few specific properties. Note that these objects will be automatically generated via the setup node. This information is provided for reference and general understanding.
+Things are stored in the global context, however it is <u>not recommended</u> to reference things directly via the context. Each thing is represented using a javascript object with a few specific properties. Note that these objects will be automatically generated via the setup node. This information is provided for reference and general understanding.
 
 | Property  | Info                                                                                                                                                                                                                                                 |
 | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -56,7 +56,7 @@ There are 7 nodes included: _setup_, _update_, _trigger_, _get_, _test_, _comman
 
 ### setup
 
-Start with the _setup_ node. It is required for all things. Use a different _setup_ node for each `type` that you have. There are no inputs or outputs. All things listed in the properties will be initialized when the flows are deployed.
+Start with the _setup_ node; It is required for all things. Use a different _setup_ node for each `type` that you have. There are no inputs or outputs. All things listed in the properties will be initialized when the flows are deployed.
 
 ##### Properties
 
@@ -65,10 +65,6 @@ Start with the _setup_ node. It is required for all things. Use a different _set
 | Thing Type      | A type indentifier decided by you. They must be used consistently throughout your flows, including case.                                                                                                                                                                                                                                                                         |
 | Things          | Each thing is added using up to 5 parameters: Name, ID, Props, State, Proxy. All fields are equivilant to the properties defined above. Only Name is required. **Note**: If state is provided, it will only be used if the thing does not already exist (i.e. on Node-RED system startup, or a newly added thing). On re-deployment of flows, the last known state will be kept. |
 | Status Function | The body of a function that will set the status of any trigger nodes for this thing. The function receives `props` and `state` variables. It should return an object with signature `{text, fill, shape}`, all optional. If the function returns `null`, a red ring will be used with the text "Unknown". If not set, defaults to `state => ({text: JSON.stringify(state)})`     |
-
-### ready
-
-**No longer provided.** Use the built-in _inject_ node.
 
 ### update
 
@@ -96,11 +92,11 @@ A node that will output when conditions are met after input into a respective _u
 
 ##### Properties
 
-| Property   | Info                                                                                                                                                                                                                                                                                                                                                                                                        |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Thing Name | The thing to trigger from                                                                                                                                                                                                                                                                                                                                                                                   |
-| Output...  | Choose from 1. On all state updates (will output whenever an update node has finished, even if the state did not change); 2. When any part of the state changes; 3. Only when a part of the state changes.<br/>If the 3rd option is selected:<br/>- set the state property (or path to a nested state property)<br/>- optionally set a condition to test first<br/>- optionally ignore initialization value |
-| Payload    | Choose from 1. Whole state; 2. Specific path.<br/>If 2nd option is selected, set the state property (or path to a nested state property)                                                                                                                                                                                                                                                                    |
+| Property   | Info                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Thing Name | The thing to trigger from                                                                                                                                                                                                                                                                                                                                                                                                |
+| Output...  | Choose from...<br/>1. On all state updates (will output whenever an update node has finished, even if the state did not change)<br/>2. When any part of the state changes<br/>3. Only when a part of the state changes.<br/>If the 3rd option is selected:<br/>- set the state property (or path to a nested state property)<br/>- optionally set a condition to test first<br/>- optionally ignore initialization value |
+| Payload    | Choose from 1. Whole state; 2. Specific path.<br/>If 2nd option is selected, set the state property (or path to a nested state property)                                                                                                                                                                                                                                                                                 |
 
 ##### Output
 
