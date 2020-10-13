@@ -7,7 +7,8 @@
       nodeName: { value: '' },
       name: { value: '' },
       thingType: { value: '' },
-      debug: { value: false }
+      debug: { value: false },
+      updates: { value: [] }
     },
     inputs: 1,
     outputs: 0,
@@ -17,48 +18,134 @@
     },
     labelStyle: function () {
       return this.name ? 'node_label_italic' : ''
+    },
+    oneditresize: function (size) {
+      var rows = $('#dialog-form>div:not(.node-input-update-container-row):visible')
+      var height = size.height
+      for (var i = 0; i < rows.length; i++) {
+        height -= $(rows[i]).outerHeight(true)
+      }
+      var editorRow = $('#dialog-form>div.node-input-update-container-row')
+      height -= parseInt(editorRow.css('marginTop')) + parseInt(editorRow.css('marginBottom'))
+      height += 16
+      $('#node-input-update-container').editableList('height', height)
+    },
+    oneditprepare: function () {
+      $('#node-input-update-container')
+        .css('min-height', '50px')
+        .css('min-width', '350px')
+        .css('max-height', '200px')
+        .editableList({
+          addItem: function (container, i, update) {
+            container.css({
+              overflow: 'hidden',
+              whiteSpace: 'nowrap'
+            })
+            let row = $('<div/>').appendTo(container)
+
+            let key = $('<input/>', { class: 'node-input-update-state-key', type: 'text' })
+              .css('width', '30%')
+              .appendTo(row)
+              .typedInput({
+                types: [{ value: 'state', label: 'state.', validate: /^[0-9a-zA-Z_\.]*$/ }]
+              })
+
+            $('<div/>', { style: 'display:inline-block; padding:0px 6px;' }).text('=').appendTo(row)
+
+            let val = $('<input/>', { class: 'node-input-update-state-value', type: 'text' })
+              .css('width', 'calc(70% - 30px)')
+              .appendTo(row)
+              .typedInput({
+                default: 'str',
+                types: ['msg', 'flow', 'global', 'str', 'num', 'bool', 'json', 're', 'date', 'env']
+              })
+
+            key.typedInput('value', update.key)
+            val.typedInput('type', update.type)
+            val.typedInput('value', update.val)
+          },
+          addButton: 'add update',
+          removable: true,
+          sortable: true
+        })
+
+      this.updates.forEach(update =>
+        $('#node-input-update-container').editableList('addItem', update)
+      )
+    },
+    oneditsave: function () {
+      let updates = $('#node-input-update-container').editableList('items')
+      let node = this
+      node.updates = []
+      updates.each(function () {
+        let updateItem = $(this)
+        let update = {
+          key: updateItem.find('.node-input-update-state-key').typedInput('value'),
+          type: updateItem.find('.node-input-update-state-value').typedInput('type'),
+          val: updateItem.find('.node-input-update-state-value').typedInput('value')
+        }
+        node.updates.push(update)
+      })
     }
   })
 </script>
 
 <script type="text/html" data-template-name="Thing Update">
   <div class="form-row">
-      <label for="node-input-nodeName"><i class="fa fa-tag"></i> Node Name</label>
-      <input type="text" id="node-input-nodeName" placeholder="Node Name">
+    <label for="node-input-nodeName"><i class="fa fa-tag"></i> Node Name</label>
+    <input type="text" id="node-input-nodeName" placeholder="Node Name" />
   </div>
   <div class="form-row">
-      <label for="node-input-name"><i class="fa fa-id-badge"></i> Thing Name</label>
-      <input type="text" id="node-input-name" placeholder="Thing Name">
+    <label for="node-input-name"><i class="fa fa-id-badge"></i> Thing Name</label>
+    <input type="text" id="node-input-name" placeholder="Thing Name" />
+  </div>
+  <div class="form-row node-input-update-container-row">
+    <ol id="node-input-update-container"></ol>
   </div>
   <div class="form-row">
-      <label for="node-input-thingType"><i class="fa fa-cube"></i> Thing Type</label>
-      <input type="text" id="node-input-thingType" placeholder="Type">
+    <label for="node-input-thingType"><i class="fa fa-cube"></i> Thing Type</label>
+    <input type="text" id="node-input-thingType" placeholder="Type" />
   </div>
   <div class="form-row">
     <label for="node-input-output"><i class="fa fa-bug"></i> Debug</label>
-    <input type="checkbox" id="node-input-debug" style="width:min-content">
+    <input type="checkbox" id="node-input-debug" style="width:min-content" />
   </div>
 </script>
 
 <script type="text/html" data-help-name="Thing Update">
-  <p>A node to update the state of a thing </p>
+  <p>A node to update the state of a thing</p>
 
   <h3>Properties</h3>
-    <dl class="message-properties">
-      <dt class="optional">Thing Name</dt>
-      <dd> The <i>thing</i> name. If not specified here, must be in <code>topic</code> on input </dd>
-      <dt class="optional">Thing Type</dt>
-      <dd> If specified, the node's status will reflect if any things of this <code>type</code> have yet to update their status. Typically only used if <code>thing name</code> is not specified. Does not affect any other part of this node other than the status shown. </dd>
-
-    </dl>
+  <dl class="message-properties">
+    <dt class="optional">Thing Name</dt>
+    <dd>The <i>thing</i> name. If not specified here, must be in <code>topic</code> on input</dd>
+    <dt class="optional">Updates</dt>
+    <dd>
+      The state keys/values to be updated. If any updates are configured, then input payload will be
+      ignored. To use input payload as the state update, the update list must be empty.
+    </dd>
+    <dt class="optional">Thing Type</dt>
+    <dd>
+      If specified, the node's status will reflect if any things of this <code>type</code> have yet
+      to update their status. Typically only used if <code>thing name</code> is not specified. Does
+      not affect any other part of this node other than the status shown.
+    </dd>
+  </dl>
 
   <h3>Inputs</h3>
-    <dl class="message-properties">
-      <dt class="optional">topic <span class="property-type">string</span></dt>
-      <dd> The <i>thing</i> name. Only used if not specified in properties. <b>Note:</b> will NOT override property setting. Alternatively, if the node is configured with a <code>thing type</code>, then the <i>thing</i> ID can be used as the topic. </dd>
-      <dt class="optional">payload <span class="property-type">any</span></dt>
-      <dd> The state update </dd>
-      <dt class="optional">replace <span class="property-type">boolean</span></dt>
-      <dd> If true, <code>payload</code> will completely replace state. Otherwise it will be merged, top-level only. </dd>
-    </dl>
+  <dl class="message-properties">
+    <dt class="optional">topic <span class="property-type">string</span></dt>
+    <dd>
+      The <i>thing</i> name. Only used if not specified in properties. <b>Note:</b> will NOT
+      override property setting. Alternatively, if the node is configured with a
+      <code>thing type</code>, then the <i>thing</i> ID can be used as the topic.
+    </dd>
+    <dt class="optional">payload <span class="property-type">any</span></dt>
+    <dd>The state update</dd>
+    <dt class="optional">replace <span class="property-type">boolean</span></dt>
+    <dd>
+      If true, <code>payload</code> will completely replace state. Otherwise it will be merged,
+      top-level only.
+    </dd>
+  </dl>
 </script>

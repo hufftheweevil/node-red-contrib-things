@@ -30,11 +30,22 @@ module.exports = function (RED) {
       // If still not found, error
       if (!thing) return node.error(`Unknown thing ${name}`)
 
+      // Determine update packet
+      let update = {}
+      if (config.updates && config.updates.length) {
+        config.updates.forEach(({ key, type, val }) => {
+          let value = RED.util.evaluateNodeProperty(val, type, node, msg)
+          RED.util.setMessageProperty(update, key, value, true)
+        })
+      } else {
+        update = msg.payload
+      }
+
       // Update state accordingly
       if (msg.replace) {
-        thing.state = msg.payload
+        thing.state = update
       } else {
-        Object.assign(thing.state, msg.payload)
+        Object.assign(thing.state, update)
       }
 
       // Emit to the bus so that all other nodes that
