@@ -43,9 +43,7 @@ module.exports = function (RED) {
             return test(a, b, c)
           }
 
-          if (/regex/.test(rule.compare)) {
-            return test(a, b, rule.case)
-          }
+          if (/regex/.test(rule.compare)) return test(a, b, rule.case)
 
           return test(a, b)
         } catch (err) {
@@ -56,6 +54,7 @@ module.exports = function (RED) {
 
       // Output, maybe
       if (pass) node.send(msg)
+      else if (config.secondOutput) node.send([null, msg])
     })
   }
   RED.nodes.registerType('Thing Test', Node)
