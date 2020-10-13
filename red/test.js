@@ -80,7 +80,6 @@ module.exports = function (RED) {
 
       // Check all rules
       let pass = config.rules.every(rule => {
-        console.log(rule)
         let test = TESTS[rule.compare]
 
         let a = RED.util.getObjectProperty(thing, rule.thingProp)
