@@ -1,8 +1,9 @@
-let { stateBus } = require('./shared')
+let { stateBus, TESTS } = require('./shared')
 
 module.exports = function (RED) {
   function Node(config) {
     RED.nodes.createNode(this, config)
+    console.log(config)
 
     const node = this
     const GLOBAL = this.context().global
@@ -29,9 +30,13 @@ module.exports = function (RED) {
         return this.thing && JSON.stringify(this.pathOrWhole(config.output, config.outputPath))
       }
       pathOrWhole(flag, path) {
-        return flag == 'path'
-          ? RED.util.getObjectProperty(this.thing.state, path)
-          : this.thing.state
+        try {
+          return flag == 'path' && path != ''
+            ? RED.util.getObjectProperty(this.thing.state, path)
+            : this.thing.state
+        } catch (err) {
+          node.warn(`Error getting path: ${err}`)
+        }
       }
       callback() {
         let thing = this.thing
@@ -39,8 +44,22 @@ module.exports = function (RED) {
         // Serialize latest state (or specific path, if configured)
         let latestState = this.getState()
 
+        // Determine if need to output
+        let shouldOutput = config.output == 'all' || this.lastKnownState != latestState
+        if (shouldOutput && config.output == 'path' && config.outputTest) {
+          try {
+            let a = RED.util.getObjectProperty(this.thing.state, config.outputPath)
+            let b = RED.util.evaluateNodeProperty(config.outputTest.value, config.outputTest.type, node)
+            let test = TESTS[config.outputTest.compare]
+            shouldOutput = test(a, b)
+          } catch (err) {
+            node.warn(`Error during test: ${err}`)
+            shouldOutput = false
+          }
+        }
+
         // Output state message accordingly
-        if (config.output == 'all' || this.lastKnownState != latestState) {
+        if (shouldOutput) {
           let msg = {
             topic: this.name,
             payload: this.pathOrWhole(config.payload, config.payloadPath)

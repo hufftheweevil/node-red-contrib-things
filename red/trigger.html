@@ -10,9 +10,10 @@
       multiValue: { value: '' },
       multiTest: { value: 'str' },
       name: { value: '' },
-      output: { value: 'change' },
+      output: { value: 'change' }, // What causes the node to trigger an output msg
       outputPath: { value: '' },
-      payload: { value: 'whole' },
+      outputTest: { value: null },
+      payload: { value: 'whole' }, // What is sent in the payload of the output msg
       payloadPath: { value: '' },
       incThing: { value: false },
       debug: { value: false }
@@ -27,7 +28,15 @@
       return this.name ? 'node_label_italic' : ''
     },
     oneditprepare: function () {
+      let StateType = {
+        value: 'str',
+        label: 'state.',
+        validate: /^[0-9a-zA-Z_\.]*$/
+      }
+      let basicTypes = ['flow', 'global', 'str', 'num', 'env']
+
       // MULTI-MODE KEY
+
       if (this.multiMode) {
         $('#row-thingName').hide()
       } else {
@@ -81,29 +90,33 @@
       $('#node-input-multi-2').typedInput('type', this.multiTest)
       $('#node-input-multi-2').typedInput('value', this.multiValue)
 
-      let StateType = {
-        value: 'str',
-        label: 'state.',
-        validate: /^[0-9a-zA-Z_\.]*$/
-      }
-
       // TRIGGER PATH
-      $('#node-input-outputPath').typedInput({
-        types: [StateType]
-      })
-      if (this.output != 'path') {
-        $('#row-outputPath').hide()
+
+      $('#node-input-outputPath').typedInput({ types: [StateType] })
+      $('#node-input-outputTest-for')
+        .typedInput({ types: basicTypes, default: 'str' })
+        .typedInput('width', '140px')
+      if (this.output != 'path') $('#row-outputPath, #row-outputTest').hide()
+
+      if (this.outputTest) {
+        $('#node-input-outputTest-checkbox').prop('checked', true)
+        $('#node-input-outputTest-compare').val(this.outputTest.compare)
+        $('#node-input-outputTest-for').typedInput('type', this.outputTest.type)
+        $('#node-input-outputTest-for').typedInput('value', this.outputTest.value)
+        if (/true|false|null|nnull|empty|nempty/.test(this.outputTest.compare))
+          $('#node-input-outputTest-for').typedInput('hide')
       }
       $('#node-input-output').change(function () {
-        if ($(this).val() == 'path') {
-          $('#row-outputPath').show()
-        } else {
-          $('#row-outputPath').hide()
-        }
+        let hideShow = $(this).val() == 'path' ? 'show' : 'hide'
+        $('#row-outputPath, #row-outputTest')[hideShow]()
       })
-      // ------
+      $('#node-input-outputTest-compare').change(function () {
+        let hideShow = /true|false|null|nnull|empty|nempty/.test($(this).val()) ? 'hide' : 'show'
+        $('#node-input-outputTest-for').typedInput(hideShow)
+      })
 
       // PAYLOAD PATH
+
       $('#node-input-payloadPath').typedInput({
         types: [StateType]
       })
@@ -119,12 +132,26 @@
       })
     },
     oneditsave: function () {
+      // Multi-mode
       if ($('#node-input-multiMode').val()) {
         this.multiKey = $('#node-input-multi-1').typedInput('type')
         if (this.multiKey == 'props.') this.multiKey += $('#node-input-multi-1').typedInput('value')
       }
       this.multiTest = $('#node-input-multi-2').typedInput('type')
       this.multiValue = $('#node-input-multi-2').typedInput('value')
+
+      // Advanced-trigger-mode
+      if (this.output == 'path') {
+        if ($('#node-input-outputTest-checkbox').prop('checked')) {
+          this.outputTest = {
+            compare: $('#node-input-outputTest-compare').val(),
+            type: $('#node-input-outputTest-for').typedInput('type'),
+            value: $('#node-input-outputTest-for').typedInput('value')
+          }
+        } else {
+          this.outputTest = null
+        }
+      }
     }
   })
 </script>
@@ -163,6 +190,34 @@
   <div class="form-row" id="row-outputPath">
     <label for="node-input-outputPath">&nbsp;</label>
     <input type="text" id="node-input-outputPath" />
+  </div>
+  <div class="form-row" id="row-outputTest">
+    <label for="node-input-outputTest">&nbsp;</label>
+    <div style="display: inline">
+      <input type="checkbox" id="node-input-outputTest-checkbox" style="width: 20px" />
+      <span>And value</span>
+      <select id="node-input-outputTest-compare" style="width: 110px">
+        <option value="eq">==</option>
+        <option value="neq">!=</option>
+        <option value="lt"><</option>
+        <option value="lte"><=</option>
+        <option value="gt">></option>
+        <option value="gte">>=</option>
+        <option value="hask">has key</option>
+        <!-- <option value="btwn">is between</option> -->
+        <option value="cont">contains</option>
+        <option value="regex">matches regex</option>
+        <!-- No case insensitive option yet -->
+        <option value="true">is true</option>
+        <option value="false">is false</option>
+        <option value="null">is null</option>
+        <option value="nnull">is not null</option>
+        <!-- <option value="istype">is of type</option> -->
+        <option value="empty">is empty</option>
+        <option value="nempty">is not empty</option>
+      </select>
+      <input type="text" id="node-input-outputTest-for" />
+    </div>
   </div>
   <div class="form-row">
     <label for="node-input-payload"><i class="fa fa-envelope"></i> Payload</label>
