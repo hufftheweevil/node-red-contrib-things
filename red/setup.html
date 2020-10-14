@@ -125,6 +125,7 @@
           let thingRow = makeThingRow(thing)
           thingRow.appendTo(table)
           fixBorder(thingRow)
+          if (filterType && filterType != thing.type) thingRow.hide()
         })
       } else {
         // No things
