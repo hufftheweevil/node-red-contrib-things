@@ -160,10 +160,25 @@ module.exports = function (RED) {
   let getThingsList = () => ({ topic: 'list', payload: Object.values(thingsRef) })
 
   wss.on('connection', socket => {
-    socket.on('message', message => {
+    socket.on('message', msg => {
 
       // When client requests list of things, send it back
-      if (message == 'list') socket.send(JSON.stringify(getThingsList()))
+      if (msg == 'list') return socket.send(JSON.stringify(getThingsList()))
+
+      // Must be JSON msg
+      try {
+        msg = JSON.parse(msg)
+      } catch (e) {
+        console.error(e)
+      }
+      switch (msg.topic) {
+        case 'delete-state-key':
+          let {thing, key, trigger} = msg.payload
+          delete thingsRef[thing].state[key]
+          if (trigger) stateBus.emit(thing)
+          sendToWs({ topic: 'update', payload: thingsRef[thing] })
+          break
+      }
     })
   })
 

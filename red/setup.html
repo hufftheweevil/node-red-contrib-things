@@ -22,6 +22,7 @@
     }
 
     let filterType
+    let dialog
 
     let statusColors = {
       red: '#c00',
@@ -102,6 +103,7 @@
       })
 
       // First request
+      // *** MUST BE DONE LAST; for some reason no code runs after this ***
       socket.send('list')
     }
 
@@ -217,15 +219,73 @@
             )
           }
 
-          // let delButton = $('<button class="red-ui-button red-ui-button-small">')
-          //   .html('<i class="fa fa-trash"></i>')
-          //   .appendTo(tools)
-          //   .on('click', function (e) {
-          //     e.preventDefault()
-          //     e.stopPropagation()
-
-          //   })
-          // RED.popover.tooltip(delButton, 'Delete key')
+          let delButton = $('<button class="red-ui-button red-ui-button-small">')
+            .html('<i class="fa fa-trash"></i>')
+            .appendTo(tools)
+            .on('click', function (e) {
+              e.preventDefault()
+              e.stopPropagation()
+              $('<div id="red-ui-confirm-dialog" class="hide">')
+                .html(
+                  `If you want to cause a trigger, consider that the new state value will be <code>undefined</code>. Only nodes that are configured to handle such a change will be triggered.`
+                )
+                .appendTo('#red-ui-editor')
+                .dialog({
+                  modal: true,
+                  autoOpen: true,
+                  width: 700,
+                  resizable: false,
+                  classes: {
+                    'ui-dialog': 'red-ui-editor-dialog',
+                    'ui-widget-overlay': 'red-ui-editor-dialog'
+                  },
+                  title: `Delete state key "${key}" for ${thing.name}?`,
+                  buttons: [
+                    {
+                      id: 'red-ui-confirm-delete-without',
+                      text: 'Delete key without causing trigger',
+                      click: function () {
+                        socket.send(
+                          JSON.stringify({
+                            topic: 'delete-state-key',
+                            payload: {
+                              thing: thing.name,
+                              key
+                            }
+                          })
+                        )
+                        $(this).dialog('destroy')
+                      }
+                    },
+                    {
+                      id: 'red-ui-confirm-delete-without',
+                      text: 'Delete key AND cause trigger',
+                      class: 'primary',
+                      click: function () {
+                        socket.send(
+                          JSON.stringify({
+                            topic: 'delete-state-key',
+                            payload: {
+                              thing: thing.name,
+                              key,
+                              trigger: true
+                            }
+                          })
+                        )
+                        $(this).dialog('destroy')
+                      }
+                    },
+                    {
+                      id: 'red-ui-confirm-cancel',
+                      text: 'Cancel',
+                      click: function () {
+                        $(this).dialog('destroy')
+                      }
+                    }
+                  ]
+                })
+            })
+          RED.popover.tooltip(delButton, 'Delete key')
 
           RED.utils
             .createObjectElement(value, { key, tools, sourceId: `state.${key}` })
