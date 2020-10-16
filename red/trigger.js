@@ -50,10 +50,11 @@ module.exports = function (RED) {
           // Extra checks if using path-mode
           if (config.ignoreInit && this.lastKnownState == undefined) shouldOutput = false
           else if (config.outputTest) {
+            let { compare, type, value } = config.outputTest
             try {
               let a = RED.util.getObjectProperty(thing.state, config.outputPath)
-              let b = RED.util.evaluateNodeProperty(config.outputTest.value, config.outputTest.type, node)
-              let test = TESTS[config.outputTest.compare]
+              let b = RED.util.evaluateNodeProperty(value, type, node)
+              let test = TESTS[compare]
               shouldOutput = test(a, b)
             } catch (err) {
               node.warn(`Error during test: ${err}`)
@@ -92,18 +93,24 @@ module.exports = function (RED) {
       node.status({})
       // Instant timeout causes this to run async (after all setup)
       setTimeout(() => {
+        // Get list of all things and setup test
+        const THINGS = Object.values(GLOBAL.get('things'))
+        let compareValue = RED.util.evaluateNodeProperty(config.multiValue, config.multiTest)
+        let test =
+          compareValue instanceof RegExp
+            ? value => compareValue.test(value)
+            : value => compareValue == value
+
         // Generate list of things that match conditions
-        watchers = Object.values(GLOBAL.get('things'))
-          .filter(thing => {
-            let thingValue = RED.util.getObjectProperty(thing, config.multiKey)
-            let compareValue = RED.util.evaluateNodeProperty(config.multiValue, config.multiTest)
-
-            let test = value =>
-              value instanceof RegExp ? value.test(thingValue) : thingValue == value
-
-            return config.multiKey == 'parents' ? thingValue.some(test) : test(compareValue)
-          })
-          .map(thing => new ThingWatcher(thing.name))
+        watchers =
+          config.multiKey == 'group'
+            ? THINGS.filter(thing => thing.type == 'Group' && test(thing.name))
+                .reduce((list, group) => [...list, ...group.things], [])
+                .map(thingName => new ThingWatcher(thingName))
+            : THINGS.filter(thing => {
+                let thingValue = RED.util.getObjectProperty(thing, config.multiKey)
+                return config.multiKey == 'parents' ? thingValue.some(test) : test(thingValue)
+              }).map(thing => new ThingWatcher(thing.name))
 
         // Listen for state updates for each thing
         registerThingListeners()
