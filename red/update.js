@@ -75,7 +75,7 @@ module.exports = function (RED) {
       } else {
         // Not configured with `type`, so show status of this update
         node.status({
-          text: `${thing.name} | ${JSON.stringify(msg.payload)} | ${now()}`
+          text: `${thing.name} | ${JSON.stringify(update)} | ${now()}`
         })
       }
     })
