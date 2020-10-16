@@ -160,8 +160,14 @@
       // IDENT COLUMN
       identCol.text(thing.name)
       $('<span>', { class: 'red-ui-sidebar-context-property-storename' })
-        .text(`${thing.type} : ${thing.id || ''}`)
+        .text(`${thing.type}${thing.id ? ` : ${thing.id}` : ''}`)
         .appendTo(identCol)
+      if (thing.type == 'Group') {
+        let list = $('<ul>', { class: 'red-ui-sidebar-context-property-storename' }).appendTo(
+          identCol
+        )
+        thing.things.forEach(name => $('<li>').text(name).appendTo(list))
+      }
       if (thing.status) {
         let status = $('<div>').css({ display: 'flex', alignItems: 'center' }).appendTo(identCol)
 
