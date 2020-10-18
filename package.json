@@ -13,6 +13,7 @@
       "trigger": "red/trigger.js",
       "get": "red/get.js",
       "test": "red/test.js",
+      "list": "red/list.js",
       "command": "red/command.js",
       "process": "red/process.js"
     }

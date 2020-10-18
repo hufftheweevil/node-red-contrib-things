@@ -52,7 +52,7 @@ Things are stored in the global context, however it is <u>not recommended</u> to
 
 ## Nodes
 
-There are 7 nodes included: _setup_, _update_, _trigger_, _get_, _test_, _command_, and _process_.
+There are 8 nodes included: _setup_, _update_, _trigger_, _get_, _test_, _list_, _command_, and _process_.
 
 ### setup
 
@@ -142,6 +142,22 @@ A node that allows a message to pass based on specified conditions related to a 
 ##### Output
 
 Input message will be passed through
+
+### list
+
+A node that will list all _things_ that match the specified conditions.
+
+##### Properties
+
+| Property   | Info                                                              |
+| ---------- | ----------------------------------------------------------------- |
+| Output     | Choose the type and value of the output.                          |
+| Property   | Specify what property to output on.                               |
+| Conditions | The conditions that must be met to include a _thing_ on the list. |
+
+##### Output
+
+The input message will be forwarded (unless `Discard input message` is checked), with the addition of the output specified in the properties.
 
 ### command
 
