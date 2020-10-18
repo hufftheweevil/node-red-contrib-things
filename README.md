@@ -232,7 +232,7 @@ This means `TV` will have `state.power` that will be in-sync with `TV Power`'s `
 
 ## Groups
 
-There is a special thing type for groups. During setup, use type "Group" and the Things input matrix will switch into a list-style input. Specify the group name and then list each thing in the group. Currently, groups are only used when sending commands. Sending a command to a group will automatically propogate the same command to all things in the group, regardless of those things' types. Groups can also be nested, as command forwading is recursive. The _update_ and _trigger_ nodes have no effect on Group type things.
+There is a special thing type for groups. During setup, use type "Group" and the Things input matrix will switch into a list-style input. Specify the group name and then list each thing in the group. Currently, groups are only used when sending commands. Sending a command to a group will automatically propagate the same command to all things in the group, regardless of those things' types. Groups can also be nested, as command forwading is recursive. The _update_ nodes has no effect on Group type things. However, the _trigger_ node can be configured to trigger from all things in the same group.
 
 ## Bugs and Feedback
 
