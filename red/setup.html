@@ -158,16 +158,74 @@
         $(`<option value=${thing.type}>${thing.type}</option>`).appendTo($('#things-type-filter'))
 
       // IDENT COLUMN
+
       identCol.text(thing.name)
+
+      let deleteButton = $('<button class="red-ui-button red-ui-button-small">')
+        .css({ position: 'absolute', right: 3, top: 3 })
+        .html('<i class="fa fa-trash"></i>')
+        .appendTo(identCol)
+        .on('click', function (e) {
+          e.preventDefault()
+          e.stopPropagation()
+          $('<div id="red-ui-confirm-dialog" class="hide">')
+            .html(`This could have unintended consequences. Use with caution.`)
+            .appendTo('#red-ui-editor')
+            .dialog({
+              modal: true,
+              autoOpen: true,
+              width: 700,
+              resizable: false,
+              classes: {
+                'ui-dialog': 'red-ui-editor-dialog',
+                'ui-widget-overlay': 'red-ui-editor-dialog'
+              },
+              title: `Delete thing ${thing.name}?`,
+              buttons: [
+                {
+                  id: 'red-ui-confirm-delete-without',
+                  text: 'Delete thing',
+                  class: 'primary',
+                  click: function () {
+                    socket.send(
+                      JSON.stringify({
+                        topic: 'delete-thing',
+                        payload: {
+                          thing: thing.name
+                        }
+                      })
+                    )
+                    $(this).dialog('destroy')
+                  }
+                },
+                {
+                  id: 'red-ui-confirm-cancel',
+                  text: 'Cancel',
+                  click: function () {
+                    $(this).dialog('destroy')
+                  }
+                }
+              ]
+            })
+        })
+        .hide()
+      RED.popover.tooltip(deleteButton, 'Delete thing')
+      identCol.hover(
+        () => deleteButton.show(),
+        () => deleteButton.hide()
+      )
+
       $('<span>', { class: 'red-ui-sidebar-context-property-storename' })
         .text(`${thing.type}${thing.id ? ` : ${thing.id}` : ''}`)
         .appendTo(identCol)
+
       if (thing.type == 'Group') {
         let list = $('<ul>', { class: 'red-ui-sidebar-context-property-storename' }).appendTo(
           identCol
         )
         thing.things.forEach(name => $('<li>').text(name).appendTo(list))
       }
+
       if (thing.status) {
         let status = $('<div>').css({ display: 'flex', alignItems: 'center' }).appendTo(identCol)
 
@@ -195,6 +253,7 @@
       }
 
       // STATE COLUMN
+
       let proxiedStates = Object.entries(thing.proxy || {}).reduce(
         (acc, [proxyThingName, { state: proxiedState }]) => {
           if (proxiedState)
@@ -205,6 +264,7 @@
         },
         {}
       )
+
       let state = Object.entries(thing.state)
       if (state.length) {
         state.forEach(([key, value]) => {
@@ -302,6 +362,7 @@
       }
 
       // PROPS COLUMN
+
       let props = Object.entries(thing.props)
       if (props.length)
         props.forEach(([key, value]) =>

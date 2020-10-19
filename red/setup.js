@@ -174,6 +174,11 @@ module.exports = function (RED) {
         console.error(e)
       }
       switch (msg.topic) {
+        case 'delete-thing':
+          delete getThings()[msg.payload.thing]
+          sendToWs(makeListPacket())
+          break
+
         case 'delete-state-key':
           let { thing: thingName, key, trigger } = msg.payload
           let thing = getThings()[thingName]
