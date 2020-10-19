@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {},
   "author": "hufftheweevil",
-  "license": "ISC",
+  "license": "MIT",
   "node-red": {
     "nodes": {
       "setup": "red/setup.js",
@@ -20,11 +20,16 @@
   },
   "keywords": [
     "node-red",
-    "iot"
+    "iot",
+    "state management"
   ],
   "homepage": "https://github.com/hufftheweevil/node-red-contrib-things",
   "repository": "github:hufftheweevil/node-red-contrib-things",
   "dependencies": {
     "ws": "^7.3.1"
+  },
+  "engines": {
+    "node": ">=12",
+    "npm": ">=3"
   }
 }

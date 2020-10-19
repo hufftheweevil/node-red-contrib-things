@@ -2,11 +2,16 @@
 
 A set of [Node-RED](https://github.com/node-red/node-red) nodes that uses an agnostic state management system to keep IOT device states and provide a uniform control system.
 
+[![GitHub release](https://img.shields.io/github/release/hufftheweevil/node-red-contrib-things.svg?style=flat-square)](https://github.com/hufftheweevil/node-red-contrib-things/releases) [![NPM Version](https://img.shields.io/npm/v/node-red-contrib-things.svg?style=flat-square)](https://www.npmjs.com/package/node-red-contrib-things) [![GitHub last commit](https://img.shields.io/github/last-commit/hufftheweevil/node-red-contrib-things.svg?style=flat-square)](https://github.com/hufftheweevil/node-red-contrib-things/commits/master) [![Github All Releases](https://img.shields.io/npm/dw/node-red-contrib-things)](https://github.com/hufftheweevil/node-red-contrib-things/releases)
+[![Node version](https://img.shields.io/node/v/node-red-contrib-things.svg?style=flat-square)](http://nodejs.org/download/) [![GitHub repo size in bytes](https://img.shields.io/github/repo-size/hufftheweevil/node-red-contrib-things.svg?style=flat-square)](https://github.com/hufftheweevil/node-red-contrib-things) [![npm](https://img.shields.io/npm/l/node-red-contrib-things.svg?style=flat-square)](https://github.com/hufftheweevil/node-red-contrib-things/blob/master/LICENSE)
+
 ### Purpose
 
 First, what these nodes do **not** do: These nodes have no connection outside of Node-RED. They will not directly receive any data, and they do not directly send any data.
 
 This is an internal system that will help manage your Node-RED project better, minimizing overhead and simplying flows. You provide the outside connections, wire them up correctly to these nodes, and you will have a super charged version of Node-RED. The system is designed to be as minimalistic as possible, while allowing for just about any use case.
+
+### Usage
 
 The core concept is to reduce all IOT devices into one common "langauge". With that, flows are more sensible and changes are easier. To facilitate the abstractness of this library, it is broken into four main segments/nodes.
 
@@ -15,7 +20,11 @@ The core concept is to reduce all IOT devices into one common "langauge". With t
 - Your logic may link into a **_command_** node, which will route to...
 - The **_process_** node, which will link back to the various platforms.
 
-The exact uses of these nodes can be customized to fit your needs.
+Exact usage can vary depending on your use-case. However, this system was designed with the following general concept in mind. This is an over simplified representation. The two connections in the middle represent some of the inner-workings of this system.
+
+![General usage overview](images/usage-overview.png)
+
+The **_get_**, **_list_**, and **_test_** nodes are to help assist in your flows.
 
 ### Inspiration
 
@@ -56,13 +65,13 @@ There are 8 nodes included: _setup_, _update_, _trigger_, _get_, _test_, _list_,
 
 ### setup
 
-Start with the _setup_ node; It is required for all things. Use a different _setup_ node for each `type` that you have. There are no inputs or outputs. All things listed will be initialized when the flows are deployed.
+All things must be created using this node. Use a different _setup_ node for each `type` that you have. It is up to you how you organize your `types`. But it is recommended to base them on the platforms you use - or in other words, based on how the devices connect in to and out of Node-RED. There are no inputs or outputs for this node. All things listed will be initialized when the flows are deployed.
 
 ##### Properties
 
 | Property        | Info                                                                                                                                                                                                                                                                                                                                                                                  |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Thing Type      | A type indentifier decided by you. They must be used consistently throughout your flows, including case.                                                                                                                                                                                                                                                                              |
+| Thing Type      | A type/platform identifier chosen by you. They must be used consistently throughout your flows, and they are case sensitive.                                                                                                                                                                                                                                                          |
 | Things          | Each thing is added using up to 5 parameters: Name, ID, Props, State, Proxy. All fields are equivilant to the properties defined above. Only Name is required. **Note**: If state is provided, it will only be used if the thing does not already exist (i.e. on Node-RED system startup, or a newly added thing). On re-deployment of flows, the last known state will be preserved. |
 | Status Function | The body of a function that will set the status of any trigger nodes for this thing. The function receives `props` and `state` variables. It should return an object with signature `{text, fill, shape}`, all optional. If the function returns `null`, a red ring will be used with the text "Unknown". If not set, defaults to `state => ({text: JSON.stringify(state)})`          |
 
@@ -196,12 +205,6 @@ A trigger-type node that will listen for messages from _command_ nodes for a spe
 | `topic`   | _string_ | The thing ID. (Not the name)             |
 | `payload` | any      | The command, passed from a command node. |
 | `thing`   | _object_ | The entire thing object.                 |
-
-## Usage
-
-Exact usage can vary depending on your use-case. However, this system was designed with the following general concept in mind. This is an over simplified representation. The two connections down in the middle represent all of the inner-workings of this system.
-
-![General usage overview](images/usage-overview.png)
 
 ## Proxy System
 
