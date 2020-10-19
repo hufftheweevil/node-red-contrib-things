@@ -1,12 +1,11 @@
 let { commandBus, now } = require('./shared')
 
 module.exports = function (RED) {
-
   function Node(config) {
     RED.nodes.createNode(this, config)
 
-    let node = this
-    let global = this.context().global
+    const node = this
+    const global = this.context().global
 
     function debug(msg) {
       if (config.debug) node.warn(msg)
@@ -26,11 +25,14 @@ module.exports = function (RED) {
       debug(`Input message: ${JSON.stringify(msg)}`)
 
       let name = config.name || msg.topic
-      let command = config.command === '' ? msg.payload
-        : RED.util.evaluateNodeProperty(config.command, config.commandType, node, msg)
+      let command =
+        config.command === ''
+          ? msg.payload
+          : RED.util.evaluateNodeProperty(config.command, config.commandType, node, msg)
 
       if (!name) return err(`Thing name not specified in properties or input`)
-      if (typeof command == 'undefined' || command === '') return err(`Command not specified in properties or input`)
+      if (typeof command == 'undefined' || command === '')
+        return err(`Command not specified in properties or input`)
 
       handleCommand(name, command)
 
@@ -63,25 +65,36 @@ module.exports = function (RED) {
           node.warn(`Unable to handle proxies for array type commands`)
         } else if (typeof command !== 'object') {
           // Simple command type (i.e. string, number, boolean)
-          command = command.toString()  // All proxy commands will be keys of an object, hence must be a string
+          command = command.toString() // All proxy commands will be keys of an object, hence must be a string
           let proxied = false
-          proxy.forEach(([proxyThingName, { command: commandMap }]) => commandMap && Object.entries(commandMap).forEach(([thisCommand, thatCommand]) => {
-            if (command == thisCommand) {
-              debug(`Using command proxy from ${name} to ${proxyThingName} for '${thisCommand}'=>'${thatCommand}'`)
-              handleCommand(proxyThingName, thatCommand, { origThing: thing, origCommand: command })
-              // TODO: If proxied more than once, will lose true original thing/command. Should be passed in a tree or something
-              proxied = true
-            }
-          }))
+          proxy.forEach(
+            ([proxyThingName, { command: commandMap }]) =>
+              commandMap &&
+              Object.entries(commandMap).forEach(([thisCommand, thatCommand]) => {
+                if (command == thisCommand) {
+                  debug(
+                    `Using command proxy from ${name} to ${proxyThingName} for '${thisCommand}'=>'${thatCommand}'`
+                  )
+                  handleCommand(proxyThingName, thatCommand, {
+                    origThing: thing,
+                    origCommand: command
+                  })
+                  // TODO: If proxied more than once, will lose true original thing/command. Should be passed in a tree or something
+                  proxied = true
+                }
+              })
+          )
           if (proxied) return
           debug(`No proxy found for command ${command}`)
         } else {
           // Complex command type (i.e. object)
-          passCommand = { ...command }  // Shallow copy, so that keys can be deleted if used by proxy
+          passCommand = { ...command } // Shallow copy, so that keys can be deleted if used by proxy
           let proxiedKeys = []
           proxy.forEach(([proxyThingName, { command: commandMap }]) => {
             if (commandMap) {
-              let proxyMap = Object.entries(commandMap).filter(([thisCommand]) => command.hasOwnProperty(thisCommand))
+              let proxyMap = Object.entries(commandMap).filter(([thisCommand]) =>
+                command.hasOwnProperty(thisCommand)
+              )
 
               if (proxyMap.length) {
                 let proxyCommand = {}
@@ -89,8 +102,15 @@ module.exports = function (RED) {
                   proxyCommand[thatCommand] = command[thisCommand]
                   proxiedKeys.push(thisCommand)
                 })
-                debug(`Using command proxy from ${name} to ${proxyThingName} for ${JSON.stringify(proxyCommand)}`)
-                handleCommand(proxyThingName, proxyCommand, { origThing: thing, origCommand: command })
+                debug(
+                  `Using command proxy from ${name} to ${proxyThingName} for ${JSON.stringify(
+                    proxyCommand
+                  )}`
+                )
+                handleCommand(proxyThingName, proxyCommand, {
+                  origThing: thing,
+                  origCommand: command
+                })
                 // TODO: If proxied more than once, will lose true original thing/command. Should be passed in a tree or something
               }
             }
@@ -101,7 +121,6 @@ module.exports = function (RED) {
       }
 
       emitCommand({ thing, command: passCommand, ...meta })
-
     }
 
     function emitCommand(msg) {

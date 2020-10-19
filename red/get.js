@@ -1,17 +1,16 @@
 module.exports = function (RED) {
-
   function Node(config) {
     RED.nodes.createNode(this, config)
 
-    let node = this
+    const node = this
+    const global = this.context().global
 
     node.on('input', function (msg) {
-
       let errors = []
 
       // Get reference to thing
       let name = config.name || msg.topic
-      let thing = this.context().global.get('things')[name]
+      let thing = global.get('things')[name]
 
       // Check for thing
       if (!thing) {
@@ -26,7 +25,6 @@ module.exports = function (RED) {
 
       // For each prop configured...
       config.props.forEach(({ msgProp, thingProp, path }) => {
-
         if (!msgProp) return
 
         try {
@@ -52,7 +50,6 @@ module.exports = function (RED) {
         node.send(msg)
       }
     })
-
   }
   RED.nodes.registerType('Thing Get', Node)
 }

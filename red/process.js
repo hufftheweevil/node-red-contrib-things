@@ -1,11 +1,10 @@
 let { commandBus, now } = require('./shared')
 
 module.exports = function (RED) {
-
   function Node(config) {
     RED.nodes.createNode(this, config)
 
-    let node = this
+    const node = this
 
     function debug(msg) {
       if (config.debug) node.warn(msg)
@@ -15,9 +14,12 @@ module.exports = function (RED) {
     let action = ({ thing, command, origThing, origCommand }) => {
       debug(`Received command for ${thing.type}/${thing.id}: ${JSON.stringify(command)}`)
 
-      let topic = typeof config.topic !== 'string' ? thing.id // Default
-        : config.topic.startsWith('$') ? thing[config.topic.slice(1)] // Property
-          : config.topic  // Custom string
+      let topic =
+        typeof config.topic !== 'string'
+          ? thing.id // Default
+          : config.topic.startsWith('$')
+          ? thing[config.topic.slice(1)] // Property
+          : config.topic // Custom string
 
       node.send({
         topic,

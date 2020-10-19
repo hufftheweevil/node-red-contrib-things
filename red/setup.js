@@ -1,13 +1,13 @@
 let { stateBus, pushUnique } = require('./shared')
 const { wss, sendToWs } = require('../ws')
 
-let thingsRef = {} // Set just in case no setup nodes are enabled
-
 module.exports = function (RED) {
+  let globalRef
+
   function Node(config) {
     RED.nodes.createNode(this, config)
 
-    let node = this
+    const node = this
 
     node.status({
       shape: 'dot',
@@ -17,9 +17,9 @@ module.exports = function (RED) {
 
     // Initialize global.things if it doesn't exist
     const global = this.context().global
+    globalRef = global
     if (!global.get('things')) global.set('things', {})
     const THINGS = global.get('things')
-    thingsRef = THINGS
 
     let errors = 0
 
@@ -71,7 +71,9 @@ module.exports = function (RED) {
           props: newThing.props ? JSON.parse(newThing.props) : {},
           _status: config.statusFunction
             ? new Function('state', 'props', config.statusFunction)
-            : (function () { return { text: JSON.stringify(this.state) } }),
+            : function () {
+                return { text: JSON.stringify(this.state) }
+              },
           proxy: JSON.parse(newThing.proxy || null) || undefined,
           parents
         }
@@ -81,11 +83,16 @@ module.exports = function (RED) {
         Object.defineProperty(thing, 'status', {
           get: function () {
             try {
-              return this._status(RED.util.cloneMessage(this.state), RED.util.cloneMessage(this.props)) || {
-                fill: 'red',
-                shape: 'ring',
-                text: 'Unknown'
-              }
+              return (
+                this._status(
+                  RED.util.cloneMessage(this.state),
+                  RED.util.cloneMessage(this.props)
+                ) || {
+                  fill: 'red',
+                  shape: 'ring',
+                  text: 'Unknown'
+                }
+              )
             } catch (err) {
               node.warn(`Unable to generate status for type ${config.thingType}: ${err}`)
               return {}
@@ -113,7 +120,9 @@ module.exports = function (RED) {
                     const THINGS = global.get('things')
                     let value = THINGS[proxyThingName] && THINGS[proxyThingName].state[to]
                     if (config.debug)
-                      node.warn(`Calling getter for '${name}'.state.${from} -- Will return '${value}'`)
+                      node.warn(
+                        `Calling getter for '${name}'.state.${from} -- Will return '${value}'`
+                      )
                     return value
                   },
                   enumerable: true,
@@ -140,13 +149,6 @@ module.exports = function (RED) {
       stateBus.emit(newThing.name)
     })
 
-    // Sort things first (only for ease of access in context tab)
-    const ABC_THINGS = {}
-    Object.keys(THINGS)
-      .sort()
-      .forEach(key => (ABC_THINGS[key] = THINGS[key]))
-    global.set('things', ABC_THINGS)
-
     node.status({
       shape: 'dot',
       fill: errors ? 'red' : 'green',
@@ -157,13 +159,13 @@ module.exports = function (RED) {
 
   // -------------------------------------------------------------
 
-  let getThingsList = () => ({ topic: 'list', payload: Object.values(thingsRef) })
+  let getThings = () => (globalRef && globalRef.get('things')) || {}
+  let makeListPacket = () => ({ topic: 'list', payload: Object.values(getThings()) })
 
   wss.on('connection', socket => {
     socket.on('message', msg => {
-
       // When client requests list of things, send it back
-      if (msg == 'list') return socket.send(JSON.stringify(getThingsList()))
+      if (msg == 'list') return socket.send(JSON.stringify(makeListPacket()))
 
       // Must be JSON msg
       try {
@@ -173,32 +175,32 @@ module.exports = function (RED) {
       }
       switch (msg.topic) {
         case 'delete-state-key':
-          let {thing, key, trigger} = msg.payload
-          delete thingsRef[thing].state[key]
-          if (trigger) stateBus.emit(thing)
-          sendToWs({ topic: 'update', payload: thingsRef[thing] })
+          let { thing: thingName, key, trigger } = msg.payload
+          let thing = getThings()[thingName]
+          delete thing.state[key]
+          if (trigger) stateBus.emit(thingName)
+          sendToWs({ topic: 'update', payload: thing })
           break
       }
     })
   })
 
   RED.events.on('runtime-event', event => {
-    
     // On re-deployment
     if (event.id == 'runtime-deploy') {
-      
       // Cleanup list of things
       let allThingsSetup = []
       RED.nodes.eachNode(setupConfig => {
         if (RED.nodes.getNode(setupConfig.id) && setupConfig.type == 'Thing Setup')
           allThingsSetup.push(...setupConfig.things.map(t => t.name))
       })
-      Object.values(thingsRef)
+      let things = getThings()
+      Object.values(things)
         .filter(t => !allThingsSetup.includes(t.name))
-        .forEach(t => delete thingsRef[t.name])
+        .forEach(t => delete things[t.name])
 
       // Send list of things to any connected clients
-      sendToWs(getThingsList())
+      sendToWs(makeListPacket())
     }
   })
 }

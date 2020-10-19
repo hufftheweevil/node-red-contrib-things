@@ -5,11 +5,12 @@ module.exports = function (RED) {
     RED.nodes.createNode(this, config)
 
     const node = this
+    const global = this.context().global
 
     node.on('input', function (msg) {
       // Get reference to thing
       let name = config.name || msg.topic
-      let thing = this.context().global.get('things')[name]
+      let thing = global.get('things')[name]
 
       // Check for thing
       if (!thing) {

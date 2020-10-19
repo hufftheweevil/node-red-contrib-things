@@ -5,7 +5,7 @@ module.exports = function (RED) {
     RED.nodes.createNode(this, config)
 
     const node = this
-    const GLOBAL = this.context().global
+    const global = this.context().global
 
     // This will setup a listener on the bus to trigger
     // off of any update node that updates this thing's
@@ -23,7 +23,7 @@ module.exports = function (RED) {
         this.init = true
       }
       get thing() {
-        let things = GLOBAL.get('things')
+        let things = global.get('things')
         return things ? things[this.name] : { state: {} } // Placeholder if called before setup in single mode
       }
       getState() {
@@ -94,7 +94,7 @@ module.exports = function (RED) {
       // Instant timeout causes this to run async (after all setup)
       setTimeout(() => {
         // Get list of all things and setup test
-        const THINGS = Object.values(GLOBAL.get('things'))
+        const THINGS = Object.values(global.get('things'))
         let compareValue = RED.util.evaluateNodeProperty(config.multiValue, config.multiTest)
         let test =
           compareValue instanceof RegExp

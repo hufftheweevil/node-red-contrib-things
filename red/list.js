@@ -5,10 +5,11 @@ module.exports = function (RED) {
     RED.nodes.createNode(this, config)
 
     const node = this
+    const global = this.context().global
 
     node.on('input', function (msg) {
       // Get list of things
-      let list = Object.values(this.context().global.get('things'))
+      let list = Object.values(global.get('things'))
 
       // For each rule, filter the list
       config.rules.forEach(rule => {

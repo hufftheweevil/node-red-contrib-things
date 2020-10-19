@@ -5,12 +5,13 @@ module.exports = function (RED) {
   function Node(config) {
     RED.nodes.createNode(this, config)
 
-    let node = this
+    const node = this
+    const global = this.context().global
 
     let heardFrom = []
 
     node.on('input', function (msg) {
-      const THINGS = this.context().global.get('things')
+      const THINGS = global.get('things')
 
       // Name should be set in properties, or provided on input.
       // Property takes precedence.
