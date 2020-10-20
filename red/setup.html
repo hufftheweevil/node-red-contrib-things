@@ -450,7 +450,8 @@
               let thingName = $('<input/>', {
                 class: 'node-input-thing-name',
                 type: 'text',
-                value: thing.name
+                value: thing.name,
+                placeholder: 'Group Name'
               })
                 .css('width', '20%')
                 .css('vertical-align', 'top')
@@ -477,7 +478,8 @@
                         .appendTo(subrow)
                     },
                     removable: true,
-                    sortable: true
+                    sortable: true,
+                    addButton: 'add thing in this group'
                   })
 
                 thing.things.forEach(childThing => {
@@ -509,7 +511,7 @@
             },
             removable: true,
             sortable: true,
-            addButton: 'add thing'
+            addButton: isGroupType ? 'add group thing' : 'add thing'
           })
 
         $('#node-input-thing-container').editableList('empty')
