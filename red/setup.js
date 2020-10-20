@@ -62,12 +62,17 @@ module.exports = function (RED) {
         if (config.debug)
           node.warn(`Setting up ${name} with parents ${parents.length ? parents : '<none>'}`)
 
+        // Build state
+        let state = {}
+        if (newThing.state) Object.assign(state, JSON.parse(newThing.state))
+        if (oldThing) Object.assign(state, oldThing.state)
+
         // Create thing
         THINGS[name] = {
           id,
           name,
           type: config.thingType,
-          state: (oldThing && oldThing.state) || (newThing.state ? JSON.parse(newThing.state) : {}),
+          state,
           props: newThing.props ? JSON.parse(newThing.props) : {},
           _status: config.statusFunction
             ? new Function('state', 'props', config.statusFunction)
