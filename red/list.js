@@ -57,6 +57,7 @@ module.exports = function (RED) {
       else list.forEach(appendAndSend)
 
       function appendAndSend(value) {
+        msg = RED.util.cloneMessage(msg)
         RED.util.setObjectProperty(msg, config.property, value, true)
         node.send(msg)
       }
