@@ -94,18 +94,25 @@ module.exports = function (RED) {
       // Instant timeout causes this to run async (after all setup)
       setTimeout(() => {
         // Get list of all things and setup test
-        const THINGS = Object.values(global.get('things'))
+        const things = global.get('things')
+        const THINGS = Object.values(things)
         let compareValue = RED.util.evaluateNodeProperty(config.multiValue, config.multiTest)
         let test =
           compareValue instanceof RegExp
             ? value => compareValue.test(value)
             : value => compareValue == value
 
+        function recurFindThings(name) {
+          let thing = things[name]
+          return thing.type == 'Group' ? thing.things.flatMap(recurFindThings) : [thing.name]
+        }
+
         // Generate list of things that match conditions
         watchers =
           config.multiKey == 'group'
             ? THINGS.filter(thing => thing.type == 'Group' && test(thing.name))
-                .reduce((list, group) => [...list, ...group.things], [])
+                .flatMap(group => recurFindThings(group.name))
+                // .reduce((list, group) => [...list, ...nameOrThings(group.name)], [])
                 .map(thingName => new ThingWatcher(thingName))
             : THINGS.filter(thing => {
                 let thingValue = RED.util.getObjectProperty(thing, config.multiKey)
