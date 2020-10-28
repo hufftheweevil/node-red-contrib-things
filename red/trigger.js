@@ -103,7 +103,7 @@ module.exports = function (RED) {
             : value => compareValue == value
 
         function recurFindThings(name) {
-          let thing = things[name]
+          let thing = things[name] || {}
           return thing.type == 'Group' ? thing.things.flatMap(recurFindThings) : [thing.name]
         }
 
