@@ -773,7 +773,7 @@
             .appendTo(row)
             .typedInput({
               types: ['str', 'num', 'bool', 'json', 're'],
-              default: getType(data.value)
+              default: getType(data.value || '')
             })
             .typedInput('value', typedToString(data.value))
         }
@@ -1130,6 +1130,9 @@
       showMain()
     },
     oneditsave: function () {
+      let back = $('#node-button-back')
+      if (back.is(':visible')) back.click()
+
       let things = []
       $(`#node-input-list-things`)
         .editableList('items')
