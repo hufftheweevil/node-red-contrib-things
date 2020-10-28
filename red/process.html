@@ -5,7 +5,7 @@
     color: '#D8BFD8',
     defaults: {
       nodeName: { value: '' },
-      thingType: { value: '' },
+      thingType: { value: '', required: true },
       topic: { value: '$id' },
       debug: { value: false }
     },
@@ -51,39 +51,42 @@
 
 <script type="text/html" data-template-name="Thing Process">
   <div class="form-row">
-      <label for="node-input-nodeName"><i class="fa fa-tag"></i> Node Name</label>
-      <input type="text" id="node-input-nodeName" placeholder="Node Name">
+    <label for="node-input-nodeName"><i class="fa fa-tag"></i> Node Name</label>
+    <input type="text" id="node-input-nodeName" placeholder="Node Name" />
   </div>
   <div class="form-row" id="row-type">
-      <label for="node-input-thingType"><i class="fa fa-cubes"></i> Thing Type</label>
-      <input type="text" id="node-input-thingType" placeholder="Thing Type">
+    <label for="node-input-thingType"><i class="fa fa-cubes"></i> Thing Type</label>
+    <input type="text" id="node-input-thingType" placeholder="Thing Type" />
   </div>
   <div class="form-row">
     <label for="node-input-topicField"><i class="fa fa-envelope-o"></i> Topic</label>
-    <input type="text" id="node-input-topicField">
+    <input type="text" id="node-input-topicField" />
   </div>
   <div class="form-row">
     <label for="node-input-output"><i class="fa fa-bug"></i> Debug</label>
-    <input type="checkbox" id="node-input-debug" style="width:min-content">
+    <input type="checkbox" id="node-input-debug" style="width:min-content" />
   </div>
 </script>
 
 <script type="text/html" data-help-name="Thing Process">
-  <p>A node to catch all commands intended to go to a specific <code>thing type</code>. This node should be followed by a node that will send the actual command to the physical thing.</p>
+  <p>
+    A node to catch all commands intended to go to a specific <code>thing type</code>. This node
+    should be followed by a node that will send the actual command to the physical thing.
+  </p>
 
   <h3>Properties</h3>
-    <dl class="message-properties">
-      <dt class="required">Thing Type</dt>
-      <dd> The <i>thing</i> type that this node should handle</dd>
-      <dt class="required">Topic</dt>
-      <dd> Configuration of output topic. By default, uses <code>thing.id</code></dd>
-    </dl>
+  <dl class="message-properties">
+    <dt class="required">Thing Type</dt>
+    <dd>The <i>thing</i> type that this node should handle</dd>
+    <dt class="required">Topic</dt>
+    <dd>Configuration of output topic. By default, uses <code>thing.id</code></dd>
+  </dl>
 
   <h3>Outputs</h3>
-    <dl class="message-properties">
-      <dt>topic <span class="property-type">string</span></dt>
-      <dd> The <i>thing</i> ID, name, or other custom string set in properties </dd>
-      <dt>payload <span class="property-type">any</span></dt>
-      <dd> The command (as provided from the <code>command</code> node) </dd>
-    </dl>
+  <dl class="message-properties">
+    <dt>topic <span class="property-type">string</span></dt>
+    <dd>The <i>thing</i> ID, name, or other custom string set in properties</dd>
+    <dt>payload <span class="property-type">any</span></dt>
+    <dd>The command (as provided from the <code>command</code> node)</dd>
+  </dl>
 </script>
