@@ -51,76 +51,75 @@ module.exports = function (RED) {
       // Check if group
       if (thing.type == 'Group') {
         debug('Thing is a Group, sending to each:', thing.things)
-        thing.things.forEach(subName => handleCommand(subName, command))
+        thing.things.forEach(childName => handleCommand(childName, command))
         return
       }
 
       // Check for proxies
-      let passCommand = command
-      let proxy = Object.entries(thing.proxy || {})
-      if (proxy.length) {
-        debug(`Checking proxy for ${name}; Type of original command: ${typeof command}`)
-        if (Array.isArray(command)) {
-          // Unable to deal with array commands at this time
-          node.warn(`Unable to handle proxies for array type commands`)
-        } else if (typeof command !== 'object') {
-          // Simple command type (i.e. string, number, boolean)
-          command = command.toString() // All proxy commands will be keys of an object, hence must be a string
-          let proxied = false
-          proxy.forEach(
-            ([proxyThingName, { command: commandMap }]) =>
-              commandMap &&
-              Object.entries(commandMap).forEach(([thisCommand, thatCommand]) => {
-                if (command == thisCommand) {
-                  debug(
-                    `Using command proxy from ${name} to ${proxyThingName} for '${thisCommand}'=>'${thatCommand}'`
-                  )
-                  handleCommand(proxyThingName, thatCommand, {
-                    origThing: thing,
-                    origCommand: command
-                  })
-                  // TODO: If proxied more than once, will lose true original thing/command. Should be passed in a tree or something
-                  proxied = true
-                }
-              })
-          )
-          if (proxied) return
-          debug(`No proxy found for command ${command}`)
-        } else {
-          // Complex command type (i.e. object)
-          passCommand = { ...command } // Shallow copy, so that keys can be deleted if used by proxy
-          let proxiedKeys = []
-          proxy.forEach(([proxyThingName, { command: commandMap }]) => {
-            if (commandMap) {
-              let proxyMap = Object.entries(commandMap).filter(([thisCommand]) =>
-                command.hasOwnProperty(thisCommand)
-              )
+      let proxies = (thing.proxy || []).filter(proxyDef => proxyDef.type == 'command')
+      if (!proxies.length) return doEmit()
 
-              if (proxyMap.length) {
-                let proxyCommand = {}
-                proxyMap.forEach(([thisCommand, thatCommand]) => {
-                  proxyCommand[thatCommand] = command[thisCommand]
-                  proxiedKeys.push(thisCommand)
-                })
-                debug(
-                  `Using command proxy from ${name} to ${proxyThingName} for ${JSON.stringify(
-                    proxyCommand
-                  )}`
-                )
-                handleCommand(proxyThingName, proxyCommand, {
-                  origThing: thing,
-                  origCommand: command
-                })
-                // TODO: If proxied more than once, will lose true original thing/command. Should be passed in a tree or something
-              }
-            }
-          })
-          if (proxiedKeys.length) proxiedKeys.forEach(key => delete passCommand[key])
-          if (Object.keys(passCommand).length == 0) return debug('All commands proxied')
-        }
+      if (Array.isArray(command)) {
+        // Unable to deal with array commands at this time
+        node.warn(
+          `Unable to handle proxies for array type commands. Command will be sent to same thing. If this is intended, then everything is ok.`
+        )
+        return doEmit()
       }
 
-      emitCommand({ thing, command: passCommand, ...meta })
+      if (typeof command === 'object') {
+        // Normal object - need to go through proxies with command-key type
+        let origCommand = { ...command }
+        let proxyCommands = {}
+        proxies
+          .find(pd => pd.cmdType == 'key')
+          .forEach(pd => {
+            if (command.hasOwnProperty(pd.this)) {
+              proxyCommands[pd.child] = proxyCommands[pd.child] || {}
+              proxyCommands[pd.child][pd.that == null ? pd.this : pd.that] = command[pd.this]
+              delete command[pd.this]
+            }
+          })
+        // Send commands to all child things that have proxies
+        Object.entries(proxyCommands).forEach(([childThing, thatCommand]) => {
+          debug(
+            `Using command proxy from ${name} to ${childThing} for ${JSON.stringify(thatCommand)}`
+          )
+          handleCommand(childThing, thatCommand, { origThing: thing, origCommand, meta })
+        })
+        // If any keys left, send to same thing
+        if (Object.keys(command).length) doEmit()
+        return
+      }
+
+      // Primitive type: string | number | boolean
+      let proxyTest =
+        typeof command === 'string'
+          ? pd =>
+              (pd.cmdType == 'str' && pd.this == command) ||
+              (pd.cmdType == 'test' && new RegExp(pd.this).test(command))
+          : typeof command === 'number'
+          ? pd => pd.cmdType == 'num' && pd.this == command
+          : typeof command === 'boolean'
+          ? pd => pd.cmdType == 'bool' && (pd.this == 'either' || pd.this == command)
+          : null
+      let proxy = proxyTest && proxies.find(proxyTest)
+      if (proxy) {
+        let thatCommand = proxy.that == null ? command : proxy.that
+        debug(
+          `Using command proxy from ${name} to ${proxy.child} for '${command}'=>'${thatCommand}'`
+        )
+        handleCommand(proxy.child, thatCommand, {
+          origThing: thing,
+          origCommand: command,
+          meta
+        })
+        return
+      }
+
+      function doEmit() {
+        emitCommand({ thing, command, ...meta })
+      }
     }
 
     function emitCommand(msg) {

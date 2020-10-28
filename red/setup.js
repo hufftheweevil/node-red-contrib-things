@@ -24,26 +24,78 @@ module.exports = function (RED) {
     let errors = 0
 
     config.things.forEach((newThing, i) => {
-      if (!newThing.name) {
+      // ADJUST FORMATTING FROM OLD VERSIONS
+      // This reformatting will only be temporary.
+      // Must open node editor for each node to make permanent.
+      ;['props', 'state', 'proxy'].forEach(key => {
+        if (typeof newThing[key] == 'string') newThing[key] = JSON.parse(newThing[key] || '{}')
+      })
+      if (newThing.proxy && !Array.isArray(newThing.proxy)) {
+        let array = []
+        Object.entries(newThing.proxy).forEach(([child, proxies]) =>
+          ['state', 'command'].forEach(type =>
+            Object.entries(proxies[type] || {}).forEach(([thisKey, that]) => {
+              if (thisKey == that) that = null
+              let proxyDef = { child, type, this: thisKey, that }
+              if (type == 'command') proxyDef.cmdType = 'str'
+              array.push(proxyDef)
+            })
+          )
+        )
+        newThing.proxy = array
+      }
+      // END RE-FORMATTING
+
+      let { name } = newThing
+
+      if (name === '') {
         node.error(`Thing name missing during setup (${config.thingType}:${i})`)
         return errors++
       }
 
       if (config.thingType == 'Group') {
-        let { name, things } = newThing
+        let { things } = newThing
 
         THINGS[name] = {
           name,
           type: 'Group',
           things,
-          status: () => {}, // Placeholder; TODO: Somehow combine status of all things in group
-          state: {}, // Placeholder (without it, can cause crash)
-          props: {} // Placeholder (without it, can cause crash)
+          props: {}, // Placeholder (without it, can cause crash)
+          state: {}
         }
+
+        // Build state getters
+        Object.entries(newThing.state || {}).forEach(([key, opts]) => {
+          Object.defineProperty(THINGS[name].state, key, {
+            get: function () {
+              let values = THINGS[name].things
+                .map(childName => THINGS[childName])
+                .map(child => (opts.use === null ? child.state : child.state[opts.use]))
+                .filter(v => v !== null && v !== undefined)
+              switch (opts) {
+                case 'anyTrue':
+                  return values.some(v => v === true)
+                case 'allTrue':
+                  return values.every(v => v === true)
+                case 'anyFalse':
+                  return values.some(v => v === false)
+                case 'anyFalse':
+                  return values.every(v => v === false)
+                case 'min':
+                  return Math.min(...values)
+                case 'max':
+                  return Math.max(...values)
+                case 'fn':
+                  return new Function('values', opts.fn)(values)
+              }
+            },
+            enumerable: true
+          })
+        })
       } else {
         // This means config.thingType != 'Group'
 
-        let { name, id } = newThing
+        let { id } = newThing
 
         if (id.trim() === '') id = name
         else if (!isNaN(id)) id = +id
@@ -56,7 +108,8 @@ module.exports = function (RED) {
           .filter(t => t.proxy)
           .forEach(possibleParent => {
             let proxyDef = possibleParent.proxy[name]
-            if (proxyDef && proxyDef.state) parents.push(possibleParent.name)
+            if (proxyDef && proxyDef.some(pd => pd.type == 'state'))
+              parents.push(possibleParent.name)
           })
 
         if (config.debug)
@@ -64,7 +117,7 @@ module.exports = function (RED) {
 
         // Build state
         let state = {}
-        if (newThing.state) Object.assign(state, JSON.parse(newThing.state))
+        if (newThing.state) Object.assign(state, newThing.state)
         if (oldThing) Object.assign(state, oldThing.state)
 
         // Create thing
@@ -73,86 +126,81 @@ module.exports = function (RED) {
           name,
           type: config.thingType,
           state,
-          props: newThing.props ? JSON.parse(newThing.props) : {},
-          _status: config.statusFunction
-            ? new Function('state', 'props', config.statusFunction)
-            : function () {
-                return { text: JSON.stringify(this.state) }
-              },
-          proxy: JSON.parse(newThing.proxy || null) || undefined,
+          props: newThing.props ? newThing.props : {},
+          proxy: newThing.proxy || [],
           parents
         }
-        let thing = THINGS[name]
 
-        // Make status getter
-        Object.defineProperty(thing, 'status', {
-          get: function () {
-            try {
-              return (
-                this._status(
-                  RED.util.cloneMessage(this.state),
-                  RED.util.cloneMessage(this.props)
-                ) || {
-                  fill: 'red',
-                  shape: 'ring',
-                  text: 'Unknown'
-                }
-              )
-            } catch (err) {
-              node.warn(`Unable to generate status for type ${config.thingType}: ${err}`)
-              return {}
-            }
-          },
-          enumerable: true,
-          configurable: true
-        })
-
-        // If proxies are specified
-        if (newThing.proxy) {
-          //
-          // For each proxied thing
-          Object.entries(JSON.parse(newThing.proxy)).forEach(
-            ([proxyThingName, { state: stateMap }]) => {
-              if (!stateMap) return
-              //
-              // Link states with getter
-              Object.entries(stateMap).forEach(([from, to]) => {
-                delete thing.state[from] // Clear it first if it exists
-                Object.defineProperty(thing.state, from, {
-                  get: () => {
-                    // This check for the thing is mostly just in case it attempts to
-                    // use this state to update the status before the child has been setup
-                    const THINGS = global.get('things')
-                    let value = THINGS[proxyThingName] && THINGS[proxyThingName].state[to]
-                    if (config.debug)
-                      node.warn(
-                        `Calling getter for '${name}'.state.${from} -- Will return '${value}'`
-                      )
-                    return value
-                  },
-                  enumerable: true,
-                  configurable: true
-                })
-              })
-
-              // Find proxied thing (i.e. the child)
-              let proxyThing = THINGS[proxyThingName]
-              if (proxyThing) {
-                // If it is already setup, note parent in proxied thing
+        // For each proxied definition
+        THINGS[name].proxy
+          .filter(proxyDef => proxyDef.type == 'state')
+          .forEach(proxyDef => {
+            // Link state with getter
+            let proxyName = proxyDef.child
+            let from = proxyDef.this
+            let to = proxyDef.that
+            // delete THINGS[name].state[from] // Clear it first if it exists
+            Object.defineProperty(THINGS[name].state, from, {
+              get: () => {
+                // This check for the thing is mostly just in case it attempts to
+                // use this state to update the status before the child has been setup
+                const THINGS = global.get('things')
+                let value = THINGS[proxyName] && THINGS[proxyName].state[to]
                 if (config.debug)
-                  node.warn(`Adding parent ${name} to proxy child ${proxyThing.name}`)
-                pushUnique(proxyThing.parents, name)
-              }
+                  node.warn(`Calling getter for '${name}'.state.${from} -- Will return '${value}'`)
+                return value
+              },
+              enumerable: true,
+              configurable: true
+            })
+
+            // Find proxied thing (i.e. the child)
+            let proxyThing = THINGS[proxyName]
+            if (proxyThing) {
+              // If it is already setup, note parent in proxied thing
+              if (config.debug) node.warn(`Adding parent ${name} to proxy child ${proxyThing.name}`)
+              pushUnique(proxyThing.parents, name)
             }
-          )
-        } // End if proxies are specified
+          })
       } // End if config.thingType != 'Group'
+
+      // Rest is common between Group and Non-Group
+
+      // Save status function
+      THINGS[name]._status = config.statusFunction
+        ? new Function('state', 'props', config.statusFunction)
+        : function (state) {
+            return { text: JSON.stringify(state) }
+          }
+
+      // Make status getter
+      Object.defineProperty(THINGS[name], 'status', {
+        get: function () {
+          try {
+            return (
+              this._status(
+                RED.util.cloneMessage(this.state),
+                RED.util.cloneMessage(this.props)
+              ) || {
+                fill: 'red',
+                shape: 'ring',
+                text: 'Unknown'
+              }
+            )
+          } catch (err) {
+            node.warn(`Unable to generate status for type ${config.thingType}: ${err}`)
+            return {}
+          }
+        },
+        enumerable: true,
+        configurable: true
+      })
 
       // Emit to the bus so that all other nodes that
       // are configured to output on changes/updates
       // will be triggered. (And update their status)
       stateBus.emit(newThing.name)
-    })
+    }) // End of forEach newThing
 
     node.status({
       shape: 'dot',
