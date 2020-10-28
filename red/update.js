@@ -58,7 +58,11 @@ module.exports = function (RED) {
       sendToWs({ topic: 'update', payload: thing })
 
       // Check for parents and emit for them too
-      thing.parents && thing.parents.forEach(parent => stateBus.emit(parent))
+      thing.parents &&
+        thing.parents.forEach(parent => {
+          stateBus.emit(parent)
+          sendToWs({ topic: 'update', payload: THINGS[parent] })
+        })
 
       // If configured with `type`, update status
       if (config.thingType) {
