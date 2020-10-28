@@ -29,6 +29,9 @@
       return this.nodeName || this.name ? 'node_label_italic' : ''
     },
     oneditprepare: function () {
+      // Following variables are declared globally in test.html
+      // operators, thingPropsTypes, basicTypes, typeTypes
+
       let StateType = {
         value: 'str',
         label: 'state.',
@@ -53,7 +56,10 @@
         }
       })
 
-      $('#node-input-multi-1').typedInput({
+      let multi1 = $('#node-input-multi-1')
+      let multi2 = $('#node-input-multi-2')
+
+      multi1.typedInput({
         default: this.multiKey || 'name',
         types: [
           { value: 'name', label: 'name', hasValue: false },
@@ -75,44 +81,50 @@
       ]
 
       if (this.multiKey.startsWith('props.')) {
-        $('#node-input-multi-1').typedInput('type', 'props.')
-        $('#node-input-multi-1').typedInput('value', this.multiKey.slice(6))
+        multi1.typedInput('type', 'props.')
+        multi1.typedInput('value', this.multiKey.slice(6))
 
-        $('#node-input-multi-2').typedInput({ types: typesForProps })
+        multi2.typedInput({ types: typesForProps })
       } else {
-        $('#node-input-multi-2').typedInput({ types: typesForNonProps })
+        multi2.typedInput({ types: typesForNonProps })
       }
-      $('#node-input-multi-1').on('change', function (xx, valType) {
+      multi1.on('change', function (xx, valType) {
         let newTypes = valType == 'props.' ? typesForProps : typesForNonProps
-        $('#node-input-multi-2').typedInput('types', newTypes)
+        multi2.typedInput('types', newTypes)
       })
 
-      $('#node-input-multi-2').typedInput('type', this.multiTest)
-      $('#node-input-multi-2').typedInput('value', this.multiValue)
+      multi2.typedInput('type', this.multiTest)
+      multi2.typedInput('value', this.multiValue)
 
       // TRIGGER PATH
 
+      let compare = $('#node-input-outputTest-compare')
+      let forVal = $('#node-input-outputTest-for')
+
+      operators
+        .filter(opt => !/btwn|istype/.test(opt.v))
+        .forEach(opt => $('<option>', { value: opt.v }).text(opt.t).appendTo(compare))
+
+      let optShide = val =>
+        forVal.typedInput(operators.find(o => o.v == val).hasValue === false ? 'hide' : 'show')
+
       $('#node-input-outputPath').typedInput({ types: [StateType] })
-      $('#node-input-outputTest-for')
-        .typedInput({ types: basicTypes, default: 'str' })
-        .typedInput('width', '140px')
+      forVal.typedInput({ types: basicTypes, default: 'str' }).typedInput('width', '140px')
       if (this.output != 'path') $('#row-outputPath, #row-outputTest, #row-ignoreInit').hide()
 
       if (this.outputTest) {
         $('#node-input-outputTest-checkbox').prop('checked', true)
-        $('#node-input-outputTest-compare').val(this.outputTest.compare)
-        $('#node-input-outputTest-for').typedInput('type', this.outputTest.type)
-        $('#node-input-outputTest-for').typedInput('value', this.outputTest.value)
-        if (/true|false|null|nnull|empty|nempty/.test(this.outputTest.compare))
-          $('#node-input-outputTest-for').typedInput('hide')
+        compare.val(this.outputTest.compare)
+        forVal.typedInput('type', this.outputTest.type)
+        forVal.typedInput('value', this.outputTest.value)
+        optShide(this.outputTest.compare)
       }
       $('#node-input-output').change(function () {
         let hideShow = $(this).val() == 'path' ? 'show' : 'hide'
         $('#row-outputPath, #row-outputTest, #row-ignoreInit')[hideShow]()
       })
-      $('#node-input-outputTest-compare').change(function () {
-        let hideShow = /true|false|null|nnull|empty|nempty/.test($(this).val()) ? 'hide' : 'show'
-        $('#node-input-outputTest-for').typedInput(hideShow)
+      compare.change(function () {
+        optShide($(this).val())
       })
 
       // PAYLOAD PATH
@@ -193,26 +205,7 @@
         style="width: 14px; margin-bottom: 5px"
       />
       <span>And value</span>
-      <select id="node-input-outputTest-compare" style="width: 110px">
-        <option value="eq">==</option>
-        <option value="neq">!=</option>
-        <option value="lt"><</option>
-        <option value="lte"><=</option>
-        <option value="gt">></option>
-        <option value="gte">>=</option>
-        <option value="hask">has key</option>
-        <!-- <option value="btwn">is between</option> -->
-        <option value="cont">contains</option>
-        <option value="regex">matches regex</option>
-        <!-- No case insensitive option yet -->
-        <option value="true">is true</option>
-        <option value="false">is false</option>
-        <option value="null">is null</option>
-        <option value="nnull">is not null</option>
-        <!-- <option value="istype">is of type</option> -->
-        <option value="empty">is empty</option>
-        <option value="nempty">is not empty</option>
-      </select>
+      <select id="node-input-outputTest-compare" style="width: 110px"></select>
       <input type="text" id="node-input-outputTest-for" />
     </div>
   </div>
