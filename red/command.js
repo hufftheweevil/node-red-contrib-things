@@ -72,11 +72,19 @@ module.exports = function (RED) {
         let origCommand = { ...command }
         let proxyCommands = {}
         proxies
-          .find(pd => pd.cmdType == 'key')
+          .filter(pd => pd.cmdType == 'key')
           .forEach(pd => {
             if (command.hasOwnProperty(pd.this)) {
-              proxyCommands[pd.child] = proxyCommands[pd.child] || {}
-              proxyCommands[pd.child][pd.that == null ? pd.this : pd.that] = command[pd.this]
+              if (pd.that == null) {
+                // Method is "the same", so include in object to be sent to child thing
+                // After done going through all keys, those commands will be sent
+                proxyCommands[pd.child] = proxyCommands[pd.child] || {}
+                proxyCommands[pd.child][pd.this] = command[pd.this]
+              } else {
+                // Method is sending a primitive value as the command, instead
+                // of an object. This means the value in the origCommand is lost.
+                handleCommand(pd.child, pd.that, { origThing: thing, origCommand, meta })
+              }
               delete command[pd.this]
             }
           })
