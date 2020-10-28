@@ -157,7 +157,7 @@
       let propsCol = $(thingRow.children()[2])
 
       if (!$(`#things-type-filter [value='${thing.type}']`).length)
-        $(`<option value=${thing.type}>${thing.type}</option>`).appendTo($('#things-type-filter'))
+        $(`<option value='${thing.type}'>${thing.type}</option>`).appendTo($('#things-type-filter'))
 
       // IDENT COLUMN
 
