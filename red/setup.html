@@ -840,15 +840,18 @@
                   .typedInput('value', typedToString(_data.that))
 
                 function alignThat(init) {
-                  if (thisPart.typedInput('type') == 'state') {
+                  let isState = thisPart.typedInput('type') == 'state'
+                  if (isState) {
                     mid.text('=')
                     thatPart.typedInput('types', thatStateTypes)
                   } else {
                     mid.text('->')
                     thatPart.typedInput('types', thatCommandTypes)
                   }
-                  if (init) {
-                    let type = _data.that == null ? 'same' : getType(_data.that || '')
+                  // Only set type on init
+                  if (init === true) {
+                    let type =
+                      _data.that == null ? 'same' : isState ? 'state' : getType(_data.that || '')
                     thatPart.typedInput('type', type)
                   }
                 }
