@@ -1,25 +1,38 @@
 <script type="text/javascript">
   let sidebar = (function () {
-    let socket = new WebSocket(`ws://${window.location.hostname}:8120/`)
-    socket.onopen = () => socket.send('list')
-    socket.onmessage = event => {
-      let { topic, payload } = JSON.parse(event.data)
-      switch (topic) {
-        case 'list':
-          fullRefresh(payload)
-          break
-        case 'update':
-          let newRow = makeThingRow(payload)
-          $(`#Thing__${payload.name.replace(/ /g, '__')}`).replaceWith(newRow)
-          fixBorder(newRow)
-          if (filterType && filterType != payload.type) newRow.hide()
-          break
+    let socket
+
+    function connect() {
+      socket = new WebSocket(`ws://${window.location.hostname}:8120/`)
+      socket.onopen = () => {
+        $('#things-dir-info').text('awaiting list')
+        socket.send('list')
       }
-      // Sort filter-by-type list
-      let list = $('#things-type-filter :not(:first-child)')
-      list.sort((a, b) => a.innerHTML.localeCompare(b.innerHTML))
-      $('#things-type-filter').append(list)
+      socket.onmessage = event => {
+        $('#things-dir-info').text('connected')
+        let { topic, payload } = JSON.parse(event.data)
+        switch (topic) {
+          case 'list':
+            fullRefresh(payload)
+            break
+          case 'update':
+            let newRow = makeThingRow(payload)
+            $(`#Thing__${payload.name.replace(/ /g, '__')}`).replaceWith(newRow)
+            fixBorder(newRow)
+            if (filterType && filterType != payload.type) newRow.hide()
+            break
+        }
+        // Sort filter-by-type list
+        let list = $('#things-type-filter :not(:first-child)')
+        list.sort((a, b) => a.innerHTML.localeCompare(b.innerHTML))
+        $('#things-type-filter').append(list)
+      }
+      socket.onclose = () => {
+        $('#things-dir-info').text('DISCONNECTED...')
+        setTimeout(() => socket.readyState !== WebSocket.OPEN && connect(), 5000)
+      }
     }
+    connect()
 
     let filterType
     let dialog
@@ -66,21 +79,11 @@
         .html('<option value="">Filter type...</option>')
         .appendTo(header)
 
-      let refresh = $('<div>').css({ float: 'right', padding: 5 }).appendTo(header)
-      $('<span id="things-last-updated">&nbsp;</span>')
+      // let refresh = $('<div>').css({ float: 'right', padding: 5 }).appendTo(header)
+      $('<span id="things-dir-info">initializing...</span>')
         .addClass('red-ui-sidebar-context-updated')
-        .appendTo(refresh)
-      let refreshButton = $('<button>')
-        .addClass('red-ui-button red-ui-button-small')
-        .css({ marginLeft: 4 })
-        .html('<i class="fa fa-refresh"></i>')
-        .appendTo(refresh)
-        .on('click', function (evt) {
-          evt.stopPropagation()
-          evt.preventDefault()
-          socket.send('list') // Refresh request
-        })
-      RED.popover.tooltip(refreshButton, 'Refresh')
+        .css({ float: 'right', padding: 5 })
+        .appendTo(header)
 
       // Table...
 
@@ -137,7 +140,6 @@
           .html('<td colspan="3">No things setup</td>')
           .appendTo(table)
       }
-      $('#things-last-updated').text(new Date().toLocaleString())
     }
 
     function makeThingRow(thing) {
