@@ -400,7 +400,22 @@
     category: 'things',
     color: '#D8BFD8',
     defaults: {
-      thingType: { value: '', required: true },
+      thingType: {
+        value: '',
+        required: true,
+        validate: function () {
+          // Check for dupe thing type
+          // Can only have one setup node for each thing type
+          return !RED.nodes
+            .filterNodes({})
+            .find(
+              n =>
+                n.type == 'Thing Setup' &&
+                n.id != this.id &&
+                n.thingType == $('#node-input-thingType').val()
+            )
+        }
+      },
       things: { value: [] },
       statusFunction: { value: '' },
       debug: { value: false }
@@ -632,12 +647,12 @@
           })
             .css('width', '100%')
             .appendTo(row)
-            .on('keyup', validate)
-            .on('change', validate)
+            .on('keyup', validateThingInGroup)
+            .on('change', validateThingInGroup)
 
           let info = $('<span>').css({ fontSize: 'small', color: '#D74108' }).appendTo(row)
 
-          function validate() {
+          function validateThingInGroup() {
             let cir = findCircular($(this).val(), $('#node-input-group-name').val())
             if (cir) {
               $(this).addClass('input-error')
