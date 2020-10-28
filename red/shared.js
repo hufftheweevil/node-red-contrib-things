@@ -27,7 +27,9 @@ const TESTS = {
   cont: (a, b) => (a + '').indexOf(b) != -1,
   regex: (a, b, c) => (a + '').match(new RegExp(b, c ? 'i' : '')),
   true: a => a === true,
+  ntrue: a => a !== true,
   false: a => a === false,
+  nfalse: a => a !== false,
   null: a => typeof a == 'undefined' || a === null,
   nnull: a => typeof a != 'undefined' && a !== null,
   empty: a => {

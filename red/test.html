@@ -31,13 +31,15 @@
     { v: 'btwn', t: 'is between' },
     { v: 'cont', t: 'contains' },
     { v: 'regex', t: 'matches regex' },
-    { v: 'true', t: 'is true' },
-    { v: 'false', t: 'is false' },
-    { v: 'null', t: 'is null' },
-    { v: 'nnull', t: 'is not null' },
+    { v: 'true', t: 'is true', hasValue: false },
+    { v: 'ntrue', t: 'is not true', hasValue: false },
+    { v: 'false', t: 'is false', hasValue: false },
+    { v: 'nfalse', t: 'is not false', hasValue: false },
+    { v: 'null', t: 'is null', hasValue: false },
+    { v: 'nnull', t: 'is not null', hasValue: false },
     { v: 'istype', t: 'is of type' },
-    { v: 'empty', t: 'is empty' },
-    { v: 'nempty', t: 'is not empty' }
+    { v: 'empty', t: 'is empty', hasValue: false },
+    { v: 'nempty', t: 'is not empty', hasValue: false }
   ]
 
   let thingPropsTypes = [
