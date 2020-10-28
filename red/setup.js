@@ -54,12 +54,11 @@ module.exports = function (RED) {
       }
 
       if (config.thingType == 'Group') {
-        let { things } = newThing
-
+        // Create thing/group
         THINGS[name] = {
           name,
           type: 'Group',
-          things,
+          things: newThing.things,
           props: {}, // Placeholder (without it, can cause crash)
           state: {}
         }
@@ -139,7 +138,6 @@ module.exports = function (RED) {
             let proxyName = proxyDef.child
             let from = proxyDef.this
             let to = proxyDef.that
-            // delete THINGS[name].state[from] // Clear it first if it exists
             Object.defineProperty(THINGS[name].state, from, {
               get: () => {
                 // This check for the thing is mostly just in case it attempts to

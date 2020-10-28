@@ -610,6 +610,19 @@
 
       // ---------------------------- onEditPrepare >>> setup lists >>> group_things
 
+      function findCircular(findThing, origThing) {
+        if (findThing == origThing) return [findThing]
+        let match = lists.things.editableList('items').filter(function () {
+          return $(this).data().data.name == findThing
+        })
+        if (match.length) {
+          let next
+          let list = $(match[0]).data().data.things
+          if (list && list.find(name => (next = findCircular(name, origThing))))
+            return [findThing, ...next]
+        }
+      }
+
       lists.group_things.editableList({
         addItem: function (row, i, data) {
           $('<input/>', {
@@ -619,6 +632,26 @@
           })
             .css('width', '100%')
             .appendTo(row)
+            .on('keyup', validate)
+            .on('change', validate)
+
+          let info = $('<span>').css({ fontSize: 'small', color: '#D74108' }).appendTo(row)
+
+          function validate() {
+            let cir = findCircular($(this).val(), $('#node-input-group-name').val())
+            if (cir) {
+              $(this).addClass('input-error')
+              cir.push($(this).val())
+              info.html(
+                `This will create a circular group reference:<br/>
+                    &emsp;&emsp;${cir.join(' -> ')}<br/>
+                    It will be removed if saved.`
+              )
+            } else {
+              $(this).removeClass('input-error')
+              info.text('')
+            }
+          }
         },
         ...editableProps('add thing in this group')
       })
@@ -906,9 +939,10 @@
 
           newThing.things = []
           lists.group_things.editableList('items').each(function () {
-            let childThingName = $(this).find('.node-input-thing-childName').val()
-            if (childThingName == '') return
-            newThing.things.push(childThingName)
+            let childName = $(this).find('.node-input-thing-childName').val()
+            if (childName == '') return
+            if (findCircular(childName, newThing.name)) return
+            newThing.things.push(childName)
           })
 
           newThing.state = {}
