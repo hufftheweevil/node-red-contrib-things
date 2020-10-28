@@ -69,7 +69,7 @@ module.exports = function (RED) {
             get: function () {
               let values = THINGS[name].things
                 .map(childName => THINGS[childName])
-                .map(child => (opts.use === null ? child.state : child.state[opts.use]))
+                .map(child => child && (opts.use === null ? child.state : child.state[opts.use]))
                 .filter(v => v !== null && v !== undefined)
               switch (opts) {
                 case 'anyTrue':

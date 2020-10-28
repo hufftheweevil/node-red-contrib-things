@@ -1038,7 +1038,6 @@
             console.log('Error saving thing', err)
             return false
           }
-          console.log('saving thing', newThing)
           $(row).data().data = newThing
           $(row).find('.red-ui-treeList-label').text(makeLabel(newThing))
         })
