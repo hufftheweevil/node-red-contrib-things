@@ -79,7 +79,6 @@
         .html('<option value="">Filter type...</option>')
         .appendTo(header)
 
-      // let refresh = $('<div>').css({ float: 'right', padding: 5 }).appendTo(header)
       $('<span id="things-dir-info">initializing...</span>')
         .addClass('red-ui-sidebar-context-updated')
         .css({ float: 'right', padding: 5 })
@@ -612,11 +611,11 @@
       // ---------------------------- onEditPrepare >>> setup lists >>> group_things
 
       lists.group_things.editableList({
-        addItem: function (row, i, thingName) {
+        addItem: function (row, i, data) {
           $('<input/>', {
             class: 'node-input-thing-childName',
             type: 'text',
-            value: thingName || ''
+            value: data.name || ''
           })
             .css('width', '100%')
             .appendTo(row)
@@ -892,7 +891,10 @@
         let thing = $(row).data().data
 
         $('#node-input-group-name').val(thing.name || '')
-        populateList('group_things', Object.values(thing.things || []))
+        populateList(
+          'group_things',
+          (thing.things || []).map(name => ({ name }))
+        )
         populateList('group_state', objToArray(thing.state))
 
         showDetail(groupPage, function () {
