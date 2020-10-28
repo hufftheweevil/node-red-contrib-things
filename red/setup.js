@@ -9,6 +9,10 @@ module.exports = function (RED) {
 
     const node = this
 
+    function debug(msg) {
+      if (config.debug) node.warn(msg)
+    }
+
     node.status({
       shape: 'dot',
       fill: 'blue',
@@ -102,17 +106,11 @@ module.exports = function (RED) {
         let oldThing = THINGS[name]
 
         // Check for known parents
-        let parents = []
-        Object.values(THINGS)
-          .filter(t => t.proxy)
-          .forEach(possibleParent => {
-            let proxyDef = possibleParent.proxy[name]
-            if (proxyDef && proxyDef.some(pd => pd.type == 'state'))
-              parents.push(possibleParent.name)
-          })
+        let parents = Object.values(THINGS)
+          .filter(t => t.proxy && t.proxy.some(pd => pd.child == name))
+          .map(t => t.name)
 
-        if (config.debug)
-          node.warn(`Setting up ${name} with parents ${parents.length ? parents : '<none>'}`)
+        debug(`Setting up ${name} with parents ${parents.length ? parents : '<none>'}`)
 
         // Build state
         let state = {}
@@ -137,15 +135,14 @@ module.exports = function (RED) {
             // Link state with getter
             let proxyName = proxyDef.child
             let from = proxyDef.this
-            let to = proxyDef.that
+            let to = proxyDef.that === null ? from : proxyDef.that
             Object.defineProperty(THINGS[name].state, from, {
               get: () => {
                 // This check for the thing is mostly just in case it attempts to
                 // use this state to update the status before the child has been setup
                 const THINGS = global.get('things')
                 let value = THINGS[proxyName] && THINGS[proxyName].state[to]
-                if (config.debug)
-                  node.warn(`Calling getter for '${name}'.state.${from} -- Will return '${value}'`)
+                debug(`Calling getter for '${name}'.state.${from} -- Will return '${value}'`)
                 return value
               },
               enumerable: true,
@@ -156,7 +153,7 @@ module.exports = function (RED) {
             let proxyThing = THINGS[proxyName]
             if (proxyThing) {
               // If it is already setup, note parent in proxied thing
-              if (config.debug) node.warn(`Adding parent ${name} to proxy child ${proxyThing.name}`)
+              debug(`Adding parent ${name} to proxy child ${proxyThing.name}`)
               pushUnique(proxyThing.parents, name)
             }
           })
