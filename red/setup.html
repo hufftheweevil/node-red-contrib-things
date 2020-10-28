@@ -402,19 +402,7 @@
     defaults: {
       thingType: {
         value: '',
-        required: true,
-        validate: function () {
-          // Check for dupe thing type
-          // Can only have one setup node for each thing type
-          return !RED.nodes
-            .filterNodes({})
-            .find(
-              n =>
-                n.type == 'Thing Setup' &&
-                n.id != this.id &&
-                n.thingType == $('#node-input-thingType').val()
-            )
-        }
+        required: true
       },
       things: { value: [] },
       statusFunction: { value: '' },
@@ -433,6 +421,17 @@
       sidebar.init()
     },
     oneditresize: adjustHeights,
+    /* ------------------------------------------------------------------------
+    //
+    //
+    //
+    //
+    //               ON    EDIT    PREPARE
+    //
+    //
+    //
+    //
+    /* ------------------------------------------------------------------------ */
     oneditprepare: function () {
       // ADJUST FORMATTING FROM OLD VERSIONS
       // This will affect the node config as soon as editor is opened
@@ -466,6 +465,7 @@
       let groupPage = $('#node-form-group')
       let thingPage = $('#node-form-thing')
       let backButton = $('#node-button-back')
+      let currentEdit
 
       let lists = {}
       ;[
@@ -623,6 +623,56 @@
         tabs[setId] = tabSet
       })
 
+      // ---------------------------- onEditPrepare >>> setup headers
+
+      $('.validate-thing').on('keyup', validateThing).on('change', validateThing)
+
+      function validateThing() {
+        // Determine if validating name | id
+        let domId = $(this)[0].id
+        let by = domId.split('-')[3]
+        let val = $(this).val()
+
+        let err
+
+        // Check blanks
+        if (val == '' && by == 'name') err = 'Name is required'
+        // Check for dupe
+        else if (val != '') {
+          // First check this setup node
+          if (
+            lists.things.editableList('items').filter(function () {
+              return !this.is(currentEdit) && $(this).data().data[by] == val
+            }).length
+          )
+            err = `Duplicate ${by} in this setup node`
+          // Then check other setup nodes
+          // Name validation applies to ALL setup nodes; id validation only for same thing type
+          else if (
+            RED.nodes
+              .filterNodes({})
+              .find(
+                n =>
+                  n.type == 'Thing Setup' &&
+                  n.id != node.id &&
+                  (by == 'name' || n.thingType == $('#node-input-thingType').val()) &&
+                  n.things.some(t => t[by] == val)
+              )
+          )
+            err = `Duplicate ${by} in another setup node`
+        }
+
+        if (err) {
+          // Invalid
+          $(this).addClass('input-error')
+          $(this).next().css({ paddingLeft: 120 }).text(err).show()
+        } else {
+          // Valid
+          $(this).removeClass('input-error')
+          $(this).next().hide()
+        }
+      }
+
       // ---------------------------- onEditPrepare >>> setup lists >>> group_things
 
       function findCircular(findThing, origThing) {
@@ -650,7 +700,7 @@
             .on('keyup', validateThingInGroup)
             .on('change', validateThingInGroup)
 
-          let info = $('<span>').css({ fontSize: 'small', color: '#D74108' }).appendTo(row)
+          let info = $('<span>', { class: 'node-ui-error-info' }).appendTo(row)
 
           function validateThingInGroup() {
             let cir = findCircular($(this).val(), $('#node-input-group-name').val())
@@ -936,6 +986,8 @@
         else editThing(row)
       }
       function editGroup(row) {
+        currentEdit = row
+
         let thing = $(row).data().data
 
         $('#node-input-group-name').val(thing.name || '')
@@ -947,6 +999,7 @@
 
         showDetail(groupPage, function () {
           // Callback ran when back button used (GROUP) to save thing
+          currentEdit = null
           let err
           let newThing = {}
 
@@ -989,6 +1042,8 @@
         tabs.group.resize()
       }
       function editThing(row) {
+        currentEdit = row
+
         let thing = $(row).data().data
 
         $('#node-input-thing-name').val(thing.name || '')
@@ -1004,6 +1059,7 @@
 
         showDetail(thingPage, function () {
           // Callback ran when back button used (NON-GROUP) to save thing
+          currentEdit = null
           let err
           let newThing = {}
 
@@ -1084,7 +1140,11 @@
       })
       $('<style>')
         .prop('type', 'text/css')
-        .html(`.ace_state_props {color: #b900ff}`)
+        .html(
+          `
+        .ace_state_props {color: #b900ff}
+        .node-ui-error-info { display: block; font-size: small; color: #D74108 }`
+        )
         .appendTo('head')
 
       // ---------------------------- onEditPrepare >>> warnings/checks
@@ -1210,7 +1270,13 @@
   <div id="node-form-group" class="node-form-page">
     <div class="form-row" style="clear: left">
       <label for="node-input-group-name"><i class="fa fa-id-badge"></i> Name</label>
-      <input type="text" id="node-input-group-name" style="width: calc(70% - 65px)" />
+      <input
+        type="text"
+        id="node-input-group-name"
+        class="validate-thing"
+        style="width: calc(70% - 65px)"
+      />
+      <span class="node-ui-error-info"></span>
     </div>
 
     <div class="form-row">
@@ -1232,12 +1298,24 @@
   <div id="node-form-thing" class="node-form-page">
     <div class="form-row" style="clear: left">
       <label for="node-input-thing-name"><i class="fa fa-id-badge"></i> Name</label>
-      <input type="text" id="node-input-thing-name" style="width: calc(70% - 65px)" />
+      <input
+        type="text"
+        id="node-input-thing-name"
+        class="validate-thing"
+        style="width: calc(70% - 65px)"
+      />
+      <span class="node-ui-error-info"></span>
     </div>
 
     <div class="form-row" style="clear: left">
       <label for="node-input-thing-id"><i class="fa fa-id-card-o"></i> ID</label>
-      <input type="text" id="node-input-thing-id" style="width: calc(70% - 65px)" />
+      <input
+        type="text"
+        id="node-input-thing-id"
+        class="validate-thing"
+        style="width: calc(70% - 65px)"
+      />
+      <span class="node-ui-error-info"></span>
     </div>
 
     <div class="form-row">
