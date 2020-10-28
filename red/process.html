@@ -18,7 +18,7 @@
       return this.nodeName || this.thingType || 'process'
     },
     labelStyle: function () {
-      return this.thingType ? 'node_label_italic' : ''
+      return this.nodeName || this.thingType ? 'node_label_italic' : ''
     },
     oneditprepare: function () {
       let topic = this.topic === undefined ? '$id' : this.topic
