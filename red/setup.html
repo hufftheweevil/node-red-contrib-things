@@ -217,7 +217,7 @@
       )
 
       $('<span>', { class: 'red-ui-sidebar-context-property-storename' })
-        .text(`${thing.type}${thing.id ? ` : ${thing.id}` : ''}`)
+        .text(`${thing.type}${thing.id && thing.id != thing.name ? ` : ${thing.id}` : ''}`)
         .appendTo(identCol)
 
       if (thing.type == 'Group') {
