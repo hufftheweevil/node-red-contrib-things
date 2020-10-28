@@ -17,7 +17,7 @@
             break
           case 'update':
             let newRow = makeThingRow(payload)
-            $(`#Thing__${payload.name.replace(/ /g, '__')}`).replaceWith(newRow)
+            $(`#Thing__${withoutSpaces(payload.name)}`).replaceWith(newRow)
             fixBorder(newRow)
             if (filterType && filterType != payload.type) newRow.hide()
             break
@@ -51,6 +51,10 @@
       $(row.children()[1]).css('border-right-color', $(row.children()[0]).css('border-right-color'))
     }
 
+    function withoutSpaces(str) {
+      return str.replace(/ /g, '__')
+    }
+
     function init() {
       let content = $('<div>').addClass('red-ui-sidebar-context red-ui-sidebar-context-stack').css({
         position: 'relative',
@@ -65,14 +69,18 @@
       $('<select id="things-type-filter">')
         .css({ float: 'left', height: 28, margin: 2, fontSize: 12 })
         .change(function ({ target: { value } }) {
+          console.log({ value, val: $(this).val() })
           if (value == '') {
             filterType = null
             $(`#things-table tr`).show()
             $(`#things-type-filter [value='']`).text('Filter type...')
           } else {
             filterType = value
-            $(`#things-table tr`).not(`.thing-row-type-${value}`).not(`:first-child`).hide()
-            $(`#things-table tr.thing-row-type-${value}`).show()
+            $(`#things-table tr`)
+              .not(`.thing-row-type-${withoutSpaces(value)}`)
+              .not(`:first-child`)
+              .hide()
+            $(`#things-table tr.thing-row-type-${withoutSpaces(value)}`).show()
             $(`#things-type-filter [value='']`).text('xxxx Clear Filter xxxx')
           }
         })
@@ -143,9 +151,9 @@
 
     function makeThingRow(thing) {
       let thingRow = $(
-        `<tr class="red-ui-help-info-row thing-row-type-${
+        `<tr class="red-ui-help-info-row thing-row-type-${withoutSpaces(
           thing.type
-        }" id="Thing__${thing.name.replace(/ /g, '__')}">
+        )}" id="Thing__${withoutSpaces(thing.name)}">
               <td class="red-ui-sidebar-context-property"></td>
               <td style="vertical-align: top; padding: 3px 3px 3px 6px; overflow-y: hidden; border-right: solid 1px #ddd"></td>
               <td></td>
