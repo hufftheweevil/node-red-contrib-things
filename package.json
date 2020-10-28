@@ -3,7 +3,10 @@
   "version": "2.4.5",
   "description": "A set of Node-RED nodes that uses an agnostic state management system to keep IOT device states and provide a uniform control system.",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "start": "pm2 start node-red --watch && pm2 log",
+    "stop": "pm2 stop node-red"
+  },
   "author": "hufftheweevil",
   "license": "MIT",
   "node-red": {
