@@ -10,11 +10,7 @@
         <option value="array">Array of</option>
         <option value="individual">Individual messages containing</option>
       </select>
-      <select id="node-input-outputValue">
-        <option value="name">Thing Names</option>
-        <option value="id">Thing IDs</option>
-        <option value="thing">Whole Things</option>
-      </select>
+      <input id="node-input-output" />
     </span>
   </div>
   <div class="form-row">
@@ -40,6 +36,15 @@
   // Following variables are declared globally in test.html
   // operators, thingPropsTypes, basicTypes, typeTypes
 
+  let extendedThingPropsTypes = [
+    ...thingPropsTypes,
+    {
+      value: 'thing',
+      label: 'whole thing',
+      hasValue: false
+    }
+  ]
+
   RED.nodes.registerType('Thing List', {
     paletteLabel: 'list',
     category: 'things',
@@ -47,7 +52,7 @@
     defaults: {
       nodeName: { value: '' },
       outputType: { value: 'array' },
-      outputValue: { value: 'names' },
+      outputValue: { value: 'name' },
       property: { value: 'payload', required: true },
       discardInput: { value: false },
       rules: { value: [] }
@@ -62,6 +67,15 @@
       return this.nodeName ? 'node_label_italic' : ''
     },
     oneditprepare: function () {
+      let [__, key, path] = this.outputValue.match(/^([a-z]+)(?:\.(.*))?/)
+      $('#node-input-output')
+        .typedInput({
+          types: extendedThingPropsTypes,
+          default: key
+        })
+        .typedInput('value', path)
+        .typedInput('width', 150)
+
       $('#node-input-property').typedInput({
         types: ['msg']
       }) //.typedInput('value', this.property)
@@ -207,6 +221,13 @@
       this.rules.forEach(rule => $('#node-input-rule-container').editableList('addItem', rule))
     },
     oneditsave: function () {
+      let key = $('#node-input-output').typedInput('type')
+      let path = $('#node-input-output').typedInput('value')
+      console.log({ key, path })
+      this.outputValue = key
+      if (extendedThingPropsTypes.find(t => t.value == key).hasValue !== false)
+        this.outputValue += '.' + path
+
       let rules = $('#node-input-rule-container').editableList('items')
       let node = this
       node.rules = []
