@@ -132,180 +132,166 @@
     { value: 'null', label: RED._('common.type.null'), hasValue: false }
   ]
 
-  RED.nodes.registerType('Thing Test', {
-    paletteLabel: 'test',
-    category: 'things',
-    color: '#D8BFD8',
-    defaults: {
-      nodeName: { value: '' },
-      name: { value: '' },
-      rules: { value: [{ thingProp: 'state', compare: 'eq', value: '', valType: 'str' }] },
-      secondOutput: { value: false },
-      outputs: { value: 1 }
-    },
-    inputs: 1,
-    outputs: 1,
-    icon: 'font-awesome/fa-check-square-o',
-    label: function () {
-      return this.nodeName || this.name || 'test'
-    },
-    labelStyle: function () {
-      return this.nodeName || this.name ? 'node_label_italic' : ''
-    },
-    outputLabels: ['Pass', 'Fail'],
-    oneditprepare: function () {
-      let node = this
+  function loadRulesContainer(rules) {
+    $('#node-input-rule-container')
+      .css({ minHeight: 150, width: 600, minWidth: 600 })
+      .editableList({
+        addItem: function (container, i, rule) {
+          // Defaults
+          rule.thingProp = rule.thingProp || 'state'
+          rule.compare = rule.compare || 'eq'
 
-      function resizeRule(rule) {
-        let newWidth = rule.width()
-        let selectField = rule.find('select')
-        let type = selectField.val() || ''
-        let valueField = rule.find('.node-input-rule-value')
-        let value2Field = rule.find('.node-input-rule-value2')
-        let selectWidth = type.length < 4 ? 60 : type === 'regex' ? 147 : 120
-        selectField.width(selectWidth)
-        let remainingWidth = newWidth - selectWidth - 170
-        if (type === 'btwn') {
-          valueField.typedInput('width', remainingWidth / 2)
-          value2Field.typedInput('width', remainingWidth / 2)
-        } else if (opHasValue(type)) {
-          if (type === 'regex') remainingWidth -= 80
-          valueField.typedInput('width', remainingWidth)
-        }
-      }
+          container.css({
+            overflow: 'hidden',
+            whiteSpace: 'nowrap'
+          })
 
-      $('#node-input-rule-container')
-        .css('min-height', '150px')
-        .css('min-width', '450px')
-        .editableList({
-          addItem: function (container, i, rule) {
-            // Defaults
-            rule.thingProp = rule.thingProp || 'state'
-            rule.compare = rule.compare || 'eq'
+          let row = $('<div/>').appendTo(container)
 
-            container.css({
-              overflow: 'hidden',
-              whiteSpace: 'nowrap'
+          let propField = $('<input/>', {
+            class: 'node-input-rule-thingProp',
+            type: 'text'
+          })
+            .css({ width: 200, marginLeft: 5 })
+            .appendTo(row)
+            .typedInput({
+              default: 'state',
+              types: thingPropsTypes
             })
 
-            let row = $('<div/>').appendTo(container)
+          let selectField = $('<select/>')
+            .css({ width: 120, marginLeft: 5, textAlign: 'center' })
+            .appendTo(row)
+          operators.forEach(({ v, t }) => selectField.append($('<option></option>').val(v).text(t)))
 
-            let propField = $('<input/>', {
-              class: 'node-input-rule-thingProp',
-              type: 'text',
-              style: 'width: 200px; margin-left: 5px'
-            })
-              .appendTo(row)
-              .typedInput({
-                default: 'state',
-                types: thingPropsTypes
-              })
-
-            let selectField = $('<select/>', {
-              style: 'width:120px; margin-left: 5px; text-align: center;'
-            }).appendTo(row)
-            operators.forEach(({ v, t }) =>
-              selectField.append($('<option></option>').val(v).text(t))
-            )
-
-            let valueField = $('<input/>', {
-              class: 'node-input-rule-value',
-              type: 'text',
-              style: 'margin-left: 5px'
-            })
-              .appendTo(row)
-              .typedInput({
-                default: 'str',
-                types: basicTypes
-              })
-
-            let value2Field = $('<input/>', {
-              class: 'node-input-rule-value2',
-              type: 'text',
-              style: 'margin-left:2px; width: 0'
-            })
-              .appendTo(row)
-              .typedInput({
-                default: 'num',
-                types: basicTypes
-              })
-
-            let caseSensitive = $('<div/>', {
-              style: 'display: inline-flex'
-            }).appendTo(row)
-            let caseSensitiveBox = $('<input/>', {
-              id: 'node-input-rule-case-' + i,
-              class: 'node-input-rule-case',
-              type: 'checkbox',
-              stype: 'width: fit-content; margin: 5px'
-            }).appendTo(caseSensitive)
-            $('<label/>', { for: 'node-input-rule-case-' + i, style: 'font-size: smaller' })
-              .text('ignore case')
-              .appendTo(caseSensitive)
-
-            selectField.on('change', function () {
-              let type = selectField.val()
-
-              if (opHasValue(type)) {
-                valueField.typedInput('show')
-                valueField.typedInput('types', type === 'istype' ? typeTypes : basicTypes)
-                valueField.typedInput('type', /lt|lte|gt|gte|btwn/.test(type) ? 'num' : 'str') // Default
-              } else {
-                valueField.typedInput('hide')
-              }
-
-              if (type === 'btwn') {
-                value2Field.typedInput('show')
-                value2Field.typedInput('types', basicTypes)
-                value2Field.typedInput('type', 'num') // Default
-              } else {
-                value2Field.typedInput('hide')
-              }
-
-              if (type === 'regex') {
-                caseSensitive.show()
-              } else {
-                caseSensitive.hide()
-              }
-
-              resizeRule(container)
+          let valueField = $('<input/>', {
+            class: 'node-input-rule-value',
+            type: 'text'
+          })
+            .css({ marginLeft: 5 })
+            .appendTo(row)
+            .typedInput({
+              default: 'str',
+              types: basicTypes
             })
 
-            // Load current config...
+          let value2Field = $('<input/>', {
+            class: 'node-input-rule-value2',
+            type: 'text'
+          })
+            .css({ marginLeft: 2, width: 0 })
+            .appendTo(row)
+            .typedInput({
+              default: 'num',
+              types: basicTypes
+            })
 
-            let [x, root, path] = rule.thingProp.match(/([^.]+)(?:\.(.+))?/)
-            propField.typedInput('type', root)
-            if (path) propField.typedInput('value', path)
+          let caseSensitive = $('<div/>', {
+            style: 'display: inline-flex'
+          }).appendTo(row)
+          let caseSensitiveBox = $('<input/>', {
+            id: 'node-input-rule-case-' + i,
+            class: 'node-input-rule-case',
+            type: 'checkbox'
+          })
+            .css({ width: 'fit-content', margin: 3 })
+            .appendTo(caseSensitive)
+          $('<label/>', { for: 'node-input-rule-case-' + i })
+            .css({ fontSize: 'smaller' })
+            .text('ignore case')
+            .appendTo(caseSensitive)
 
-            selectField.val(rule.compare)
-            selectField.change() // Ensure proper types are listed before loading types and values
+          selectField.on('change', function () {
+            let type = selectField.val()
 
-            valueField.typedInput('type', rule.valType)
-            if (rule.compare !== 'istype') valueField.typedInput('value', rule.value)
-
-            if (rule.compare == 'btwn') {
-              value2Field.typedInput('type', rule.valType2)
-              value2Field.typedInput('value', rule.value2)
+            if (opHasValue(type)) {
+              valueField.typedInput('show')
+              valueField.typedInput('types', type === 'istype' ? typeTypes : basicTypes)
+              valueField.typedInput('type', /lt|lte|gt|gte|btwn/.test(type) ? 'num' : 'str') // Default
+            } else {
+              valueField.typedInput('hide')
             }
-            if (rule.compare == 'regex') caseSensitiveBox.prop('checked', rule.case)
-          },
-          sortable: true,
-          removable: true,
-          addButton: 'add rule'
-        })
 
-      this.rules.forEach(rule => $('#node-input-rule-container').editableList('addItem', rule))
-    },
-    oneditsave: function () {
-      let rules = $('#node-input-rule-container').editableList('items')
-      let node = this
-      node.rules = []
-      rules.each(function (i) {
+            if (type === 'btwn') {
+              value2Field.typedInput('show')
+              value2Field.typedInput('types', basicTypes)
+              value2Field.typedInput('type', 'num') // Default
+            } else {
+              value2Field.typedInput('hide')
+            }
+
+            if (type === 'regex') {
+              caseSensitive.show()
+            } else {
+              caseSensitive.hide()
+            }
+
+            resizeRule(container)
+          })
+
+          // Load current config...
+
+          let [x, root, path] = rule.thingProp.match(/([^.]+)(?:\.(.+))?/)
+          propField.typedInput('type', root)
+          if (path) propField.typedInput('value', path)
+
+          selectField.val(rule.compare)
+          selectField.change() // Ensure proper types are listed before loading types and values
+
+          valueField.typedInput('type', rule.valType)
+          if (rule.compare !== 'istype') valueField.typedInput('value', rule.value)
+
+          if (rule.compare == 'btwn') {
+            value2Field.typedInput('type', rule.valType2)
+            value2Field.typedInput('value', rule.value2)
+          }
+          if (rule.compare == 'regex') caseSensitiveBox.prop('checked', rule.case)
+        },
+        sortable: true,
+        removable: true,
+        addButton: 'add rule'
+      })
+
+    rules.forEach(rule => $('#node-input-rule-container').editableList('addItem', rule))
+  }
+
+  function resizeRule(rule) {
+    let newWidth = rule.width()
+    let selectField = rule.find('select')
+    let type = selectField.val() || ''
+    let valueField = rule.find('.node-input-rule-value')
+    let value2Field = rule.find('.node-input-rule-value2')
+    let selectWidth = type.length < 4 ? 45 : type === 'regex' ? 115 : 105
+    selectField.width(selectWidth)
+    let remainingWidth = newWidth - selectWidth - 235 // 200 = thingPath input
+    if (type === 'btwn') {
+      valueField.typedInput('width', remainingWidth / 2)
+      value2Field.typedInput('width', remainingWidth / 2)
+    } else if (opHasValue(type)) {
+      if (type === 'regex') remainingWidth -= 80 // Ignore case option
+      valueField.typedInput('width', remainingWidth)
+    }
+  }
+
+  function resizeRuleContainer(size) {
+    let rows = $('#dialog-form>div:not(.node-input-rule-container-row)')
+    let otherRowHeights = $.map(rows, el => $(el).outerHeight(true)).reduce((s, n) => s + n, 0)
+    $('#node-input-rule-container')
+      .editableList('height', size.height - 10 - otherRowHeights)
+      .editableList('items')
+      .each(function () {
+        resizeRule($(this))
+      })
+  }
+
+  function saveRules() {
+    let rules = []
+    $('#node-input-rule-container')
+      .editableList('items')
+      .each(function () {
         let ruleData = $(this).data('data')
         let rule = $(this)
         let type = rule.find('select').val()
-
-        // Create config based on inputs
 
         let r = { compare: type }
 
@@ -330,23 +316,43 @@
             r.case = rule.find('.node-input-rule-case').prop('checked')
           }
         }
-        node.rules.push(r)
+        rules.push(r)
       })
+    return rules
+  }
+
+  RED.nodes.registerType('Thing Test', {
+    paletteLabel: 'test',
+    category: 'things',
+    color: '#D8BFD8',
+    defaults: {
+      nodeName: { value: '' },
+      name: { value: '' },
+      rules: { value: [{ thingProp: 'state', compare: 'eq', value: '', valType: 'str' }] },
+      secondOutput: { value: false },
+      outputs: { value: 1 }
+    },
+    inputs: 1,
+    outputs: 1,
+    icon: 'font-awesome/fa-check-square-o',
+    label: function () {
+      return this.nodeName || this.name || 'test'
+    },
+    labelStyle: function () {
+      return this.nodeName || this.name ? 'node_label_italic' : ''
+    },
+    outputLabels: ['Pass', 'Fail'],
+    oneditprepare: function () {
+      let node = this
+      loadRulesContainer(this.rules)
+    },
+    oneditsave: function () {
+      this.rules = saveRules()
       this.propertyType = $('#node-input-property').typedInput('type')
 
       $('#node-input-outputs').val($('#node-input-secondOutput').prop('checked') ? 2 : 1)
     },
-    oneditresize: function (size) {
-      var rows = $('#dialog-form>div:not(.node-input-rule-container-row)')
-      var height = size.height
-      for (var i = 0; i < rows.length; i++) {
-        height -= $(rows[i]).outerHeight(true)
-      }
-      var editorRow = $('#dialog-form>div.node-input-rule-container-row')
-      height -= parseInt(editorRow.css('marginTop')) + parseInt(editorRow.css('marginBottom'))
-      height += 16
-      $('#node-input-rule-container').editableList('height', height)
-    }
+    oneditresize: resizeRuleContainer
   })
 </script>
 

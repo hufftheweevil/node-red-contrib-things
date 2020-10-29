@@ -35,6 +35,7 @@
 <script type="text/javascript">
   // Following variables are declared globally in test.html
   // operators, opHasValue(), thingPropsTypes, basicTypes, typeTypes
+  // resizeRule(), resizeRuleContainer(), loadRulesContainer(), saveRules()
 
   let extendedThingPropsTypes = [
     ...thingPropsTypes.filter(tpt => tpt.value != 'group'),
@@ -80,151 +81,7 @@
         types: ['msg']
       })
 
-      function resizeRule(rule) {
-        let newWidth = rule.width()
-        let selectField = rule.find('select')
-        let type = selectField.val() || ''
-        let valueField = rule.find('.node-input-rule-value')
-        let value2Field = rule.find('.node-input-rule-value2')
-        let selectWidth = type.length < 4 ? 60 : type === 'regex' ? 147 : 120
-        selectField.width(selectWidth)
-        let remainingWidth = newWidth - selectWidth - 170
-        if (type === 'btwn') {
-          valueField.typedInput('width', remainingWidth / 2)
-          value2Field.typedInput('width', remainingWidth / 2)
-        } else if (opHasValue(type)) {
-          if (type === 'regex') remainingWidth -= 80
-          valueField.typedInput('width', remainingWidth)
-        }
-      }
-
-      $('#node-input-rule-container')
-        .css('min-height', '150px')
-        .css('min-width', '450px')
-        .editableList({
-          addItem: function (container, i, rule) {
-            // Defaults
-            rule.thingProp = rule.thingProp || 'state'
-            rule.compare = rule.compare || 'eq'
-
-            container.css({
-              overflow: 'hidden',
-              whiteSpace: 'nowrap'
-            })
-
-            let row = $('<div/>').appendTo(container)
-
-            let propField = $('<input/>', {
-              class: 'node-input-rule-thingProp',
-              type: 'text',
-              style: 'width: 200px; margin-left: 5px'
-            })
-              .appendTo(row)
-              .typedInput({
-                default: 'state',
-                types: thingPropsTypes
-              })
-              .on('change', function (xx, valType) {
-                if (valType == 'group') {
-                  selectField.hide()
-                  valueField.typedInput('show')
-                } else selectField.show()
-              })
-
-            let selectField = $('<select/>', {
-              style: 'width:120px; margin-left: 5px; text-align: center;'
-            }).appendTo(row)
-            operators.forEach(({ v, t }) =>
-              selectField.append($('<option></option>').val(v).text(t))
-            )
-
-            let valueField = $('<input/>', {
-              class: 'node-input-rule-value',
-              type: 'text',
-              style: 'margin-left: 5px'
-            })
-              .appendTo(row)
-              .typedInput({
-                default: 'str',
-                types: basicTypes
-              })
-
-            let value2Field = $('<input/>', {
-              class: 'node-input-rule-value2',
-              type: 'text',
-              style: 'margin-left:2px; width: 0'
-            })
-              .appendTo(row)
-              .typedInput({
-                default: 'num',
-                types: basicTypes
-              })
-
-            let caseSensitive = $('<div/>', {
-              style: 'display: inline-flex'
-            }).appendTo(row)
-            let caseSensitiveBox = $('<input/>', {
-              id: 'node-input-rule-case-' + i,
-              class: 'node-input-rule-case',
-              type: 'checkbox',
-              stype: 'width: fit-content; margin: 5px'
-            }).appendTo(caseSensitive)
-            $('<label/>', { for: 'node-input-rule-case-' + i, style: 'font-size: smaller' })
-              .text('ignore case')
-              .appendTo(caseSensitive)
-
-            selectField.on('change', function () {
-              let type = selectField.val()
-
-              if (opHasValue(type) || propField.typedInput('type') == 'group') {
-                valueField.typedInput('show')
-                valueField.typedInput('types', type === 'istype' ? typeTypes : basicTypes)
-                valueField.typedInput('type', /lt|lte|gt|gte|btwn/.test(type) ? 'num' : 'str') // Default
-              } else {
-                valueField.typedInput('hide')
-              }
-
-              if (type === 'btwn') {
-                value2Field.typedInput('show')
-                value2Field.typedInput('types', basicTypes)
-                value2Field.typedInput('type', 'num') // Default
-              } else {
-                value2Field.typedInput('hide')
-              }
-
-              if (type === 'regex') {
-                caseSensitive.show()
-              } else {
-                caseSensitive.hide()
-              }
-
-              resizeRule(container)
-            })
-
-            // Load current config...
-
-            let [x, root, path] = rule.thingProp.match(/([^.]+)(?:\.(.+))?/)
-            propField.typedInput('type', root)
-            if (path) propField.typedInput('value', path)
-
-            selectField.val(rule.compare)
-            selectField.change() // Ensure proper types are listed before loading types and values
-
-            valueField.typedInput('type', rule.valType)
-            if (rule.compare !== 'istype') valueField.typedInput('value', rule.value)
-
-            if (rule.compare == 'btwn') {
-              value2Field.typedInput('type', rule.valType2)
-              value2Field.typedInput('value', rule.value2)
-            }
-            if (rule.compare == 'regex') caseSensitiveBox.prop('checked', rule.case)
-          },
-          sortable: true,
-          removable: true,
-          addButton: 'add rule'
-        })
-
-      this.rules.forEach(rule => $('#node-input-rule-container').editableList('addItem', rule))
+      loadRulesContainer(this.rules)
     },
     oneditsave: function () {
       this.outputValue = $('#node-input-output').typedInput('type')
@@ -235,56 +92,12 @@
       )
         this.outputValue += '.' + path
 
-      let rules = $('#node-input-rule-container').editableList('items')
-      let node = this
-      node.rules = []
-      rules.each(function (i) {
-        let ruleData = $(this).data('data')
-        let rule = $(this)
-        let type = rule.find('select').val()
-
-        // Create config based on inputs
-
-        let r = { compare: type }
-
-        r.thingProp = rule.find('.node-input-rule-thingProp').typedInput('type')
-        let canHavePath = thingPropsTypes.find(tpt => tpt.value == r.thingProp).label.endsWith('.')
-        let path = rule.find('.node-input-rule-thingProp').typedInput('value')
-        if (canHavePath && path) r.thingProp += '.' + path
-
-        if (r.thingProp == 'group') r.compare = 'inc'
-
-        if (opHasValue(type) || r.thingProp == 'group') {
-          let typeOrValue = type === 'istype' ? 'type' : 'value'
-          r.value = rule.find('.node-input-rule-value').typedInput(typeOrValue)
-          r.valType = rule.find('.node-input-rule-value').typedInput('type')
-
-          if (type === 'btwn') {
-            r.value2 = rule.find('.node-input-rule-value2').typedInput('value')
-            r.valType2 = rule.find('.node-input-rule-value2').typedInput('type')
-          }
-
-          if (type === 'regex') {
-            r.case = rule.find('.node-input-rule-case').prop('checked')
-          }
-        }
-        node.rules.push(r)
-      })
+      this.rules = saveRules()
       this.propertyType = $('#node-input-property').typedInput('type')
 
       $('#node-input-outputs').val($('#node-input-secondOutput').prop('checked') ? 2 : 1)
     },
-    oneditresize: function (size) {
-      var rows = $('#dialog-form>div:not(.node-input-rule-container-row)')
-      var height = size.height
-      for (var i = 0; i < rows.length; i++) {
-        height -= $(rows[i]).outerHeight(true)
-      }
-      var editorRow = $('#dialog-form>div.node-input-rule-container-row')
-      height -= parseInt(editorRow.css('marginTop')) + parseInt(editorRow.css('marginBottom'))
-      height += 16
-      $('#node-input-rule-container').editableList('height', height)
-    }
+    oneditresize: resizeRuleContainer
   })
 </script>
 
