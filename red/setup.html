@@ -285,7 +285,7 @@
         state.forEach(([key, value]) => {
           let tools = $('<span class="button-group"></span>')
 
-          let proxy = thing.proxy.find(pd => pd.type == 'state' && pd.this == key)
+          let proxy = thing.proxy && thing.proxy.find(pd => pd.type == 'state' && pd.this == key)
           if (proxy) {
             let proxyInfo = $('<button class="red-ui-button red-ui-button-small">')
               .html('<i class="fa fa-chain"></i>')

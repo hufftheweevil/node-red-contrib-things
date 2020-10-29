@@ -71,25 +71,29 @@ module.exports = function (RED) {
         Object.entries(newThing.state || {}).forEach(([key, opts]) => {
           Object.defineProperty(THINGS[name].state, key, {
             get: function () {
-              let values = THINGS[name].things
-                .map(childName => THINGS[childName])
-                .map(child => child && (opts.use === null ? child.state : child.state[opts.use]))
-                .filter(v => v !== null && v !== undefined)
-              switch (opts) {
-                case 'anyTrue':
-                  return values.some(v => v === true)
-                case 'allTrue':
-                  return values.every(v => v === true)
-                case 'anyFalse':
-                  return values.some(v => v === false)
-                case 'anyFalse':
-                  return values.every(v => v === false)
-                case 'min':
-                  return Math.min(...values)
-                case 'max':
-                  return Math.max(...values)
-                case 'fn':
-                  return new Function('values', opts.fn)(values)
+              try {
+                let values = THINGS[name].things
+                  .map(childName => THINGS[childName])
+                  .map(child => child && (opts.use === null ? child.state : child.state[opts.use]))
+                  .filter(v => v !== null && v !== undefined)
+                switch (opts.type) {
+                  case 'anyTrue':
+                    return values.some(v => v === true)
+                  case 'allTrue':
+                    return values.every(v => v === true)
+                  case 'anyFalse':
+                    return values.some(v => v === false)
+                  case 'anyFalse':
+                    return values.every(v => v === false)
+                  case 'min':
+                    return Math.min(...values)
+                  case 'max':
+                    return Math.max(...values)
+                  case 'fn':
+                    return new Function('values', opts.fn)(values)
+                }
+              } catch (err) {
+                node.warn(`Unable to get generate ${name}.state.${key}: ${err}`)
               }
             },
             enumerable: true
