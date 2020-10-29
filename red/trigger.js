@@ -116,7 +116,7 @@ module.exports = function (RED) {
                 .map(thingName => new ThingWatcher(thingName))
             : THINGS.filter(thing => {
                 let thingValue = RED.util.getObjectProperty(thing, config.multiKey)
-                return config.multiKey == 'parents' ? thingValue.some(test) : test(thingValue)
+                return test(thingValue)
               }).map(thing => new ThingWatcher(thing.name))
 
         // Listen for state updates for each thing

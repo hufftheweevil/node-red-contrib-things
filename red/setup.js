@@ -105,13 +105,6 @@ module.exports = function (RED) {
 
         let oldThing = THINGS[name]
 
-        // Check for known parents
-        let parents = Object.values(THINGS)
-          .filter(t => t.proxy && t.proxy.some(pd => pd.child == name))
-          .map(t => t.name)
-
-        debug(`Setting up ${name} with parents ${parents.length ? parents : '<none>'}`)
-
         // Build state
         let state = {}
         if (newThing.state) Object.assign(state, newThing.state)
@@ -124,8 +117,7 @@ module.exports = function (RED) {
           type: config.thingType,
           state,
           props: newThing.props ? newThing.props : {},
-          proxy: newThing.proxy || [],
-          parents
+          proxy: newThing.proxy || []
         }
 
         // For each proxied definition
@@ -148,14 +140,6 @@ module.exports = function (RED) {
               enumerable: true,
               configurable: true
             })
-
-            // Find proxied thing (i.e. the child)
-            let proxyThing = THINGS[proxyName]
-            if (proxyThing) {
-              // If it is already setup, note parent in proxied thing
-              debug(`Adding parent ${name} to proxy child ${proxyThing.name}`)
-              pushUnique(proxyThing.parents, name)
-            }
           })
       } // End if config.thingType != 'Group'
 

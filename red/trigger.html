@@ -66,7 +66,6 @@
           { value: 'id', label: 'id', hasValue: false },
           { value: 'type', label: 'type', hasValue: false },
           { value: 'props.', label: 'props.', validate: /^[0-9a-zA-Z_\.]*$/ },
-          { value: 'parents', label: 'parents includes', hasValue: false },
           { value: 'group', label: 'is in group', hasValue: false }
         ]
       })
@@ -252,9 +251,9 @@
     <dt class="optional">Multi-thing Mode</dt>
     <dd>
       When enabled, allows multiple <i>things</i> to trigger this node. Can be configured to check
-      against any static attributes: <i>name</i>, <i>id</i>, <i>type</i>, any key in <i>props</i>,
-      list of <i>parents</i>. List of matching <i>things</i> is made immediately after setup and is
-      not updated until nodes are re-deployed. Each thing is tracked individually.
+      against any static attributes: <i>name</i>, <i>id</i>, <i>type</i>, any key in <i>props</i>.
+      List of matching <i>things</i> is made immediately after setup and is not updated until nodes
+      are re-deployed. Each thing is tracked individually.
     </dd>
     <dt class="optional">Thing Name</dt>
     <dd>Required if not using multi mode</dd>
