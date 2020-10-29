@@ -49,20 +49,27 @@ module.exports = function (RED) {
         Object.assign(thing.state, update)
       }
 
-      // Emit to the bus so that all other nodes that
-      // are configured to output on changes/updates
-      // will be triggered. (And update their status)
-      stateBus.emit(name)
+      function triggerUpdate(thingName) {
+        // Emit to the bus so that all other nodes that
+        // are configured to output on changes/updates
+        // will be triggered. (And update their status)
+        stateBus.emit(thingName)
 
-      // Send to websockets to update sidebar
-      sendToWs({ topic: 'update', payload: thing })
+        // Send to websockets to update sidebar
+        sendToWs({ topic: 'update', payload: THINGS[thingName] })
+      }
 
-      // Check for parents and emit for them too
-      thing.parents &&
-        thing.parents.forEach(parent => {
-          stateBus.emit(parent)
-          sendToWs({ topic: 'update', payload: THINGS[parent] })
-        })
+      // Trigger for self
+      triggerUpdate(name)
+
+      // Trigger for all group and proxy parents too
+      Object.values(THINGS)
+        .filter(
+          t =>
+            (t.type == 'Group' && t.things.includes(name)) ||
+            (t.proxy && t.proxy.some(p => p.type == 'state' && p.child == name))
+        )
+        .forEach(t => triggerUpdate(t.name))
 
       // If configured with `type`, update status
       if (config.thingType) {
