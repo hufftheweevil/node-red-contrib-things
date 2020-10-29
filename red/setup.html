@@ -833,7 +833,7 @@
           // ^ OPTS
 
           function toggleFunctionOpts(v) {
-            let shide = v == 'function' ? 'show' : 'hide'
+            let shide = v == 'fn' ? 'show' : 'hide'
             advanced[shide]()
             use.find('option[value=whole]')[shide]()
             if (shide == 'hide' && use.val() == 'whole') use.val('same')
