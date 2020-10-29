@@ -1401,86 +1401,64 @@
 </script>
 
 <script type="text/html" data-help-name="Thing Setup">
+  <p>
+    It is recommended to use <b>one</b> <i>setup</i> node for each <i>thing type</i>. The
+    <i>type</i> is typically the platform that these <i>things</i> use. Each type categorizes how
+    commands are processed. All things of the same type can share a status function.
+  </p>
   <h3>Properties</h3>
   <dl class="message-properties">
     <dt class="required">Thing Type <span class="property-type">string</span></dt>
-    <dd>An array of things to setup the dictionary with</dd>
+    <dd>User's choice. Special type "Group" can be used to access advanced group features.</dd>
     <dt class="required">Things</dt>
-    <dl class="message-properties" style="margin-left: 20px; border-right: 0">
-      <dt>Name <span class="property-type">string</span></dt>
-      <dd>Should be unique among all other things.</dd>
-      <dt>ID <span class="property-type">string | number</span></dt>
-      <dd>Should be unique among all things of same type. If ommited, name is used.</dd>
-      <dt>Props <span class="property-type">JSON/object</span></dt>
-      <dd>Optional.</dd>
-      <dt>State <span class="property-type">JSON/object</span></dt>
-      <dd>Optional. Initialized state only. Will <b>not</b> reset upon redeployment.</dd>
-      <dt>Proxy <span class="property-type">JSON/object</span></dt>
-      <dd>Optional. See below for more information.</dd>
-    </dl>
+    <dd>
+      Each <i>thing</i> of this <i>type</i> is listed. Click a <i>thing</i> to see detailed setup
+      properties.
+    </dd>
+    <ul>
+      <li>Names must be unique among <b>all</b> <i>things</i></li>
+      <li>
+        IDs must be unique among all <i>things</i> of the same <i><b>type</b></i>
+      </li>
+      <li>
+        Individual status functions can be set for each thing. If not specified, the type-level
+        status function will be used.
+      </li>
+      <li>
+        For non-Group <i>things</i>
+        <ul>
+          <li>
+            Initial state values will not override current <i>thing state</i> during re-deployment.
+          </li>
+          <li>
+            Proxies come in two flavors
+            <ul>
+              <li><i>State proxies</i> allow a thing to get state from a child thing</li>
+              <li><i>Command proxies</i> allow a thing to forward a command to a child thing</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+
+      <li>
+        For Group <i>things</i>
+        <ul>
+          <li>List all of the <i>things</i> by <i>name</i> that should be included in the group</li>
+          <li>
+            State getters take the state of all <i>things</i> in the group and reduce to one state
+            value. They can be one of the pre-defined reduction methods, or a custom function.
+          </li>
+        </ul>
+      </li>
+    </ul>
+
     <dt class="required">Status Function <span class="property-type">function</span></dt>
     <dd>
-      A function that runs to determine the status of a trigger node. Function is run with current
+      A function that runs to determine the status of a <i>thing</i>. Function is run with current
       <code>state</code> and <code>props</code> as input, and should output a node status object.
-      The object can contain <code>text</code>, <code>fill</code>, and/or <code>shape</code>.
-    </dd>
-  </dl>
-
-  <h3>Things</h3>
-  <p>
-    A <i>thing</i> is any object/device/entity that you want to keep state on. Each <i>thing</i> has
-    a few standard parts:
-  </p>
-  <dl class="message-properties">
-    <dt>name <span class="property-type">string</span></dt>
-    <dd><b>Must</b> be included on setup. <b>Must</b> be unique among all other things.</dd>
-    <dt>type <span class="property-type">string</span></dt>
-    <dd>
-      Typically, the platform that it uses, such as Lifx, TP-Link, or Z-Wave. Should be included on
-      setup. Default <code>''</code>.
-    </dd>
-    <dt>id <span class="property-type">string | number</span></dt>
-    <dd>
-      Typically, a unqiue identifier among all things of the same type. Should be included on setup.
-      Defaults to the <code>name</code>.
-    </dd>
-    <dt>props <span class="property-type">object</span></dt>
-    <dd>
-      Static properties that will not change. Should be included on setup. Can be modified later,
-      but not will not cause any state update notices. Default <code>{}</code>.
-    </dd>
-    <dt>state <span class="property-type">object | any</span></dt>
-    <dd>
-      Thing values that will change and, together, represent a complete state of the <i>thing</i>.
-      Can be included on setup. Should be updated after setup. Default <code>{}</code>. Any type can
-      be used, however an object is recommended.
-    </dd>
-    <dt>status <span class="property-type">function</span></dt>
-    <dd>
-      A function that takes in the current <code>(state, props)</code> and outputs a Node-RED node
-      status message, which may include <code>{text, fill, shape}</code>. Should be included on
-      setup. This function will run on every state update.
-    </dd>
-    <dt>proxy <span class="property-type">object</span></dt>
-    <dd>
-      Only exists if included on setup. A map of other <i>things</i> to proxy to (aka
-      <i>child things</i>). The map must be keyed by other <i>things</i>. The values are objects
-      with the following properties:
-      <dl class="message-properties">
-        <dt>state <span class="property-type">object</span></dt>
-        <dd>
-          A map of states to be proxied. The keys are the state properties of this <i>thing</i>. The
-          values are the state properties of the <i>child thing</i>. All state properties of the
-          <i>child thing</i> that are mapped here will be available in the state of the parent
-          <i>thing</i>.
-        </dd>
-        <dt>command <span class="property-type">object</span></dt>
-        <dd>
-          A map of commands to be proxied. The keys are the commands that you want to be available
-          on the parent <i>thing</i>. The values are the relative command to use on the
-          <i>child thing</i>.
-        </dd>
-      </dl>
+      The object can contain <code>text</code>, <code>fill</code>, and/or <code>shape</code>. If a
+      thing has its own status function, that will be used. Otherwise the common <i>type</i> status
+      function will be used.
     </dd>
   </dl>
 </script>
