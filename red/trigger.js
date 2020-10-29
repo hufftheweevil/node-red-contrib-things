@@ -115,8 +115,12 @@ module.exports = function (RED) {
                 // .reduce((list, group) => [...list, ...nameOrThings(group.name)], [])
                 .map(thingName => new ThingWatcher(thingName))
             : THINGS.filter(thing => {
-                let thingValue = RED.util.getObjectProperty(thing, config.multiKey)
-                return test(thingValue)
+                try {
+                  return test(RED.util.getObjectProperty(thing, config.multiKey))
+                } catch (err) {
+                  node.warn(`Unable to test ${thing.name} for ${config.multiKey}: ${err}`)
+                  return false
+                }
               }).map(thing => new ThingWatcher(thing.name))
 
         // Listen for state updates for each thing
