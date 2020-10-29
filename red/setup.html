@@ -1042,18 +1042,17 @@
           lists.group_state.editableList('items').each(function () {
             let key = typedValue($(this).find('.node-input-list-key'))
             if (key == '') return
-            let use = $(this).find('.node-input-list-use').val()
+            let useType = $(this).find('.node-input-list-use').val()
+            let use =
+              useType == 'whole'
+                ? null
+                : useType == 'same'
+                ? key
+                : $(this).find('.node-input-list-childKey').val()
             let editor = $(this).find('.node-input-list-function').data().editor
-            newThing.state[key] = {
-              type: $(this).find('.node-input-list-type').val(),
-              use:
-                use == 'whole'
-                  ? null
-                  : use == 'same'
-                  ? key
-                  : $(this).find('.node-input-list-childKey').val(),
-              fn: editor.getValue()
-            }
+            let type = $(this).find('.node-input-list-type').val()
+            newThing.state[key] = { type, use }
+            if (type == 'fn') newThing.state[key].fn = editor.getValue()
             editor.destroy()
           })
 
