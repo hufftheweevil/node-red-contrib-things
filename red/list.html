@@ -37,7 +37,7 @@
   // operators, thingPropsTypes, basicTypes, typeTypes
 
   let extendedThingPropsTypes = [
-    ...thingPropsTypes,
+    ...thingPropsTypes.filter(tpt => tpt.value != 'group'),
     {
       value: 'thing',
       label: 'whole thing',
@@ -78,7 +78,11 @@
 
       $('#node-input-property').typedInput({
         types: ['msg']
-      }) //.typedInput('value', this.property)
+      })
+
+      function opHasValue(type) {
+        return operators.find(op => op.v == type).hasValue !== false
+      }
 
       function resizeRule(rule) {
         let newWidth = rule.width()
@@ -92,7 +96,7 @@
         if (type === 'btwn') {
           valueField.typedInput('width', remainingWidth / 2)
           value2Field.typedInput('width', remainingWidth / 2)
-        } else if (!/true|false|null|nnull|empty|nempty/.test(type)) {
+        } else if (opHasValue(type)) {
           if (type === 'regex') remainingWidth -= 80
           valueField.typedInput('width', remainingWidth)
         }
@@ -123,6 +127,10 @@
               .typedInput({
                 default: 'state',
                 types: thingPropsTypes
+              })
+              .on('change', function (xx, valType) {
+                if (valType == 'group') selectField.hide()
+                else selectField.show()
               })
 
             let selectField = $('<select/>', {
@@ -170,7 +178,7 @@
             selectField.on('change', function () {
               let type = selectField.val()
 
-              if (!/true|false|null|nnull|empty|nempty/.test(type)) {
+              if (opHasValue(type)) {
                 valueField.typedInput('show')
                 valueField.typedInput('types', type === 'istype' ? typeTypes : basicTypes)
                 valueField.typedInput('type', /lt|lte|gt|gte|btwn/.test(type) ? 'num' : 'str') // Default
@@ -245,7 +253,7 @@
         let path = rule.find('.node-input-rule-thingProp').typedInput('value')
         if (canHavePath && path) r.thingProp += '.' + path
 
-        if (!/true|false|null|nnull|empty|nempty/.test(type)) {
+        if (opHasValue(type)) {
           let typeOrValue = type === 'istype' ? 'type' : 'value'
           r.value = rule.find('.node-input-rule-value').typedInput(typeOrValue)
           r.valType = rule.find('.node-input-rule-value').typedInput('type')

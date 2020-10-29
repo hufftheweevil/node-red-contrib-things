@@ -61,13 +61,7 @@
 
       multi1.typedInput({
         default: this.multiKey || 'name',
-        types: [
-          { value: 'name', label: 'name', hasValue: false },
-          { value: 'id', label: 'id', hasValue: false },
-          { value: 'type', label: 'type', hasValue: false },
-          { value: 'props.', label: 'props.', validate: /^[0-9a-zA-Z_\.]*$/ },
-          { value: 'group', label: 'is in group', hasValue: false }
-        ]
+        types: thingPropsTypes.filter(tpt => tpt.value != 'state')
       })
       let typesForProps = ['str', 'num', 'bool', 're']
       let typesForNonProps = [
@@ -79,8 +73,8 @@
         're'
       ]
 
-      if (this.multiKey.startsWith('props.')) {
-        multi1.typedInput('type', 'props.')
+      if (this.multiKey.startsWith('props')) {
+        multi1.typedInput('type', 'props')
         multi1.typedInput('value', this.multiKey.slice(6))
 
         multi2.typedInput({ types: typesForProps })
@@ -88,7 +82,7 @@
         multi2.typedInput({ types: typesForNonProps })
       }
       multi1.on('change', function (xx, valType) {
-        let newTypes = valType == 'props.' ? typesForProps : typesForNonProps
+        let newTypes = valType == 'props' ? typesForProps : typesForNonProps
         multi2.typedInput('types', newTypes)
       })
 
@@ -139,7 +133,8 @@
       // Multi-mode
       if ($('#node-input-multiMode').val()) {
         this.multiKey = $('#node-input-multi-1').typedInput('type')
-        if (this.multiKey == 'props.') this.multiKey += $('#node-input-multi-1').typedInput('value')
+        if (this.multiKey == 'props')
+          this.multiKey += '.' + $('#node-input-multi-1').typedInput('value')
       }
       this.multiTest = $('#node-input-multi-2').typedInput('type')
       this.multiValue = $('#node-input-multi-2').typedInput('value')

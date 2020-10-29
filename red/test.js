@@ -33,20 +33,18 @@ module.exports = function (RED) {
 
           let a = RED.util.getObjectProperty(thing, rule.thingProp)
 
-          if (/true|false|null|nnull|empty|nempty/.test(rule.compare)) return test(a)
+          let b = makeParam('b', rule, node, msg, RED)
+          let c = makeParam('c', rule, node, msg, RED)
+          // let b =
+          //   (rule.compare = 'istype' && rule.value) ||
+          //   (rule.value && RED.util.evaluateNodeProperty(rule.value, rule.valType, node, msg))
 
-          if (/istype/.test(rule.compare)) return test(a, rule.value)
+          // let c =
+          //   (rule.compare == 'btwn' &&
+          //     RED.util.evaluateNodeProperty(rule.value2, rule.valType2, node, msg)) ||
+          //   (rule.compare == 'regex' && rule.case)
 
-          let b = RED.util.evaluateNodeProperty(rule.value, rule.valType, node, msg)
-
-          if (/btwn/.test(rule.compare)) {
-            let c = RED.util.evaluateNodeProperty(rule.value2, rule.valType2, node, msg)
-            return test(a, b, c)
-          }
-
-          if (/regex/.test(rule.compare)) return test(a, b, rule.case)
-
-          return test(a, b)
+          return test(a, b, c)
         } catch (err) {
           node.warn(`Error during test: ${err}`)
           return false

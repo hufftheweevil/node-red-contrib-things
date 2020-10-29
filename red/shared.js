@@ -69,4 +69,19 @@ const TESTS = {
   hask: (a, b) => typeof b !== 'object' && a.hasOwnProperty(b + '')
 }
 
-module.exports = { stateBus, commandBus, pushUnique, now, TESTS }
+function makeParam(part, rule, node, msg, RED) {
+  switch (part) {
+    case 'b':
+      if (rule.compare == 'isType') return rule.value
+      if (rule.value) return RED.util.evaluateNodeProperty(rule.value, rule.valType, node, msg)
+      return
+
+    case 'c':
+      if (rule.compare == 'btwn')
+        return RED.util.evaluateNodeProperty(rule.value2, rule.valType2, node, msg)
+      if (rule.compare == 'regex') return rule.case
+      return
+  }
+}
+
+module.exports = { stateBus, commandBus, pushUnique, now, TESTS, makeParam }

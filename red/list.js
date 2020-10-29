@@ -7,6 +7,12 @@ module.exports = function (RED) {
     const node = this
     const global = this.context().global
 
+    function getGroupList(groupName) {
+      let group = global.get('things')[groupName]
+      if (!group.things) return
+      return group.things.map(thing => getGroupList(thing.name) || thing.name).flat()
+    }
+
     node.on('input', function (msg) {
       // Get list of things
       let list = Object.values(global.get('things'))
@@ -14,29 +20,27 @@ module.exports = function (RED) {
       // For each rule, filter the list
       config.rules.forEach(rule => {
         try {
-          let test = TESTS[rule.compare]
+          let b = makeParam('b', rule, node, msg, RED)
+          // let b =
+          //   (rule.compare = 'istype' && rule.value) ||
+          //   (rule.value && RED.util.evaluateNodeProperty(rule.value, rule.valType, node, msg))
 
-          let b =
-            !/true|false|null|nnull|empty|nempty|istype/.test(rule.compare) &&
-            RED.util.evaluateNodeProperty(rule.value, rule.valType, node, msg)
+          if (rule.thingProp == 'group') {
+            let thingsInGroup = getGroupList(b)
+            list = list.filter(thing => thingsInGroup.includes(thing.name))
+          } else {
+            let b = makeParam('c', rule, node, msg, RED)
+            // let c =
+            //   (rule.compare == 'btwn' &&
+            //     RED.util.evaluateNodeProperty(rule.value2, rule.valType2, node, msg)) ||
+            //   (rule.compare == 'regex' && rule.case)
 
-          let c =
-            /btwn/.test(rule.compare) &&
-            RED.util.evaluateNodeProperty(rule.value2, rule.valType2, node, msg)
+            list = list.filter(thing => {
+              let a = RED.util.getObjectProperty(thing, rule.thingProp)
 
-          list = list.filter(thing => {
-            let a = RED.util.getObjectProperty(thing, rule.thingProp)
-
-            if (/true|false|null|nnull|empty|nempty/.test(rule.compare)) return test(a)
-
-            if (/istype/.test(rule.compare)) return test(a, rule.value)
-
-            if (/btwn/.test(rule.compare)) return test(a, b, c)
-
-            if (/regex/.test(rule.compare)) return test(a, b, rule.case)
-
-            return test(a, b)
-          })
+              return TESTS[rule.compare](a, b, c)
+            })
+          }
         } catch (err) {
           node.warn(`Error during test: ${err}`)
           return false
