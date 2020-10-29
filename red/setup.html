@@ -14,6 +14,10 @@
         switch (topic) {
           case 'list':
             fullRefresh(payload)
+            // Sort filter-by-type list
+            let list = $('#things-type-filter :not(:first-child)')
+            list.sort((a, b) => a.innerHTML.localeCompare(b.innerHTML))
+            $('#things-type-filter').append(list)
             break
           case 'update':
             let newRow = makeThingRow(payload)
@@ -22,10 +26,6 @@
             if (filterType && filterType != payload.type) newRow.hide()
             break
         }
-        // Sort filter-by-type list
-        let list = $('#things-type-filter :not(:first-child)')
-        list.sort((a, b) => a.innerHTML.localeCompare(b.innerHTML))
-        $('#things-type-filter').append(list)
       }
       socket.onclose = () => {
         $('#things-dir-info').text('DISCONNECTED...')
