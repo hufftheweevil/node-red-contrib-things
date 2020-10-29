@@ -162,15 +162,13 @@ module.exports = function (RED) {
       // Rest is common between Group and Non-Group
 
       // Save status function
-      THINGS[name]._status = config.statusFunction
-        ? new Function('state', 'props', config.statusFunction)
-        : function (state) {
-            return { text: JSON.stringify(state) }
-          }
+      THINGS[name]._status =
+        config.statusFunction && new Function('state', 'props', config.statusFunction)
 
       // Make status getter
       Object.defineProperty(THINGS[name], 'status', {
         get: function () {
+          if (!this._status) return {}
           try {
             return (
               this._status(
