@@ -34,11 +34,11 @@ module.exports = function (RED) {
       if (typeof command == 'undefined' || command === '')
         return err(`Command not specified in properties or input`)
 
-      handleCommand(name, command)
-
       node.status({
         text: `${name} | ${JSON.stringify(command)} | ${now()}`
       })
+
+      handleCommand(name, command)
     })
 
     // This function is fully recursive; It handles all groups and proxy commands
