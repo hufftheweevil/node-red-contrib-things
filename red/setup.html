@@ -620,12 +620,14 @@
         },
         group: {
           things: 'Things in Group',
-          state: 'State of the Group'
+          state: 'State of the Group',
+          status: 'Status Fn'
         },
         thing: {
           props: 'Props',
           state: 'State',
-          proxy: 'Proxy'
+          proxy: 'Proxy',
+          status: 'Status Fn'
         }
       }
       Object.keys(tabs).forEach(setId => {
@@ -999,12 +1001,14 @@
         ...editableProps('add thing to proxy')
       })
 
-      // ---------------------------- onEditPrepare >>> edit group/thing
+      // ---------------------------- onEditPrepare >>> edit
 
       function edit(row) {
         if ($('#node-input-thingType').val() == 'Group') editGroup(row)
         else editThing(row)
       }
+
+      // ---------------------------- onEditPrepare >>> edit group
       function editGroup(row) {
         currentEdit = row
 
@@ -1016,6 +1020,7 @@
           (thing.things || []).map(name => ({ name }))
         )
         populateList('group_state', objToArray(thing.state))
+        node.statusEditors.group.setValue(thing.statusFn || '')
 
         showDetail(groupPage, function () {
           // Callback ran when back button used (GROUP) to save thing
@@ -1052,8 +1057,11 @@
             editor.destroy()
           })
 
+          let status = node.statusEditors.group.getValue()
+          if (status) newThing.statusFn = status
+
           if (err) {
-            console.log('Error saving thing', err)
+            node.error('Error saving thing', err)
             return false
           }
           $(row).data().data = newThing
@@ -1061,6 +1069,8 @@
         })
         tabs.group.resize()
       }
+
+      // ---------------------------- onEditPrepare >>> edit thing
       function editThing(row) {
         currentEdit = row
 
@@ -1076,6 +1086,7 @@
           return obj
         }, {})
         populateList('thing_proxy', objToArray(proxies))
+        node.statusEditors.thing.setValue(thing.statusFn || '')
 
         showDetail(thingPage, function () {
           // Callback ran when back button used (NON-GROUP) to save thing
@@ -1125,8 +1136,11 @@
               })
           })
 
+          let status = node.statusEditors.thing.getValue()
+          if (status) newThing.statusFn = status
+
           if (err) {
-            console.log('Error saving thing', err)
+            node.error('Error saving thing', err)
             return false
           }
           $(row).data().data = newThing
@@ -1135,15 +1149,22 @@
         tabs.thing.resize()
       }
 
-      // ---------------------------- onEditPrepare >>> setup status function editor
+      // ---------------------------- onEditPrepare >>> setup status function editors
 
-      this.editor = RED.editor.createEditor({
+      this.statusEditors = {}
+      this.statusEditors.main = RED.editor.createEditor({
         id: 'node-input-editor-statusFunction',
         value: this.statusFunction
       })
+      this.statusEditors.group = RED.editor.createEditor({
+        id: 'node-input-editor-statusFunction-group'
+      })
+      this.statusEditors.thing = RED.editor.createEditor({
+        id: 'node-input-editor-statusFunction-thing'
+      })
 
       // Add extra color highlighting for 'state' and 'props'
-      let session = this.editor.session
+      let session = this.statusEditors.main.session
       session.setMode(`ace/mode/nrjavascript`, function () {
         let rules = session.$mode.$highlightRules.getRules()
         Object.values(rules).forEach(rule => {
@@ -1235,13 +1256,13 @@
           things.push($(this).data().data)
         })
       this.things = JSON.parse(JSON.stringify(things)) // Poor man's clone
-      this.statusFunction = this.editor.getValue()
-      this.editor.destroy()
-      delete this.editor
+      this.statusFunction = this.statusEditors.main.getValue()
+      Object.values(this.statusEditors).forEach(editor => editor.destroy())
+      delete this.statusEditors
     },
     oneditcancel: function () {
-      this.editor.destroy()
-      delete this.editor
+      Object.values(this.statusEditors).forEach(editor => editor.destroy())
+      delete this.statusEditors
     }
   })
 </script>
@@ -1311,6 +1332,16 @@
       <div id="group-tab-state" style="display:none">
         <ol id="node-input-list-group-state"></ol>
       </div>
+
+      <div id="group-tab-status" style="display:none">
+        <div><code>function (state, props) {</code></div>
+        <div
+          style="height: 200px; min-height:200px"
+          class="node-text-editor"
+          id="node-input-editor-statusFunction-group"
+        ></div>
+        <div><code>}</code></div>
+      </div>
     </div>
   </div>
 
@@ -1354,6 +1385,17 @@
       <div id="thing-tab-proxy" style="display:none">
         <ol id="node-input-list-thing-proxy"></ol>
       </div>
+
+      <div id="thing-tab-status" style="display:none">
+        <div><code>function (state, props) {</code></div>
+        <div
+          style="height: 200px; min-height:200px"
+          class="node-text-editor"
+          id="node-input-editor-statusFunction-thing"
+        ></div>
+        <div><code>}</code></div>
+      </div>
+    </div>
     </div>
   </div>
 </script>

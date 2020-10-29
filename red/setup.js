@@ -147,7 +147,8 @@ module.exports = function (RED) {
 
       // Save status function
       THINGS[name]._status =
-        config.statusFunction && new Function('state', 'props', config.statusFunction)
+        (newThing.statusFn && new Function('state', 'props', newThing.statusFn)) ||
+        (config.statusFunction && new Function('state', 'props', config.statusFunction))
 
       // Make status getter
       Object.defineProperty(THINGS[name], 'status', {
