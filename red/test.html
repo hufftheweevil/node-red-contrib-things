@@ -42,6 +42,11 @@
     { v: 'nempty', t: 'is not empty', hasValue: false }
   ]
 
+  function opHasValue(opVal) {
+    let op = operators.find(o => o.v == opVal)
+    return op && op.hasValue !== false
+  }
+
   let thingPropsTypes = [
     {
       value: 'name',
@@ -150,10 +155,6 @@
     outputLabels: ['Pass', 'Fail'],
     oneditprepare: function () {
       let node = this
-
-      function opHasValue(type) {
-        return operators.find(op => op.v == type).hasValue !== false
-      }
 
       function resizeRule(rule) {
         let newWidth = rule.width()
@@ -312,6 +313,8 @@
         let canHavePath = thingPropsTypes.find(tpt => tpt.value == r.thingProp).label.endsWith('.')
         let path = rule.find('.node-input-rule-thingProp').typedInput('value')
         if (canHavePath && path) r.thingProp += '.' + path
+
+        if (r.thingProp == 'group') r.compare = 'inc'
 
         if (opHasValue(type)) {
           let typeOrValue = type === 'istype' ? 'type' : 'value'

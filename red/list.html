@@ -34,7 +34,7 @@
 
 <script type="text/javascript">
   // Following variables are declared globally in test.html
-  // operators, thingPropsTypes, basicTypes, typeTypes
+  // operators, opHasValue(), thingPropsTypes, basicTypes, typeTypes
 
   let extendedThingPropsTypes = [
     ...thingPropsTypes.filter(tpt => tpt.value != 'group'),
@@ -79,10 +79,6 @@
       $('#node-input-property').typedInput({
         types: ['msg']
       })
-
-      function opHasValue(type) {
-        return operators.find(op => op.v == type).hasValue !== false
-      }
 
       function resizeRule(rule) {
         let newWidth = rule.width()
@@ -129,8 +125,10 @@
                 types: thingPropsTypes
               })
               .on('change', function (xx, valType) {
-                if (valType == 'group') selectField.hide()
-                else selectField.show()
+                if (valType == 'group') {
+                  selectField.hide()
+                  valueField.typedInput('show')
+                } else selectField.show()
               })
 
             let selectField = $('<select/>', {
@@ -178,7 +176,7 @@
             selectField.on('change', function () {
               let type = selectField.val()
 
-              if (opHasValue(type)) {
+              if (opHasValue(type) || propField.typedInput('type') == 'group') {
                 valueField.typedInput('show')
                 valueField.typedInput('types', type === 'istype' ? typeTypes : basicTypes)
                 valueField.typedInput('type', /lt|lte|gt|gte|btwn/.test(type) ? 'num' : 'str') // Default
@@ -229,11 +227,12 @@
       this.rules.forEach(rule => $('#node-input-rule-container').editableList('addItem', rule))
     },
     oneditsave: function () {
-      let key = $('#node-input-output').typedInput('type')
+      this.outputValue = $('#node-input-output').typedInput('type')
       let path = $('#node-input-output').typedInput('value')
-      console.log({ key, path })
-      this.outputValue = key
-      if (extendedThingPropsTypes.find(t => t.value == key).hasValue !== false)
+      if (
+        extendedThingPropsTypes.find(t => t.value == this.outputValue).label.endsWith('.') &&
+        path
+      )
         this.outputValue += '.' + path
 
       let rules = $('#node-input-rule-container').editableList('items')
@@ -253,7 +252,9 @@
         let path = rule.find('.node-input-rule-thingProp').typedInput('value')
         if (canHavePath && path) r.thingProp += '.' + path
 
-        if (opHasValue(type)) {
+        if (r.thingProp == 'group') r.compare = 'inc'
+
+        if (opHasValue(type) || r.thingProp == 'group') {
           let typeOrValue = type === 'istype' ? 'type' : 'value'
           r.value = rule.find('.node-input-rule-value').typedInput(typeOrValue)
           r.valType = rule.find('.node-input-rule-value').typedInput('type')

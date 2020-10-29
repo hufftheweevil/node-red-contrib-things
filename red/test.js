@@ -1,4 +1,4 @@
-let { TESTS } = require('./shared')
+let { TESTS, makeParam } = require('./shared')
 
 module.exports = function (RED) {
   function Node(config) {
@@ -6,6 +6,13 @@ module.exports = function (RED) {
 
     const node = this
     const global = this.context().global
+
+    function getGroupList(name) {
+      let group = global.get('things')[name]
+      if (!group) return []
+      if (!group.things) return [name]
+      return group.things.map(getGroupList).flat()
+    }
 
     node.on('input', function (msg) {
       // Get reference to thing
@@ -29,22 +36,13 @@ module.exports = function (RED) {
       // Check all rules
       let pass = config.rules.every(rule => {
         try {
-          let test = TESTS[rule.compare]
+          if (rule.thingProp == 'group') b = getGroupList(b).filter((v, i, a) => a.indexOf(v) == i)
 
-          let a = RED.util.getObjectProperty(thing, rule.thingProp)
+          let a = makeParam('a', rule, thing, node, msg, RED)
+          let b = makeParam('b', rule, thing, node, msg, RED)
+          let c = makeParam('c', rule, thing, node, msg, RED)
 
-          let b = makeParam('b', rule, node, msg, RED)
-          let c = makeParam('c', rule, node, msg, RED)
-          // let b =
-          //   (rule.compare = 'istype' && rule.value) ||
-          //   (rule.value && RED.util.evaluateNodeProperty(rule.value, rule.valType, node, msg))
-
-          // let c =
-          //   (rule.compare == 'btwn' &&
-          //     RED.util.evaluateNodeProperty(rule.value2, rule.valType2, node, msg)) ||
-          //   (rule.compare == 'regex' && rule.case)
-
-          return test(a, b, c)
+          return TESTS[rule.compare](a, b, c)
         } catch (err) {
           node.warn(`Error during test: ${err}`)
           return false

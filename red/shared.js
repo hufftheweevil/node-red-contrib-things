@@ -66,11 +66,16 @@ const TESTS = {
       return typeof a === b && !Array.isArray(a) && !Buffer.isBuffer(a) && a !== null
     }
   },
-  hask: (a, b) => typeof b !== 'object' && a.hasOwnProperty(b + '')
+  hask: (a, b) => typeof b !== 'object' && a.hasOwnProperty(b + ''),
+  inc: (a, b) => (Array.isArray(a) ? a.includes(b) : Array.isArray(b) ? b.includes(a) : false)
 }
 
-function makeParam(part, rule, node, msg, RED) {
+function makeParam(part, rule, thing, node, msg, RED) {
   switch (part) {
+    case 'a':
+      if (rule.thingProp == 'group') return thing.name
+      return RED.util.getObjectProperty(thing, rule.thingProp)
+
     case 'b':
       if (rule.compare == 'isType') return rule.value
       if (rule.value) return RED.util.evaluateNodeProperty(rule.value, rule.valType, node, msg)
