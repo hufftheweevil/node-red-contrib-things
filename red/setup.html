@@ -68,8 +68,8 @@
 
       $('<select id="things-type-filter">')
         .css({ float: 'left', height: 28, margin: 2, fontSize: 12 })
-        .change(function ({ target: { value } }) {
-          console.log({ value, val: $(this).val() })
+        .change(function () {
+          let value = $(this).val()
           if (value == '') {
             filterType = null
             $(`#things-table tr`).show()
@@ -241,7 +241,7 @@
         () => buttons.hide()
       )
 
-      $('<span>', { class: 'red-ui-sidebar-context-property-storename' })
+      $('<span>', { class: 'red-ui-sidebar-context-property-storename thing-type-and-id' })
         .text(`${thing.type}${thing.id && thing.id != thing.name ? ` : ${thing.id}` : ''}`)
         .appendTo(identCol)
 
@@ -291,12 +291,24 @@
               .html('<i class="fa fa-chain"></i>')
               .appendTo(tools)
               .on('click', function (e) {
+                let filterType = $('#things-type-filter').val()
+                let proxyRow = $(`#Thing__${withoutSpaces(proxy.child)}`)
+                // First determine if currently filtered and need to switch type
+                let proxyType = proxyRow.find('.thing-type-and-id').html().split(' : ')[0]
+                if (filterType != '' && filterType != proxyType)
+                  $('#things-type-filter').val(proxyType).change()
+                // Scroll to row
+                proxyRow.get()[0].scrollIntoView()
                 e.preventDefault()
                 e.stopPropagation()
               })
             RED.popover.tooltip(
               proxyInfo,
-              `Proxy Info<br/>Thing: ${proxy.child}<br/>State Key: ${proxy.that}`
+              [
+                'Proxy Info',
+                `Thing: ${proxy.child}`,
+                `State Key: ${proxy.that === null ? key : proxy.that}`
+              ].join('<br/>')
             )
           }
 
