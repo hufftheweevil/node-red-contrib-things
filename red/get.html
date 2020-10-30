@@ -123,37 +123,12 @@
 </script>
 
 <script type="text/html" data-help-name="Thing Get">
-  <p>A node that appends a message with specified values from a <i>thing</i>.</p>
-
-  <h3>Properties</h3>
-  <dl class="message-properties">
-    <dt class="optional">Thing Name</dt>
-    <dd>
-      The <i>thing</i> name. If not specified here, must be in <code>topic</code> on input. If
-      specified, will not be overriden by input.
-    </dd>
-    <dt class="optional">Props</dt>
-    <dd>
-      Specify what part of the <i>thing</i> to append to what part of the message. Leave
-      <code>state.</code> or <code>props.</code> blank to include the entire respective object.
-    </dd>
-  </dl>
-
-  <h3>Inputs</h3>
-  <dl class="message-properties">
-    <dt>topic <span class="property-type">string</span></dt>
-    <dd>The <i>thing</i> name, if not specified in properties. Will NOT override properties.</dd>
-  </dl>
-
-  <h3>Outputs</h3>
-  <p>Input message will be passed through, with the specified properties added/modified</p>
-  <p>
-    Note that messages will <b>only</b> output from this node on input. That means if any part of
-    the <i>thing</i> changes, it will <b>not</b> automatically cause an output. To trigger from
-    <i>thing</i> state changes, use the <code>trigger</code> node.
-  </p>
-  <p>
-    Node status will reflect the <i>thing</i> status at the point that the node was last used. It
-    may not reflect the current status of the <i>thing</i>.
-  </p>
+<p>A node that will append specified values of a <i>thing</i> to a message.</p>
+<h3>Properties</h3>
+<dl class="message-properties">
+<dt class="required">Thing Name</dt><dd>The <i>thing</i> to reference</dd>
+<dt class="required">Message</dt><dd>Similar to the built-in inject node</dd>
+</dl>
+<h3>Output</h3>
+<p>Same message from input, with specified properties changed/added.</p>
 </script>

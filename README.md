@@ -5,6 +5,8 @@ A set of [Node-RED](https://github.com/node-red/node-red) nodes that uses an agn
 [![GitHub release](https://img.shields.io/github/release/hufftheweevil/node-red-contrib-things.svg?style=flat-square)](https://github.com/hufftheweevil/node-red-contrib-things/releases) [![NPM Version](https://img.shields.io/npm/v/node-red-contrib-things.svg?style=flat-square)](https://www.npmjs.com/package/node-red-contrib-things) [![GitHub last commit](https://img.shields.io/github/last-commit/hufftheweevil/node-red-contrib-things.svg?style=flat-square)](https://github.com/hufftheweevil/node-red-contrib-things/commits/master) [![Github All Releases](https://img.shields.io/npm/dw/node-red-contrib-things)](https://github.com/hufftheweevil/node-red-contrib-things/releases)
 [![Node version](https://img.shields.io/node/v/node-red-contrib-things.svg?style=flat-square)](http://nodejs.org/download/) [![GitHub repo size in bytes](https://img.shields.io/github/repo-size/hufftheweevil/node-red-contrib-things.svg?style=flat-square)](https://github.com/hufftheweevil/node-red-contrib-things) [![npm](https://img.shields.io/npm/l/node-red-contrib-things.svg?style=flat-square)](https://github.com/hufftheweevil/node-red-contrib-things/blob/master/LICENSE)
 
+**[Upgrading from v2?](#upgrading-from-v2)**
+
 ### Purpose
 
 First, what these nodes do **not** do: These nodes have no connection outside of Node-RED. They will not directly receive any data, and they do not directly send any data.
@@ -44,6 +46,10 @@ This library of nodes does not actually connect to any of the devices; it only a
 
 All _things_ configured in the setup nodes are listed in the **Things Directory** sidebar tab after deployment.
 
+### Upgrading from v2
+
+Version 3 has been designed to automatically upgrade any nodes from version 2. The main difference is how the configuration data is stored for the _setup_ node. Therefore, it is **highly recommended** to backup your `flows.json` file before upgrading. After upgrading to version 3, it is **recommended** to open every _setup_ node you have and verify that they remain configured as you want. Many tests have been done to ensure everything upgrades properly, but of course there is always a chance for something to go wrong. Please report any bugs you encounter.
+
 ## Nodes
 
 There are 8 nodes included: _setup_, _update_, _trigger_, _get_, _test_, _list_, _command_, and _process_.
@@ -56,9 +62,11 @@ All _things_ must be configured using this node. Use a different _setup_ node fo
 
 | Property        | Info                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Thing Type      | User's choice. Special type "Group" can be used to access advanced group features.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| Thing Type      | User's choice. Typically, the platform that these _things_ use to connect outside of Node-RED. Special type "Group" can be used to access advanced group features.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | Things          | Each <i>thing</i> of this `type` is listed. Click a <i>thing</i> to see detailed setup properties. <ul> <li><code>Name</code>s must be unique among <b>all</b> <i>things</i></li> <li><code>ID</code>s must be unique among all <i>things</i> of the same `type`</li><li>Individual `status functions` can be set for each _thing_. If not specified, the `type`-level `status function` will be used. </li> <li> For non-Group <i>things</i> <ul> <li> Initial `state` values will not override current _thing_ `state` during re-deployment. </li> <li> `Proxies` come in two flavors <ul> <li><i>State proxies</i> allow a _thing_ to get `state` from a child _thing_</li> <li><i>Command proxies</i> allow a _thing_ to forward a command to a child _thing_</li> </ul> </li> </ul> </li> <li> For Group <i>things</i> <ul> <li>List all of the <i>things</i> by `name` that should be included in the group</li> <li> `State` getters take the `state` of all <i>things</i> in the group and reduce to one value. They can be a pre-defined reduction method, or a custom function. </li> </ul> </li> </ul> |
-| Status Function | A function that runs to determine the status of a <i>thing</i>. Function is run with current <code>state</code> and <code>props</code> as input, and should output a node status object. The object can contain <code>text</code>, <code>fill</code>, and/or <code>shape</code>. If a thing has its own status function, that will be used. Otherwise the `type`-level status function will be used.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Status Function | Optional. A function that runs to determine the status of a <i>thing</i>. Function is run with current <code>state</code> and <code>props</code> as input, and should output a node status object. The object can contain <code>text</code>, <code>fill</code>, and/or <code>shape</code>. If a thing has its own status function, that will be used. Otherwise the `type`-level status function will be used.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+
+See README for more information on **Groups** and **Proxies**.
 
 ### update
 
@@ -89,18 +97,18 @@ A node that outputs a message when a thing's state changes. Can be configured in
 | Property         | Info                                                                                                                                                                                                                                              |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Multi-thing Mode | When enabled, allows multiple <i>things</i> to trigger this node                                                                                                                                                                                  |
-| Thing Name       | (Single-thing mode) The thing to trigger from                                                                                                                                                                                                     |
+| Thing Name       | (Single-thing mode) The _thing_ `name` to trigger from                                                                                                                                                                                            |
 | Thing Test       | (Multi-thing mode) Can be configured to check against any static attributes of each _thing_. List of matching <i>things</i> is made immediately after setup and is not updated until nodes are re-deployed. Each _thing_ is tracked individually. |
-| Output...        | Configure **when** to trigger an output.                                                                                                                                                                                                          |
+| Output...        | Configure **when** to trigger an output. If a state key is specified, certain values can be filtered as well. _Ignore initialization_ option will prevent triggers when the value changes from `undefined`.                                       |
 | Payload          | Configure **what** to output on `msg.payload`                                                                                                                                                                                                     |
 
 ##### Output
 
-| Key       | Type     | Info                                                     |
-| --------- | -------- | -------------------------------------------------------- |
-| `topic`   | _string_ | Thing name                                               |
-| `payload` | any      | Depends on Payload property                              |
-| `thing`   | _object_ | The entire thing object, only if specified in properties |
+| Key       | Type     | Info                                                    |
+| --------- | -------- | ------------------------------------------------------- |
+| `topic`   | _string_ | _Thing_ `name`                                          |
+| `payload` | any      | Depends on Payload property                             |
+| `thing`   | _object_ | The entire thing object, only if selected in properties |
 
 ### get
 
@@ -110,7 +118,7 @@ A node that will append specified values of a _thing_ to a message.
 
 | Property   | Info                                |
 | ---------- | ----------------------------------- |
-| Thing Name | The thing to reference              |
+| Thing Name | The _thing_ to reference            |
 | Message    | Similar to the built-in inject node |
 
 ##### Output
@@ -123,17 +131,17 @@ A node that allows a message to pass based on specified conditions related to a 
 
 ##### Properties
 
-| Property   | Info                                                                                 |
-| ---------- | ------------------------------------------------------------------------------------ |
-| Thing Name | The thing to reference                                                               |
-| Conditions | The conditions that must be met to allow the message to pass through.                |
-| 2nd Output | Optionally choose to have a 2nd output that will pass the message if the test fails. |
+| Property   | Info                                                                                |
+| ---------- | ----------------------------------------------------------------------------------- |
+| Thing Name | The _thing_ to reference                                                            |
+| Conditions | The conditions that must be met to allow the message to pass through                |
+| 2nd Output | Optionally choose to have a 2nd output that will pass the message if the test fails |
 
 ##### Input
 
-| Key     | Type     | Info                                                                                      |
-| ------- | -------- | ----------------------------------------------------------------------------------------- |
-| `topic` | _string_ | Thing name, if not specified in properties. **Note:** will not override property setting. |
+| Key     | Type     | Info                                                                                                    |
+| ------- | -------- | ------------------------------------------------------------------------------------------------------- |
+| `topic` | _string_ | Optional. _Thing_ `name`, if not specified in properties. **Note:** will not override property setting. |
 
 ##### Output
 
@@ -145,11 +153,11 @@ A node that will list all _things_ that match the specified conditions.
 
 ##### Properties
 
-| Property   | Info                                                              |
-| ---------- | ----------------------------------------------------------------- |
-| Output     | Choose the type and value of the output.                          |
-| Property   | Specify what property to output on.                               |
-| Conditions | The conditions that must be met to include a _thing_ on the list. |
+| Property   | Info                                                                                                |
+| ---------- | --------------------------------------------------------------------------------------------------- |
+| Output     | Choose the type and value of the output                                                             |
+| Property   | Specify what property to output on                                                                  |
+| Conditions | The conditions that must be met to include a _thing_ on the list. Leave empty to list all _things_. |
 
 ##### Output
 
@@ -157,41 +165,42 @@ The input message will be forwarded (unless `Discard input message` is checked),
 
 ### command
 
-An action node that will initiate the sending of a command to a thing or multiple things. Note that this node does not provide any communication to the outside. It will only relay messages to respective _process_ nodes.
+A node that will initiate the sending of a command to a _thing_ or multiple _things_. Note that this node does not provide any communication to the outside. It will only relay messages to respective _process_ nodes.
 
-The node will recurse through any groups and proxies before determining Thing type, then forward to the respective _process_ node(s).
+The node will recurse through any groups and proxies before determining _thing_ `type`, then forward to the respective _process_ node(s).
 
 ##### Properties
 
-| Property   | Info                                                                                                                           |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Thing Name | When specified, all input messages will be directed to this thing. If not provided, the input message must include thing name. |
-| Command    | When specified, will be used as the command. If not provided, the input must include the command.                              |
+| Property   | Info                                                                                                                                           |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Thing Name | Optional. When specified, all input messages will be directed to this _thing_. If not provided, the input message must include _thing_ `name`. |
+| Command    | Optional. When specified, will be used as the _command_. If not provided, the input must include the _command_.                                |
 
 ##### Input
 
-| Key       | Type     | Info                                                                                       |
-| --------- | -------- | ------------------------------------------------------------------------------------------ |
-| `topic`   | _string_ | Thing name, if not specified in properties. **Note:** will not override property setting.  |
-| `payload` | any      | The command, if not specified in properties. **Note:** will not override property setting. |
+| Key       | Type     | Info                                                                                          |
+| --------- | -------- | --------------------------------------------------------------------------------------------- |
+| `topic`   | _string_ | _Thing_ `name`, if not specified in properties. **Note:** will not override property setting. |
+| `payload` | any      | The _command_, if not specified in properties. **Note:** will not override property setting.  |
 
 ### process
 
-A trigger-type node that will listen for messages from _command_ nodes for a specific Thing type, and then output the message. Note that this node does not provide any communication to the outside. It will only relay messages from repsective _command_ nodes. Its purpose is to funnel all messages intended for a certain node library into one place.
+A node that will listen for messages from _command_ nodes for a specific _thing_ `type`, and then output the message. Note that this node does not provide any communication to the outside. It will only relay messages from repsective _command_ nodes. Its purpose is to funnel all messages intended for a certain node library into one place.
 
 ##### Properties
 
-| Property   | Info           |
-| ---------- | -------------- |
-| Thing Type | The thing type |
+| Property   | Info                                                      |
+| ---------- | --------------------------------------------------------- |
+| Thing Type | The _thing_ `type` to listen for                          |
+| Topic      | The property or custom string to send as the `msg.topic`. |
 
 ##### Output
 
-| Key       | Type     | Info                                     |
-| --------- | -------- | ---------------------------------------- |
-| `topic`   | _string_ | The thing ID. (Not the name)             |
-| `payload` | any      | The command, passed from a command node. |
-| `thing`   | _object_ | The entire thing object.                 |
+| Key       | Type     | Info                                        |
+| --------- | -------- | ------------------------------------------- |
+| `topic`   | _string_ | As configured in properties                 |
+| `payload` | any      | The _command_, passed from a _command_ node |
+| `thing`   | _object_ | The entire thing object                     |
 
 ## Groups
 

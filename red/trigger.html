@@ -239,49 +239,19 @@
 </script>
 
 <script type="text/html" data-help-name="Thing Trigger">
-  <p>A node that outputs a message when a thing's state changes. Can be configured in many ways.</p>
-
-  <h3>Properties</h3>
-  <dl class="message-properties">
-    <dt class="optional">Multi-thing Mode</dt>
-    <dd>
-      When enabled, allows multiple <i>things</i> to trigger this node. Can be configured to check
-      against any static attributes: <code>name</code>, <code>id</code>, <code>type</code>, any key in <code>props</code>.
-      List of matching <i>things</i> is made immediately after setup and is not updated until nodes
-      are re-deployed. Each <i>thing</i> is tracked individually.
-    </dd>
-    <dt class="optional">Thing Name</dt>
-    <dd>Required if not using multi mode</dd>
-    <dt class="optional">Output</dt>
-    <dd>When to output <i>thing</i> state</dd>
-    <ul>
-      <li><b>On all state updates</b> - Will trigger even if state did not change.</li>
-      <li>
-        <b>When any part of the state changes</b> - Comparison is done using
-        <code>JSON.stringify</code>
-      </li>
-      <li>
-        <b>Only when a part of the state changes</b> - State path must be defined. Comparison is
-        done using <code>JSON.stringify.</code> Can optionally be configured to test value and only
-        trigger if condition is met. Enabling <b>Ignore initialization</b> will prevent output when
-        the key is first initialized (i.e. old value is <code>undefined</code>).
-      </li>
-    </ul>
-    <dt class="optional">Payload</dt>
-    <dd>What to output as <code>msg.payload</code></dd>
-    <ul>
-      <li><b>Whole State</b></li>
-      <li><b>Specific Path</b> - State path must be defined.</li>
-    </ul>
-  </dl>
-
-  <h3>Outputs</h3>
-  <dl class="message-properties">
-    <dt>topic <span class="property-type">string</span></dt>
-    <dd>The <i>thing</i> name</dd>
-    <dt>payload <span class="property-type">any</span></dt>
-    <dd>As configured in properties</dd>
-    <dt>thing <span class="property-type">object</span></dt>
-    <dd>Only if configured in properties</dd>
-  </dl>
+<p>A node that outputs a message when a thing's state changes. Can be configured in many ways.</p>
+<h3>Properties</h3>
+<dl class="message-properties">
+<dt class="required">Multi-thing Mode</dt><dd>When enabled, allows multiple <i>things</i> to trigger this node</dd>
+<dt class="required">Thing Name</dt><dd>(Single-thing mode) The <i>thing</i> <code>name</code> to trigger from</dd>
+<dt class="required">Thing Test</dt><dd>(Multi-thing mode) Can be configured to check against any static attributes of each <i>thing</i>. List of matching <i>things</i> is made immediately after setup and is not updated until nodes are re-deployed. Each <i>thing</i> is tracked individually.</dd>
+<dt class="required">Output...</dt><dd>Configure <b>when</b> to trigger an output. If a state key is specified, certain values can be filtered as well. <i>Ignore initialization</i> option will prevent triggers when the value changes from <code>undefined</code>.</dd>
+<dt class="required">Payload</dt><dd>Configure <b>what</b> to output on <code>msg.payload</code></dd>
+</dl>
+<h3>Output</h3>
+<dl class="message-properties">
+<dt class="required"><code>topic</code> <span class="property-type">string</span></dt><dd><i>Thing</i> <code>name</code></dd>
+<dt class="required"><code>payload</code> <span class="property-type">any</span></dt><dd>Depends on Payload property</dd>
+<dt class="required"><code>thing</code> <span class="property-type">object</span></dt><dd>The entire thing object, only if selected in properties</dd>
+</dl>
 </script>
