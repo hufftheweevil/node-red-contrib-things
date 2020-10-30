@@ -102,14 +102,21 @@
       multi2.on('change', updateMatches)
 
       // Get list of all things currently configured; for updateMatches()
+      let disabledTabs = []
+      RED.nodes.eachWorkspace(ws => {
+        if (ws.disabled) disabledTabs.push(ws.id)
+      })
       const things = {}
       const THINGS = []
       RED.nodes.eachNode(node => {
-        node.type == 'Thing Setup' &&
+        !node.d &&
+          !disabledTabs.includes(node.z) &&
+          node.type == 'Thing Setup' &&
           node.things &&
           node.things.forEach(thing => {
-            things[thing.name] = thing
-            THINGS.push(thing)
+            let _thing = { ...thing, type: node.thingType }
+            things[thing.name] = _thing
+            THINGS.push(_thing)
           })
       })
 
@@ -146,6 +153,8 @@
                   return false
                 }
               }).map(thing => thing.name)
+
+        matches = matches.filter((v, i, a) => a.indexOf(v) == i)
 
         let results = $('#thing-test-results')
         results.empty()
