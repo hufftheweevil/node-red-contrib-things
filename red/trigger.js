@@ -7,6 +7,10 @@ module.exports = function (RED) {
     const node = this
     const global = this.context().global
 
+    function debug(msg) {
+      if (config.debug) node.warn(msg)
+    }
+
     // This will setup a listener on the bus to trigger
     // off of any update node that updates this thing's
     // state. This will change the node's status and
@@ -129,10 +133,11 @@ module.exports = function (RED) {
     }
 
     function registerThingListeners() {
-      watchers.forEach(({ name, callback }) => stateBus.on(name, callback))
+      debug(`Multi-mode list created: ${watchers.map(w => w.name).join(', ')}`)
+      watchers.forEach(w => stateBus.on(w.name, w.callback))
     }
     function removeAllListeners() {
-      watchers.forEach(({ name, callback }) => stateBus.removeListener(name, callback))
+      watchers.forEach(w => stateBus.removeListener(w.name, w.callback))
     }
 
     // When node destroyed, stop listening
