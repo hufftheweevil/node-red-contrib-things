@@ -14,10 +14,6 @@
         switch (topic) {
           case 'list':
             fullRefresh(payload)
-            // Sort filter-by-type list
-            let list = $('#things-type-filter :not(:first-child)')
-            list.sort((a, b) => a.innerHTML.localeCompare(b.innerHTML))
-            $('#things-type-filter').append(list)
             break
           case 'update':
             let newRow = makeThingRow(payload)
@@ -147,6 +143,20 @@
           .html('<td colspan="3">No things setup</td>')
           .appendTo(table)
       }
+
+      // Recreate type-filter list (in case types removed/added)
+      let filter = $('#things-type-filter')
+      let sel = filter.val()
+      filter.children(':not(:first-child)').remove()
+      let types = things.map(t => t.type)
+      let typeOpts = types
+        .filter((v, i, a) => a.indexOf(v) == i)
+        .sort()
+        .map(type => $(`<option value='${type}'>${type}</option>`))
+      filter
+        .append(typeOpts)
+        .val(types.includes(sel) ? sel : '')
+        .change()
     }
 
     function makeThingRow(thing) {
@@ -163,9 +173,6 @@
       let identCol = $(thingRow.children()[0])
       let stateCol = $(thingRow.children()[1])
       let propsCol = $(thingRow.children()[2])
-
-      if (!$(`#things-type-filter [value='${thing.type}']`).length)
-        $(`<option value='${thing.type}'>${thing.type}</option>`).appendTo($('#things-type-filter'))
 
       // IDENT COLUMN
 
@@ -1400,12 +1407,79 @@
 </script>
 
 <script type="text/html" data-help-name="Thing Setup">
-<p>All <i>things</i> must be configured using this node. Use a different <i>setup</i> node for each <i>type</i> that you have. It is up to you how you organize your <i>types</i>. But it is recommended to base them on the platforms you use - or in other words, based on how the devices connect in to and out of Node-RED. There are no inputs or outputs for this node. All things listed will be created when the flows are deployed.</p>
-<h3>Properties</h3>
-<dl class="message-properties">
-<dt class="required">Thing Type</dt><dd>User's choice. Typically, the platform that these <i>things</i> use to connect outside of Node-RED. Special type "Group" can be used to access advanced group features.</dd>
-<dt class="required">Things</dt><dd>Each <i>thing</i> of this <code>type</code> is listed. Click a <i>thing</i> to see detailed setup properties. <ul> <li><code>Name</code>s must be unique among <b>all</b> <i>things</i></li> <li><code>ID</code>s must be unique among all <i>things</i> of the same <code>type</code></li><li>Individual <code>status functions</code> can be set for each <i>thing</i>. If not specified, the <code>type</code>-level <code>status function</code> will be used. </li> <li> For non-Group <i>things</i> <ul> <li> Initial <code>state</code> values will not override current <i>thing</i> <code>state</code> during re-deployment. </li> <li> <code>Proxies</code> come in two flavors <ul> <li><i>State proxies</i> allow a <i>thing</i> to get <code>state</code> from a child <i>thing</i></li> <li><i>Command proxies</i> allow a <i>thing</i> to forward a command to a child <i>thing</i></li> </ul> </li> </ul> </li> <li> For Group <i>things</i> <ul> <li>List all of the <i>things</i> by <code>name</code> that should be included in the group</li> <li> <code>State</code> getters take the <code>state</code> of all <i>things</i> in the group and reduce to one value. They can be a pre-defined reduction method, or a custom function. </li> </ul> </li> </ul></dd>
-<dt class="optional">Status Function</dt><dd>A function that runs to determine the status of a <i>thing</i>. Function is run with current <code>state</code> and <code>props</code> as input, and should output a node status object. The object can contain <code>text</code>, <code>fill</code>, and/or <code>shape</code>. If a thing has its own status function, that will be used. Otherwise the <code>type</code>-level status function will be used.</dd>
-</dl>
-<p>See README for more information on <b>Groups</b> and <b>Proxies</b>.</p>
+  <p>
+    All <i>things</i> must be configured using this node. Use a different <i>setup</i> node for each
+    <i>type</i> that you have. It is up to you how you organize your <i>types</i>. But it is
+    recommended to base them on the platforms you use - or in other words, based on how the devices
+    connect in to and out of Node-RED. There are no inputs or outputs for this node. All things
+    listed will be created when the flows are deployed.
+  </p>
+  <h3>Properties</h3>
+  <dl class="message-properties">
+    <dt class="required">Thing Type</dt>
+    <dd>
+      User's choice. Typically, the platform that these <i>things</i> use to connect outside of
+      Node-RED. Special type "Group" can be used to access advanced group features.
+    </dd>
+    <dt class="required">Things</dt>
+    <dd>
+      Each <i>thing</i> of this <code>type</code> is listed. Click a <i>thing</i> to see detailed
+      setup properties.
+      <ul>
+        <li><code>Name</code>s must be unique among <b>all</b> <i>things</i></li>
+        <li>
+          <code>ID</code>s must be unique among all <i>things</i> of the same <code>type</code>
+        </li>
+        <li>
+          Individual <code>status functions</code> can be set for each <i>thing</i>. If not
+          specified, the <code>type</code>-level <code>status function</code> will be used.
+        </li>
+        <li>
+          For non-Group <i>things</i>
+          <ul>
+            <li>
+              Initial <code>state</code> values will not override current <i>thing</i>
+              <code>state</code> during re-deployment.
+            </li>
+            <li>
+              <code>Proxies</code> come in two flavors
+              <ul>
+                <li>
+                  <i>State proxies</i> allow a <i>thing</i> to get <code>state</code> from a child
+                  <i>thing</i>
+                </li>
+                <li>
+                  <i>Command proxies</i> allow a <i>thing</i> to forward a command to a child
+                  <i>thing</i>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li>
+          For Group <i>things</i>
+          <ul>
+            <li>
+              List all of the <i>things</i> by <code>name</code> that should be included in the
+              group
+            </li>
+            <li>
+              <code>State</code> getters take the <code>state</code> of all <i>things</i> in the
+              group and reduce to one value. They can be a pre-defined reduction method, or a custom
+              function.
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </dd>
+    <dt class="optional">Status Function</dt>
+    <dd>
+      A function that runs to determine the status of a <i>thing</i>. Function is run with current
+      <code>state</code> and <code>props</code> as input, and should output a node status object.
+      The object can contain <code>text</code>, <code>fill</code>, and/or <code>shape</code>. If a
+      thing has its own status function, that will be used. Otherwise the <code>type</code>-level
+      status function will be used.
+    </dd>
+  </dl>
+  <p>See README for more information on <b>Groups</b> and <b>Proxies</b>.</p>
 </script>
