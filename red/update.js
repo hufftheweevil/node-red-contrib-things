@@ -12,6 +12,7 @@ module.exports = function (RED) {
 
     node.on('input', function (msg) {
       const THINGS = global.get('things')
+      const things = Object.values(THINGS)
 
       // Name should be set in properties, or provided on input.
       // Property takes precedence.
@@ -24,7 +25,7 @@ module.exports = function (RED) {
 
       // If not found and thing type is set, Try finding by ID (assuming topic is ID)
       if (!thing && config.thingType && msg.topic) {
-        thing = Object.values(THINGS).find(t => t.type == config.thingType && t.id == msg.topic)
+        thing = things.find(t => t.type == config.thingType && t.id == msg.topic)
         if (thing) name = thing.name
       }
 
@@ -50,32 +51,30 @@ module.exports = function (RED) {
       }
 
       function triggerUpdate(thingName) {
-        // Emit to the bus so that all other nodes that
-        // are configured to output on changes/updates
-        // will be triggered. (And update their status)
+        // Emit to the bus; wake up trigger nodes
         stateBus.emit(thingName)
 
         // Send to websockets to update sidebar
         sendToWs({ topic: 'update', payload: THINGS[thingName] })
+
+        // Trigger for all group and proxy parents too (recursive)
+        things
+          .filter(
+            t =>
+              (t.type == 'Group' && t.things && t.things.includes(thingName)) ||
+              (t.proxy && t.proxy.some(p => p.type == 'state' && p.child == thingName))
+          )
+          .forEach(t => triggerUpdate(t.name))
       }
 
-      // Trigger for self
+      // Begin trigger process
       triggerUpdate(name)
-
-      // Trigger for all group and proxy parents too
-      Object.values(THINGS)
-        .filter(
-          t =>
-            (t.type == 'Group' && t.things.includes(name)) ||
-            (t.proxy && t.proxy.some(p => p.type == 'state' && p.child == name))
-        )
-        .forEach(t => triggerUpdate(t.name))
 
       // If configured with `type`, update status
       if (config.thingType) {
         pushUnique(heardFrom, name)
 
-        let waitingOn = Object.values(THINGS)
+        let waitingOn = things
           .filter(t => t.type == config.thingType && !heardFrom.includes(t.name))
           .map(t => t.name)
 

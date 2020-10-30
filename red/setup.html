@@ -1461,12 +1461,16 @@
           <ul>
             <li>
               List all of the <i>things</i> by <code>name</code> that should be included in the
-              group
+              group. Groups can be nested.
             </li>
             <li>
               <code>State</code> getters take the <code>state</code> of all <i>things</i> in the
               group and reduce to one value. They can be a pre-defined reduction method, or a custom
               function.
+            </li>
+            <li>
+              For nested groups, only the direct children of each group are used when determining
+              <code>state</code>.
             </li>
           </ul>
         </li>

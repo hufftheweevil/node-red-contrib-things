@@ -108,19 +108,21 @@ module.exports = function (RED) {
         }
 
         // Generate list of things that match conditions
-        watchers =
-          config.multiKey == 'group'
-            ? THINGS.filter(thing => thing.type == 'Group' && test(thing.name))
-                .flatMap(group => recurFindThings(group.name))
-                .map(thingName => new ThingWatcher(thingName))
-            : THINGS.filter(thing => {
-                try {
-                  return test(RED.util.getObjectProperty(thing, config.multiKey))
-                } catch (err) {
-                  node.warn(`Unable to test ${thing.name} for ${config.multiKey}: ${err}`)
-                  return false
-                }
-              }).map(thing => new ThingWatcher(thing.name))
+        watchers = (config.multiKey == 'group'
+          ? THINGS.filter(thing => thing.type == 'Group' && test(thing.name)).flatMap(group =>
+              recurFindThings(group.name)
+            )
+          : THINGS.filter(thing => {
+              try {
+                return test(RED.util.getObjectProperty(thing, config.multiKey))
+              } catch (err) {
+                node.warn(`Unable to test ${thing.name} for ${config.multiKey}: ${err}`)
+                return false
+              }
+            }).map(thing => thing.name)
+        )
+          .filter((v, i, a) => a.indexOf(v) == i)
+          .map(name => new ThingWatcher(name))
 
         // Listen for state updates for each thing
         registerThingListeners()
