@@ -239,16 +239,16 @@
 </script>
 
 <script type="text/html" data-help-name="Thing Trigger">
-  <p>A node that outputs a message when a thing's state changes</p>
+  <p>A node that outputs a message when a thing's state changes. Can be configured in many ways.</p>
 
   <h3>Properties</h3>
   <dl class="message-properties">
     <dt class="optional">Multi-thing Mode</dt>
     <dd>
       When enabled, allows multiple <i>things</i> to trigger this node. Can be configured to check
-      against any static attributes: <i>name</i>, <i>id</i>, <i>type</i>, any key in <i>props</i>.
+      against any static attributes: <code>name</code>, <code>id</code>, <code>type</code>, any key in <code>props</code>.
       List of matching <i>things</i> is made immediately after setup and is not updated until nodes
-      are re-deployed. Each thing is tracked individually.
+      are re-deployed. Each <i>thing</i> is tracked individually.
     </dd>
     <dt class="optional">Thing Name</dt>
     <dd>Required if not using multi mode</dd>

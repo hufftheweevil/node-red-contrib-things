@@ -113,22 +113,30 @@
 </script>
 
 <script type="text/html" data-help-name="Thing Update">
-  <p>A node to update the state of a thing</p>
+  <p>
+    A node that will update a <i>thing</i>'s state, potentially causing a separate
+    <i>trigger</i> node(s) to output. Use is flexible and can be configured in a few ways.
+  </p>
 
   <h3>Properties</h3>
   <dl class="message-properties">
     <dt class="optional">Thing Name</dt>
-    <dd>The <i>thing</i> name. If not specified here, must be in <code>topic</code> on input</dd>
+    <dd>
+      When specified, all input messages will be directed to this thing. If not provided, the input
+      message must include thing <code>name</code>.
+    </dd>
     <dt class="optional">Updates</dt>
     <dd>
-      The state keys/values to be updated. If any updates are configured, then input payload will be
-      ignored. To use input payload as the state update, the update list must be empty.
+      The <code>state</code> keys/values to be updated. If any updates are configured, then input
+      <code>payload</code> will be ignored. To use input <code>payload</code> as the state update,
+      the update properties list must be empty.
     </dd>
     <dt class="optional">Thing Type</dt>
     <dd>
-      If specified, the node's status will reflect if any things of this <code>type</code> have yet
-      to update their status. Typically only used if <code>thing name</code> is not specified. Does
-      not affect any other part of this node other than the status shown.
+      When specified, the node will watch for all <i>things</i> of the <code>type</code> and update
+      its status with any missing <i>things</i>. Additionally, if specified, input messages can
+      optionally use <i>thing</i> <code>ID</code> instead of <code>name</code>. If not provided, the
+      node will not display a status.
     </dd>
   </dl>
 
@@ -136,16 +144,16 @@
   <dl class="message-properties">
     <dt class="optional">topic <span class="property-type">string</span></dt>
     <dd>
-      The <i>thing</i> name. Only used if not specified in properties. <b>Note:</b> will NOT
-      override property setting. Alternatively, if the node is configured with a
+      <i>Thing</i> <code>name</code>. Only used if not specified in properties. <b>Note:</b> will
+      NOT override property setting. Alternatively, if the node is configured with a
       <code>thing type</code>, then the <i>thing</i> ID can be used as the topic.
     </dd>
     <dt class="optional">payload <span class="property-type">any</span></dt>
-    <dd>The state update. Ignored if any updates are set in properties.</dd>
+    <dd>The <code>state</code> update. Ignored if any updates are set in properties.</dd>
     <dt class="optional">replace <span class="property-type">boolean</span></dt>
     <dd>
-      If true, <code>payload</code> will completely replace state. Otherwise it will be merged,
-      top-level only.
+      If true, the new <code>state</code> will completely replace the current <code>state</code>.
+      Otherwise it will be merged, top-level only.
     </dd>
   </dl>
 </script>

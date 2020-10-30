@@ -38,25 +38,11 @@ Lastly, I used node status, as much as possible, to assist with debugging. I've 
 
 ### What is a Thing?
 
-A **_thing_**, as used in this library, is any device or entity in Node-RED that you want to either keep state on, trigger off state changes, and/or control. These things could be simple devices such as lights and sensors, or they could be more complex devices such as thermostats and entertainment devices, or even abstract things, such as people.
+A **_thing_**, as used in this library, is any device or entity in Node-RED that you want to either keep state on, trigger off state changes, and/or control. These could be simple devices such as lights and sensors, or they could be more complex devices such as thermostats and entertainment devices, or even abstract "things", such as people.
 
-This library of nodes does not actually connect to any of the devices; it only acts as a state management system. All things will need to be connected to Node-RED via another node(s). For example, if using Lifx lights, you will need one of the Lifx Node-RED libraries.
+This library of nodes does not actually connect to any of the devices; it only acts as a state management system. All outside communication will need to go through another Node-RED node. For example, if using Lifx lights, you will need one of the Lifx Node-RED libraries.
 
----
-
-After things are setup, they are listed in the **Things Directory** sidebar tab.
-
-Things are stored in the global context, however it is <u>not recommended</u> to reference things directly via the context. Each thing is represented using a javascript object with a few specific properties. Note that these objects will be automatically generated via the setup node. This information is provided for reference and general understanding.
-
-| Property | Info                                                                                                                                                                                                                                                 |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`   | Things are always referenced by their name. Must be a valid javascript string. Therefore, spaces can be used, or any other style/case that you prefer. Unique among **all** things.                                                                  |
-| `type`   | The platform that it uses, such as Lifx, Kasa, Z-Wave, or Person. Exact formatting is up to you, but it must remain consistent throughout your flows.                                                                                                |
-| `id`     | Typically, a unqiue identifier among all things of the same type. Does not need to be unique among all things. If not set, defaults to the `name`. Common uses could be IP or MAC address.                                                           |
-| `props`  | An object of static properties that will not change, typically set during setup. They can be modified later, but it not will not cause any state update notices. Defaults to `{}`.                                                                   |
-| `state`  | An object of variable properties that will change and, together, represent a complete state of the thing. Defaults to `{}`.                                                                                                                          |
-| `status` | A getter property that uses the function in setup to generate a Node-RED node status message.                                                                                                                                                        |
-| `proxy`  | An optional object map that defines any state and/or command proxies. State proxies are linked to a child thing and causes this thing to update when the child thing updates. Command proxies forward any commands from this thing to another thing. |
+All _things_ configured in the setup nodes are listed in the **Things Directory** sidebar tab after deployment.
 
 ## Nodes
 
@@ -64,47 +50,49 @@ There are 8 nodes included: _setup_, _update_, _trigger_, _get_, _test_, _list_,
 
 ### setup
 
-All things must be created using this node. Use a different _setup_ node for each `type` that you have. It is up to you how you organize your `types`. But it is recommended to base them on the platforms you use - or in other words, based on how the devices connect in to and out of Node-RED. There are no inputs or outputs for this node. All things listed will be initialized when the flows are deployed.
+All _things_ must be configured using this node. Use a different _setup_ node for each _type_ that you have. It is up to you how you organize your _types_. But it is recommended to base them on the platforms you use - or in other words, based on how the devices connect in to and out of Node-RED. There are no inputs or outputs for this node. All things listed will be created when the flows are deployed.
 
 ##### Properties
 
-| Property        | Info                                                                                                                                                                                                                                                                                                                                                                                  |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Thing Type      | A type/platform identifier chosen by you. They must be used consistently throughout your flows, and they are case sensitive.                                                                                                                                                                                                                                                          |
-| Things          | Each thing is added using up to 5 parameters: Name, ID, Props, State, Proxy. All fields are equivilant to the properties defined above. Only Name is required. **Note**: If state is provided, it will only be used if the thing does not already exist (i.e. on Node-RED system startup, or a newly added thing). On re-deployment of flows, the last known state will be preserved. |
-| Status Function | The body of a function that will set the status of any trigger nodes for this thing. The function receives `props` and `state` variables. It should return an object with signature `{text, fill, shape}`, all optional. If the function returns `null`, a red ring will be used with the text "Unknown". If not set, defaults to `state => ({text: JSON.stringify(state)})`          |
+| Property        | Info                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Thing Type      | User's choice. Special type "Group" can be used to access advanced group features.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| Things          | Each <i>thing</i> of this `type` is listed. Click a <i>thing</i> to see detailed setup properties. <ul> <li><code>Name</code>s must be unique among <b>all</b> <i>things</i></li> <li><code>ID</code>s must be unique among all <i>things</i> of the same `type`</li><li>Individual `status functions` can be set for each _thing_. If not specified, the `type`-level `status function` will be used. </li> <li> For non-Group <i>things</i> <ul> <li> Initial `state` values will not override current _thing_ `state` during re-deployment. </li> <li> `Proxies` come in two flavors <ul> <li><i>State proxies</i> allow a _thing_ to get `state` from a child _thing_</li> <li><i>Command proxies</i> allow a _thing_ to forward a command to a child _thing_</li> </ul> </li> </ul> </li> <li> For Group <i>things</i> <ul> <li>List all of the <i>things</i> by `name` that should be included in the group</li> <li> `State` getters take the `state` of all <i>things</i> in the group and reduce to one value. They can be a pre-defined reduction method, or a custom function. </li> </ul> </li> </ul> |
+| Status Function | A function that runs to determine the status of a <i>thing</i>. Function is run with current <code>state</code> and <code>props</code> as input, and should output a node status object. The object can contain <code>text</code>, <code>fill</code>, and/or <code>shape</code>. If a thing has its own status function, that will be used. Otherwise the `type`-level status function will be used.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 
 ### update
 
-An action-type node that will update a thing's state, potentially causing a separate _trigger_ node(s) to output. Use is flexible and can be configured in a few ways.
+A node that will update a _thing_'s state, potentially causing a separate _trigger_ node(s) to output. Use is flexible and can be configured in a few ways.
 
 ##### Properties
 
-| Property          | Info                                                                                                                                                                                                                |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Thing Name        | When specified, all input messages will be directed to this thing. If not provided, the input message must include thing name.                                                                                      |
-| Update Properties | The state keys/values to be updated. If any updates are configured, then input payload will be ignored. To use input payload as the state update, the update proprties list must be empty.                          |
-| Thing Type        | When specified, the node will watch for all things of the type and update its status with any missing things. If not provided, the node will not display a status. Does not affect anything other than node status. |
+| Property          | Info                                                                                                                                                                                                                                                                                                        |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Thing Name        | Optional. When specified, all input messages will be directed to this thing. If not provided, the input message must include thing `name`.                                                                                                                                                                  |
+| Update Properties | Optional. The `state` keys/values to be updated. If any updates are configured, then input `payload` will be ignored. To use input `payload` as the state update, the update properties list must be empty.                                                                                                 |
+| Thing Type        | Optional. When specified, the node will watch for all _things_ of the `type` and update its status with any missing _things_. Additionally, if specified, input messages can optionally use <i>thing</i> <code>ID</code> instead of <code>name</code>. If not provided, the node will not display a status. |
 
 ##### Input
 
-| Key       | Type      | Info                                                                                                                                                                                                              |
-| --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `topic`   | _string_  | Thing name. Only used if not specified in properties. **Note:** will _not_ override property setting. Alternatively, if the node is configured with a `thing type`, then the _thing_ ID can be used as the topic. |
-| `payload` | _object_  | The state update. Will be shallow merged with the current state. Ignored if any updates are set in properties.                                                                                                    |
-| `replace` | _boolean_ | Optional. If `true`, `payload` will completely replace current state instead of being merged.                                                                                                                     |
+| Key       | Type      | Info                                                                                                                                                                                                                                  |
+| --------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `topic`   | _string_  | Optional. _Thing_ `name`. Only used if not specified in properties. **Note:** will _not_ override property setting. Alternatively, if the node is configured with a _thing_ `type`, then the _thing_ `ID` can be used as the `topic`. |
+| `payload` | _object_  | Optional. The `state` update. Ignored if any updates are set in properties.                                                                                                                                                           |
+| `replace` | _boolean_ | Optional. If `true`, the new `state` will completely replace current `state`. Otherwise it will be merged, top-level only.                                                                                                            |
 
 ### trigger
 
-A node that will output when conditions are met after input into a respective _update_ node.
+A node that outputs a message when a thing's state changes. Can be configured in many ways.
 
 ##### Properties
 
-| Property   | Info                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Thing Name | The thing to trigger from                                                                                                                                                                                                                                                                                                                                                                                                |
-| Output...  | Choose from...<br/>1. On all state updates (will output whenever an update node has finished, even if the state did not change)<br/>2. When any part of the state changes<br/>3. Only when a part of the state changes.<br/>If the 3rd option is selected:<br/>- set the state property (or path to a nested state property)<br/>- optionally set a condition to test first<br/>- optionally ignore initialization value |
-| Payload    | Choose from 1. Whole state; 2. Specific path.<br/>If 2nd option is selected, set the state property (or path to a nested state property)                                                                                                                                                                                                                                                                                 |
+| Property         | Info                                                                                                                                                                                                                                              |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Multi-thing Mode | When enabled, allows multiple <i>things</i> to trigger this node                                                                                                                                                                                  |
+| Thing Name       | (Single-thing mode) The thing to trigger from                                                                                                                                                                                                     |
+| Thing Test       | (Multi-thing mode) Can be configured to check against any static attributes of each _thing_. List of matching <i>things</i> is made immediately after setup and is not updated until nodes are re-deployed. Each _thing_ is tracked individually. |
+| Output...        | Configure **when** to trigger an output.                                                                                                                                                                                                          |
+| Payload          | Configure **what** to output on `msg.payload`                                                                                                                                                                                                     |
 
 ##### Output
 
@@ -205,37 +193,30 @@ A trigger-type node that will listen for messages from _command_ nodes for a spe
 | `payload` | any      | The command, passed from a command node. |
 | `thing`   | _object_ | The entire thing object.                 |
 
-## Proxy System
-
-There are two parts to the proxy system: state and command. State proxies map one part of a thing's state to another thing. Command proxies forward certain commands to another thing.
-
-If utilized, the proxy object must contain keys of the other things (by name) and values that are an object with the following key/value pairs:
-
-- `state` - An object map where the keys are the state properties of this thing. The values are the state properties of the child thing. All state properties of the child thing that are mapped here will be available in the state of the parent thing.
-- `command` - An object map of commands to be proxied. The keys are the commands that you want to be available on the parent thing. The values are the relative command to use on the child thing.
-
-An example of a proxy object: Let's suppose there are two things defined in setup: `TV`, a TV that is controlled via some IR interface and `TV Power`, a smart plug that the TV is plugged into, because the IR cannot specifically turn the power on and off, just toggle. In the setup for the `TV`, we use the following proxy object:
-
-```
-{
-  "TV Power": {
-    "state": {
-      "power": "on"
-    },
-    "command": {
-      "on": "true",
-      "off": "false"
-    }
-  }
-}
-```
-
-This means `TV` will have `state.power` that will be in-sync with `TV Power`'s `state.on`. When `TV Power`'s state changes, it will also trigger `TV`'s state to change. When the `on` or `off` command is sent to `TV`, it will actually be forwarded to `TV Power` as `true` or `false`, respectively.
-
 ## Groups
 
-There is a special thing type for groups. During setup, use type "Group" and the Things input matrix will switch into a list-style input. Specify the group name and then list each thing in the group. Currently, groups are only used when sending commands. Sending a command to a group will automatically propagate the same command to all things in the group, regardless of those things' types. Groups can also be nested, as command forwading is recursive. The _update_ nodes has no effect on Group type things. However, the _trigger_ node can be configured to trigger from all things in the same group.
+There is a special thing `type` **Group**. Things with this `type` have unique features (see below). Groups can be nested and all functionality is recursive. They can also be useful for filtering on the _test_ and _trigger_ nodes.
+
+## Proxying
+
+**Proxies** come in two flavors: `state` and _command_.
+
+How they are defined and used depends if a _thing_ is of the special **Group** `type`, or any other `type`.
+
+#### Group `type`
+
+`States` are derived by reducing the `state` of all _things_ in the group to one value. They are configured in the _setup_ node under the _State of the Group_ tab.
+
+**All** _commands_ sent to a Group `type` _thing_ are automatically forwarded to **all** _things_ in the group.
+
+#### Non-Group `type`
+
+`State` proxies map to `state` from a different _thing_.
+
+_Command_ proxies forward _commands_ to a different _thing_.
+
+For non-Group `type` _things_, both proxy flavors are configured in the _setup_ node under the _Proxy_ tab.
 
 ## Bugs and Feedback
 
-For bugs, questions and discussions please use the [GitHub Issues](https://github.com/hufftheweevil/node-red-contrib-things/issues).
+For bug reports, feature requests, and questions please use the [GitHub Issues](https://github.com/hufftheweevil/node-red-contrib-things/issues).
