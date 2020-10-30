@@ -56,40 +56,38 @@
         }
       })
 
-      if (this.multiMode) {
-        let multi1 = $('#node-input-multi-1')
-        let multi2 = $('#node-input-multi-2')
+      let multi1 = $('#node-input-multi-1')
+      let multi2 = $('#node-input-multi-2')
 
-        multi1.typedInput({
-          default: this.multiKey || 'name',
-          types: thingPropsTypes.filter(tpt => tpt.value != 'state')
-        })
-        let typesForProps = ['str', 'num', 'bool', 're']
-        let typesForNonProps = [
-          {
-            value: 'str',
-            icon: 'red/images/typedInput/az.png',
-            label: 'exact'
-          },
-          're'
-        ]
+      multi1.typedInput({
+        default: this.multiKey || 'name',
+        types: thingPropsTypes.filter(tpt => tpt.value != 'state')
+      })
+      let typesForProps = ['str', 'num', 'bool', 're']
+      let typesForNonProps = [
+        {
+          value: 'str',
+          icon: 'red/images/typedInput/az.png',
+          label: 'exact'
+        },
+        're'
+      ]
 
-        if (this.multiKey.startsWith('props')) {
-          multi1.typedInput('type', 'props')
-          multi1.typedInput('value', this.multiKey.slice(6))
+      if (this.multiKey && this.multiKey.startsWith('props')) {
+        multi1.typedInput('type', 'props')
+        multi1.typedInput('value', this.multiKey.slice(6))
 
-          multi2.typedInput({ types: typesForProps })
-        } else {
-          multi2.typedInput({ types: typesForNonProps })
-        }
-        multi1.on('change', function (xx, valType) {
-          let newTypes = valType == 'props' ? typesForProps : typesForNonProps
-          multi2.typedInput('types', newTypes)
-        })
-
-        multi2.typedInput('type', this.multiTest)
-        multi2.typedInput('value', this.multiValue)
+        multi2.typedInput({ types: typesForProps })
+      } else {
+        multi2.typedInput({ types: typesForNonProps })
       }
+      multi1.on('change', function (xx, valType) {
+        let newTypes = valType == 'props' ? typesForProps : typesForNonProps
+        multi2.typedInput('types', newTypes)
+      })
+
+      multi2.typedInput('type', this.multiTest)
+      multi2.typedInput('value', this.multiValue)
 
       // TRIGGER PATH
 
@@ -133,13 +131,13 @@
     },
     oneditsave: function () {
       // Multi-mode
-      if ($('#node-input-multiMode').val()) {
+      if (this.multiMode) {
         this.multiKey = $('#node-input-multi-1').typedInput('type')
         if (this.multiKey == 'props')
           this.multiKey += '.' + $('#node-input-multi-1').typedInput('value')
+        this.multiTest = $('#node-input-multi-2').typedInput('type')
+        this.multiValue = $('#node-input-multi-2').typedInput('value')
       }
-      this.multiTest = $('#node-input-multi-2').typedInput('type')
-      this.multiValue = $('#node-input-multi-2').typedInput('value')
 
       // Advanced-trigger-mode
       if (this.output == 'path') {
