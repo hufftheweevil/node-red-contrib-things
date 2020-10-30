@@ -4,6 +4,9 @@ module.exports = function (RED) {
   function Node(config) {
     RED.nodes.createNode(this, config)
 
+    // THIS LINE ONLY: ADJUST FROM (BAD) OLD VERSION
+    if (config.outputValue == 'names') config.outputValue = 'name'
+
     const node = this
     const global = this.context().global
 
