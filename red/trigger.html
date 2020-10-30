@@ -1,4 +1,13 @@
 <script type="text/javascript">
+  function genMultiParams(obj = {}) {
+    obj.multiKey = $('#node-input-multi-1').typedInput('type')
+    let path = $('#node-input-multi-1').typedInput('value')
+    if (obj.multiKey == 'props' && path) obj.multiKey += '.' + path
+    obj.multiTest = $('#node-input-multi-2').typedInput('type')
+    obj.multiValue = $('#node-input-multi-2').typedInput('value')
+    return obj
+  }
+
   RED.nodes.registerType('Thing Trigger', {
     paletteLabel: 'trigger',
     category: 'things',
@@ -50,9 +59,11 @@
         if ($(this).prop('checked')) {
           $('#row-thingName').hide()
           $('#row-thingTest').show()
+          $('#thing-test-results').show()
         } else {
           $('#row-thingName').show()
           $('#row-thingTest').hide()
+          $('#thing-test-results').hide()
         }
       })
 
@@ -84,10 +95,74 @@
       multi1.on('change', function (xx, valType) {
         let newTypes = valType == 'props' ? typesForProps : typesForNonProps
         multi2.typedInput('types', newTypes)
+        updateMatches()
       })
 
       multi2.typedInput('type', this.multiTest)
       multi2.typedInput('value', this.multiValue)
+      multi2.on('change', updateMatches)
+
+      // Get list of all things currently configured; for updateMatches()
+      const things = {}
+      const THINGS = []
+      RED.nodes.eachNode(node => {
+        node.type == 'Thing Setup' &&
+          node.things &&
+          node.things.forEach(thing => {
+            things[thing.name] = thing
+            THINGS.push(thing)
+          })
+      })
+
+      function updateMatches() {
+        // Get current configuration
+        let { multiValue, multiTest, multiKey } = genMultiParams()
+
+        // Make test (similar to what happens at trigger.js)
+        if (multiTest == 're') multiValue = new RegExp(multiValue)
+        let test = {
+          str: value => multiValue == value,
+          num: value => +multiValue == value,
+          bool: value => (multiValue == 'true') == value,
+          re: value => multiValue.test(value)
+        }[multiTest]
+
+        // Copied from trigger.js
+        function recurFindThings(name) {
+          let thing = things[name] || {}
+          return thing.type == 'Group' ? thing.things.flatMap(recurFindThings) : [thing.name]
+        }
+
+        // Copied from trigger.js and modified
+        let matches =
+          multiKey == 'group'
+            ? THINGS.filter(thing => thing.type == 'Group' && test(thing.name)).flatMap(group =>
+                recurFindThings(group.name)
+              )
+            : THINGS.filter(thing => {
+                try {
+                  return test(RED.utils.getMessageProperty(thing, multiKey))
+                } catch (err) {
+                  console.log(`Unable to test ${thing.name} for ${multiKey}: ${err}`)
+                  return false
+                }
+              }).map(thing => thing.name)
+
+        let results = $('#thing-test-results')
+        results.empty()
+
+        let num = $('<span>')
+          .text(`Matches ${matches.length} thing${matches.length == 1 ? '' : 's'}`)
+          .appendTo(results)
+
+        let list = $('<ul>')
+          .append(matches.map(name => $('<li>').text(name)))
+          .appendTo(results)
+          .hide()
+
+        num.on('click', () => list.toggle())
+      }
+      if (this.multiMode) updateMatches()
 
       // TRIGGER PATH
 
@@ -131,13 +206,7 @@
     },
     oneditsave: function () {
       // Multi-mode
-      if (this.multiMode) {
-        this.multiKey = $('#node-input-multi-1').typedInput('type')
-        if (this.multiKey == 'props')
-          this.multiKey += '.' + $('#node-input-multi-1').typedInput('value')
-        this.multiTest = $('#node-input-multi-2').typedInput('type')
-        this.multiValue = $('#node-input-multi-2').typedInput('value')
-      }
+      if (this.multiMode) genMultiParams(this)
 
       // Advanced-trigger-mode
       if (this.output == 'path') {
@@ -178,6 +247,7 @@
     <input type="text" id="node-input-multi-1" style="width: 35%" />
     <input type="text" id="node-input-multi-2" style="width: 40%" />
   </div>
+  <div id="thing-test-results" style="padding-left: 115px; margin-bottom: 15px"></div>
   <div class="form-row">
     <label for="node-input-output"><i class="fa fa-list"></i> Output...</label>
     <select id="node-input-output" style="width: 70%">
@@ -250,7 +320,9 @@
     <dd>
       (Multi-thing mode) Can be configured to check against any static attributes of each
       <i>thing</i>. List of matching <i>things</i> is made immediately after setup and is not
-      updated until nodes are re-deployed. Each <i>thing</i> is tracked individually.
+      updated until nodes are re-deployed. Each <i>thing</i> is tracked individually. Editor will
+      show how many <i>things</i> match the current configuration. Click the number to see the full
+      list.
     </dd>
     <dt class="required">Output...</dt>
     <dd>

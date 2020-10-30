@@ -116,7 +116,6 @@ module.exports = function (RED) {
           config.multiKey == 'group'
             ? THINGS.filter(thing => thing.type == 'Group' && test(thing.name))
                 .flatMap(group => recurFindThings(group.name))
-                // .reduce((list, group) => [...list, ...nameOrThings(group.name)], [])
                 .map(thingName => new ThingWatcher(thingName))
             : THINGS.filter(thing => {
                 try {
