@@ -7,14 +7,8 @@ function pushUnique(array, item) {
 }
 
 let p = n => ('' + n).padStart(2, '0')
-
-function now() {
-  let d = new Date()
-
-  return `${d.getMonth() + 1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}:${p(
-    d.getSeconds()
-  )}`
-}
+let now = (d = new Date()) =>
+  `${d.getMonth() + 1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
 
 const TESTS = {
   eq: (a, b) => a == b,
