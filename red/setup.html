@@ -1022,8 +1022,13 @@
         editFn($(row).data().data, function (newThing) {
           currentEdit = null
           breadcrumb.remove()
-          $(row).data().data = newThing
-          $(row).find('.red-ui-treeList-label').text(makeLabel(newThing))
+
+          if (newThing.name === '') {
+            lists.things.editableList('removeItem', $(row).data().data)
+          } else {
+            $(row).data().data = newThing
+            $(row).find('.red-ui-treeList-label').text(makeLabel(newThing))
+          }
         })
       }
 
