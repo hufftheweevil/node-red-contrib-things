@@ -69,7 +69,6 @@
     },
     oneditprepare: function () {
       let [__, key, path] = this.outputValue.match(/^([a-z]+)(?:\.(.*))?/)
-      console.log({ key, path, extendedThingPropsTypes })
 
       // THIS LINE ONLY: ADJUST FROM (BAD) OLD VERSION
       if (key == 'names') key = 'name'

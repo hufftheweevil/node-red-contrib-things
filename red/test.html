@@ -201,6 +201,9 @@
             .text('ignore case')
             .appendTo(caseSensitive)
 
+          propField.on('change', function (xx, valType) {
+            selectField[valType == 'group' ? 'hide' : 'show']()
+          })
           selectField.on('change', function () {
             let type = selectField.val()
 
@@ -235,7 +238,7 @@
           propField.typedInput('type', root)
           if (path) propField.typedInput('value', path)
 
-          selectField.val(rule.compare)
+          if (operators.find(op => op.v == rule.compare)) selectField.val(rule.compare)
           selectField.change() // Ensure proper types are listed before loading types and values
 
           valueField.typedInput('type', rule.valType)
@@ -357,17 +360,27 @@
 </script>
 
 <script type="text/html" data-help-name="Thing Test">
-<p>A node that allows a message to pass based on specified conditions related to a <i>thing</i>. The message will not be modified.</p>
-<h3>Properties</h3>
-<dl class="message-properties">
-<dt class="required">Thing Name</dt><dd>The <i>thing</i> to reference</dd>
-<dt class="required">Conditions</dt><dd>The conditions that must be met to allow the message to pass through</dd>
-<dt class="required">2nd Output</dt><dd>Optionally choose to have a 2nd output that will pass the message if the test fails</dd>
-</dl>
-<h3>Input</h3>
-<dl class="message-properties">
-<dt class="optional"><code>topic</code> <span class="property-type">string</span></dt><dd><i>Thing</i> <code>name</code>, if not specified in properties. <b>Note:</b> will not override property setting.</dd>
-</dl>
-<h3>Output</h3>
-<p>Input message will be passed through</p>
+  <p>
+    A node that allows a message to pass based on specified conditions related to a <i>thing</i>.
+    The message will not be modified.
+  </p>
+  <h3>Properties</h3>
+  <dl class="message-properties">
+    <dt class="required">Thing Name</dt>
+    <dd>The <i>thing</i> to reference</dd>
+    <dt class="required">Conditions</dt>
+    <dd>The conditions that must be met to allow the message to pass through</dd>
+    <dt class="required">2nd Output</dt>
+    <dd>Optionally choose to have a 2nd output that will pass the message if the test fails</dd>
+  </dl>
+  <h3>Input</h3>
+  <dl class="message-properties">
+    <dt class="optional"><code>topic</code> <span class="property-type">string</span></dt>
+    <dd>
+      <i>Thing</i> <code>name</code>, if not specified in properties. <b>Note:</b> will not override
+      property setting.
+    </dd>
+  </dl>
+  <h3>Output</h3>
+  <p>Input message will be passed through</p>
 </script>
