@@ -1011,16 +1011,25 @@
       // ---------------------------- onEditPrepare >>> edit
 
       function edit(row) {
-        if ($('#node-input-thingType').val() == 'Group') editGroup(row)
-        else editThing(row)
+        let thingType = $('#node-input-thingType').val()
+        let breadcrumb = $('<li>')
+          .html(thingType + ' thing')
+          .appendTo('.red-ui-tray-breadcrumbs')
+
+        currentEdit = row
+
+        let editFn = thingType == 'Group' ? editGroup : editThing
+        editFn($(row).data().data, function (newThing) {
+          currentEdit = null
+          breadcrumb.remove()
+          $(row).data().data = newThing
+          $(row).find('.red-ui-treeList-label').text(makeLabel(newThing))
+        })
       }
 
       // ---------------------------- onEditPrepare >>> edit group
-      function editGroup(row) {
-        currentEdit = row
-
-        let thing = $(row).data().data
-
+      function editGroup(thing, onDone) {
+        // Load current thing config
         $('#node-input-group-name').val(thing.name || '')
         populateList(
           'group_things',
@@ -1031,8 +1040,6 @@
 
         showDetail(groupPage, function () {
           // Callback ran when back button used (GROUP) to save thing
-          currentEdit = null
-          let err
           let newThing = {}
 
           newThing.name = $('#node-input-group-name').val()
@@ -1066,22 +1073,14 @@
           let status = node.statusEditors.group.getValue()
           if (status) newThing.statusFn = status
 
-          if (err) {
-            node.error('Error saving thing', err)
-            return false
-          }
-          $(row).data().data = newThing
-          $(row).find('.red-ui-treeList-label').text(makeLabel(newThing))
+          onDone(newThing)
         })
         tabs.group.resize()
       }
 
       // ---------------------------- onEditPrepare >>> edit thing
-      function editThing(row) {
-        currentEdit = row
-
-        let thing = $(row).data().data
-
+      function editThing(thing, onDone) {
+        // Load current thing config
         $('#node-input-thing-name').val(thing.name || '')
         $('#node-input-thing-id').val(thing.id || '')
         populateList('thing_props', objToArray(thing.props))
@@ -1096,8 +1095,6 @@
 
         showDetail(thingPage, function () {
           // Callback ran when back button used (NON-GROUP) to save thing
-          currentEdit = null
-          let err
           let newThing = {}
 
           newThing.name = $('#node-input-thing-name').val()
@@ -1145,12 +1142,7 @@
           let status = node.statusEditors.thing.getValue()
           if (status) newThing.statusFn = status
 
-          if (err) {
-            node.error('Error saving thing', err)
-            return false
-          }
-          $(row).data().data = newThing
-          $(row).find('.red-ui-treeList-label').text(makeLabel(newThing))
+          onDone(newThing)
         })
         tabs.thing.resize()
       }
