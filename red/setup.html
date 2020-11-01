@@ -867,7 +867,7 @@
             .appendTo(row)
             .typedInput({
               types: ['str', 'num', 'bool', 'json', 're'],
-              default: getType(data.value || '')
+              default: data.hasOwnProperty('value') ? getType(data.value) : 'str'
             })
             .typedInput('value', typedToString(data.value))
         }
