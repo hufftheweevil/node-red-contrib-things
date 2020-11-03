@@ -5,7 +5,9 @@ A set of [Node-RED](https://github.com/node-red/node-red) nodes that uses an agn
 [![GitHub release](https://img.shields.io/github/release/hufftheweevil/node-red-contrib-things.svg?style=flat-square)](https://github.com/hufftheweevil/node-red-contrib-things/releases) [![NPM Version](https://img.shields.io/npm/v/node-red-contrib-things.svg?style=flat-square)](https://www.npmjs.com/package/node-red-contrib-things) [![GitHub last commit](https://img.shields.io/github/last-commit/hufftheweevil/node-red-contrib-things.svg?style=flat-square)](https://github.com/hufftheweevil/node-red-contrib-things/commits/master) [![Github All Releases](https://img.shields.io/npm/dw/node-red-contrib-things)](https://github.com/hufftheweevil/node-red-contrib-things/releases)
 [![Node version](https://img.shields.io/node/v/node-red-contrib-things.svg?style=flat-square)](http://nodejs.org/download/) [![GitHub repo size in bytes](https://img.shields.io/github/repo-size/hufftheweevil/node-red-contrib-things.svg?style=flat-square)](https://github.com/hufftheweevil/node-red-contrib-things) [![npm](https://img.shields.io/npm/l/node-red-contrib-things.svg?style=flat-square)](https://github.com/hufftheweevil/node-red-contrib-things/blob/master/LICENSE)
 
-**[Upgrading from v2?](#upgrading-from-v2)**
+### NOTICE
+
+This package is currently undergoing a rework that may change some of the functionality. `v2.4.5` is the latest published package on NPM and is confirmed to be stable. The latest commit to this repo represents `v3.0.0-alpha`. **However**, the creator has decided to make one more major change before `v3` final is released. `v3-alpha` is not recommend for production use at this time.
 
 ### Purpose
 
@@ -45,10 +47,6 @@ A **_thing_**, as used in this library, is any device or entity in Node-RED that
 This library of nodes does not actually connect to any of the devices; it only acts as a state management system. All outside communication will need to go through another Node-RED node. For example, if using Lifx lights, you will need one of the Lifx Node-RED libraries.
 
 All _things_ configured in the setup nodes are listed in the **Things Directory** sidebar tab after deployment.
-
-### Upgrading from v2
-
-Version 3 has been designed to automatically upgrade any nodes from version 2. The main difference is how the configuration data is stored for the _setup_ node. Therefore, it is **highly recommended** to backup your `flows.json` file before upgrading. After upgrading to version 3, it is **recommended** to open every _setup_ node you have and verify that they remain configured as you want. Many tests have been done to ensure everything upgrades properly, but of course there is always a chance for something to go wrong. Please report any bugs you encounter.
 
 ## Nodes
 
