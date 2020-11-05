@@ -1,3 +1,4 @@
+<script src="things/ui-utils.js"></script>
 <script type="text/javascript">
   function genMultiParams(obj = {}) {
     obj.multiKey = $('#node-input-multi-1').typedInput('type')
@@ -37,8 +38,9 @@
       return this.nodeName || (!this.multiMode && this.name) ? 'node_label_italic' : ''
     },
     oneditprepare: function () {
-      // Following variables are declared globally in test.html
-      // operators, thingPropsTypes, basicTypes, typeTypes
+      // Following variables are declared globally in ui-utils.js
+      // operators, opHasValue(), thingPropsTypes, basicTypes, typeTypes
+      // resizeRule(), resizeRuleContainer(), loadRulesContainer(), saveRules()
 
       let StateType = {
         value: 'str',

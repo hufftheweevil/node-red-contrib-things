@@ -243,4 +243,8 @@ module.exports = function (RED) {
       sendToWs(makeListPacket())
     }
   })
+
+  RED.httpAdmin.get('/things/ui-utils.js', function (req, res) {
+    res.sendFile(__dirname + '/ui-utils.js')
+  })
 }
