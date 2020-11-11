@@ -38,10 +38,6 @@
       return this.nodeName || (!this.multiMode && this.name) ? 'node_label_italic' : ''
     },
     oneditprepare: function () {
-      // Following variables are declared globally in ui-utils.js
-      // operators, opHasValue(), thingPropsTypes, basicTypes, typeTypes
-      // resizeRule(), resizeRuleContainer(), loadRulesContainer(), saveRules()
-
       let StateType = {
         value: 'str',
         label: 'state.',
@@ -73,7 +69,7 @@
 
       multi1.typedInput({
         default: this.multiKey || 'name',
-        types: thingPropsTypes.filter(tpt => tpt.value != 'state')
+        types: THI.thingPropsTypes.filter(tpt => tpt.value != 'state')
       })
       let typesForProps = ['str', 'num', 'bool', 're']
       let typesForNonProps = [
@@ -138,15 +134,15 @@
         // Copied from trigger.js
         function recurFindThings(name) {
           let thing = things[name] || {}
-          return thing.type == 'Group' ? thing.things.flatMap(recurFindThings) : [thing.name]
+          return [thing.name, ...thing.children.flatMap(recurFindThings)]
         }
 
         // Copied from trigger.js and modified
         let matches =
-          multiKey == 'group'
-            ? THINGS.filter(thing => thing.type == 'Group' && test(thing.name)).flatMap(group =>
-                recurFindThings(group.name)
-              )
+          multiKey == 'child'
+            ? THINGS.filter(thing => test(thing.name)).flatMap(t => t.children)
+            : multiKey == 'descendant'
+            ? THINGS.filter(thing => test(thing.name)).flatMap(t => recurFindThings(t.name))
             : THINGS.filter(thing => {
                 try {
                   return test(RED.utils.getMessageProperty(thing, multiKey))
@@ -179,12 +175,12 @@
       let compare = $('#node-input-outputTest-compare')
       let forVal = $('#node-input-outputTest-for')
 
-      operators
+      THI.operators
         .filter(opt => !/btwn|istype/.test(opt.v))
         .forEach(opt => $('<option>', { value: opt.v }).text(opt.t).appendTo(compare))
 
       let optShide = val =>
-        forVal.typedInput(operators.find(o => o.v == val).hasValue === false ? 'hide' : 'show')
+        forVal.typedInput(THI.operators.find(o => o.v == val).hasValue === false ? 'hide' : 'show')
 
       $('#node-input-outputPath').typedInput({ types: [StateType] })
       forVal.typedInput({ types: basicTypes, default: 'str' }).typedInput('width', '140px')

@@ -43,19 +43,15 @@
     },
     outputLabels: ['Pass', 'Fail'],
     oneditprepare: function () {
-      // Following variables are declared globally in ui-utils.js
-      // operators, opHasValue(), thingPropsTypes, basicTypes, typeTypes
-      // resizeRule(), resizeRuleContainer(), loadRulesContainer(), saveRules()
-      let node = this
-      loadRulesContainer(this.rules)
+      THI.loadRulesContainer(this.rules)
     },
     oneditsave: function () {
-      this.rules = saveRules()
+      this.rules = THI.saveRules()
       this.propertyType = $('#node-input-property').typedInput('type')
 
       $('#node-input-outputs').val($('#node-input-secondOutput').prop('checked') ? 2 : 1)
     },
-    oneditresize: resizeRuleContainer
+    oneditresize: THI.resizeRuleContainer
   })
 </script>
 

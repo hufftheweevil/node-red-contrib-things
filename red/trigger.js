@@ -1,4 +1,5 @@
-let { stateBus, TESTS } = require('./shared')
+let { stateBus } = require('../lib/bus.js')
+let { TESTS } = require('../lib/utils.js')
 
 module.exports = function (RED) {
   function Node(config) {
@@ -104,14 +105,14 @@ module.exports = function (RED) {
 
         function recurFindThings(name) {
           let thing = things[name] || {}
-          return thing.type == 'Group' ? thing.things.flatMap(recurFindThings) : [thing.name]
+          return [thing.name, ...thing.children.flatMap(recurFindThings)]
         }
 
         // Generate list of things that match conditions
-        watchers = (config.multiKey == 'group'
-          ? THINGS.filter(thing => thing.type == 'Group' && test(thing.name)).flatMap(group =>
-              recurFindThings(group.name)
-            )
+        watchers = (config.multiKey == 'child'
+          ? THINGS.filter(thing => test(thing.name)).flatMap(t => t.children)
+          : config.multiKey == 'descendant'
+          ? THINGS.filter(thing => test(thing.name)).flatMap(t => recurFindThings(t.name))
           : THINGS.filter(thing => {
               try {
                 return test(RED.util.getObjectProperty(thing, config.multiKey))

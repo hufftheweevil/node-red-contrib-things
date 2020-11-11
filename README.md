@@ -50,6 +50,11 @@ All _things_ configured in the setup nodes are listed in the **Things Directory*
 
 Version 3 has been designed to automatically upgrade any nodes from version 2. The main difference is how the configuration data is stored for the _setup_ node. Therefore, it is **highly recommended** to backup your `flows.json` file before upgrading. After upgrading to version 3, it is **recommended** to open every _setup_ node you have and verify that they remain configured as you want. Many tests have been done to ensure everything upgrades properly, but of course there is always a chance for something to go wrong. Please report any bugs you encounter.
 
+**Major changes from v2 to v3:**
+
+- The concept of "Groups" has been morphed into Children, and available for any `type`.
+- The two parts of the "Proxy" system have moved. State proxies are now part of the State setup. And command proxies are now part of the Command setup. See [Setup](#setup) below.
+
 ## Nodes
 
 There are 8 nodes included: _setup_, _update_, _trigger_, _get_, _test_, _list_, _command_, and _process_.
@@ -60,13 +65,22 @@ All _things_ must be configured using this node. Use a different _setup_ node fo
 
 ##### Properties
 
-| Property        | Info                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Thing Type      | User's choice. Typically, the platform that these _things_ use to connect outside of Node-RED. Special type "Group" can be used to access advanced group features.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| Things          | Each <i>thing</i> of this `type` is listed. Click a <i>thing</i> to see detailed setup properties. <ul> <li><code>Name</code>s must be unique among <b>all</b> <i>things</i></li> <li><code>ID</code>s must be unique among all <i>things</i> of the same `type`</li><li>Individual `status functions` can be set for each _thing_. If not specified, the `type`-level `status function` will be used. </li> <li> For non-Group <i>things</i> <ul> <li> Initial `state` values will not override current _thing_ `state` during re-deployment. </li> <li> `Proxies` come in two flavors <ul> <li><i>State proxies</i> allow a _thing_ to get `state` from a child _thing_</li> <li><i>Command proxies</i> allow a _thing_ to forward a command to a child _thing_</li> </ul> </li> </ul> </li> <li> For Group <i>things</i> <ul> <li>List all of the <i>things</i> by `name` that should be included in the group. Groups can be nested.</li> <li> `State` getters take the `state` of all <i>things</i> in the group and reduce to one value. They can be a pre-defined reduction method, or a custom function. When using a custom function, the parameter `values` is an array. In any case, `null` and `undefined` states are ignored. </li><li>For nested groups, only the direct children of each group are used when determining `state`. </ul> </li> </ul> |
-| Status Function | Optional. A function that runs to determine the status of a <i>thing</i>. Function is run with current <code>state</code> and <code>props</code> as input, and should output a node status object. The object can contain <code>text</code>, <code>fill</code>, and/or <code>shape</code>. If a thing has its own status function, that will be used. Otherwise the `type`-level status function will be used.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Property   | Info                                                                                                                                                               |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Thing Type | User's choice. Typically, the platform that these _things_ use to connect outside of Node-RED.                                                                     |
+| Things     | Each _thing_ of this `type` is listed. Click a _thing_ to see detailed setup properties.                                                                           |
+| \*Common   | Optional. Each `type` can have common State, Commands, or Status Function. These get applied to all _things_ of this `type` unless overriden at the _thing_ level. |
 
-See README for more information on **Groups** and **Proxies**.
+**For each thing:**
+| Property | Info
+| -------- | --------- |
+| Name | Required. Must be unique among **all** _things_
+| ID | Optional. Must be unique among all _things_ of same `type`
+| Props | Optional. Static properties
+| State | Optional. Initial state and proxied states. <ul> <li> On re-deployment, static values will only initialize if key is not already assigned. </li><li> Proxied states can point to another _thing_ or own `children`. </li><li> Proxied states can refer to the same key or a different key. Or, if using a custom function for all `children`, then the entire state can be used. </li><li> Custom function is given an array of `values`. Output should be the reduced state for _thing_. </li> </ul>
+| Commands | Optional. Special actions to take when handling commands. <ul> <li>Any command not listed will be processed as the _thing_ itself **and** will also be sent to all `children`. If this is not desired, configure it here. </li><li> Configure a specific type of command, or use `test` to do a regex test. </li><ul><li> Key-type can be used for object-style commands. </li></ul><li> Commands can be configured to be processed as self only, forwarded to `children` only, or forwarded to another _thing_. </li><li> Commands can be transformed to other commands before being processed/forwarded. </li><ul><li> If using a key-type command and also using a transform, then the value of the key in the command object will be lost. </li></ul> </ul>
+| Children | Optional. A list of other _things_. <ul> <li> Children can be used to create a dynamic state for the parent _thing_. Use `State` to configure. </li><li> All commands are automatically forwarded to all children, unless configured differently in `Commands`. </li> <li>The parent-child relationship can be many-to-many.</li> </ul>
+| Stautus Function | Optional. A function that runs to determine the status of a _thing_. Function is run with current `state` and `props` as input, and should output a node status object. The object can contain `text`, `fill`, and/or `shape`. If a thing has its own status function, that will be used. Otherwise the `type`-level status function will be used.
 
 ### update
 
@@ -165,9 +179,9 @@ The input message will be forwarded (unless `Discard input message` is checked),
 
 ### command
 
-A node that will initiate the sending of a command to a _thing_ or multiple _things_. Note that this node does not provide any communication to the outside. It will only relay messages to respective _process_ nodes.
+A node that will initiate the sending of a command to a _thing_ or multiple _things_. Note that this node does not provide any communication to the outside. It will only relay messages to respective _process_ node(s).
 
-The node will recurse through any groups and proxies before determining _thing_ `type`, then forward to the respective _process_ node(s).
+The node will check for any command configuration for the _thing_ and transform/forward, if necessary. If there is no configuration, then the command is processed for self and also forwarded to all children.
 
 ##### Properties
 
@@ -201,30 +215,6 @@ A node that will listen for messages from _command_ nodes for a specific _thing_
 | `topic`   | _string_ | As configured in properties                 |
 | `payload` | any      | The _command_, passed from a _command_ node |
 | `thing`   | _object_ | The entire thing object                     |
-
-## Groups
-
-There is a special thing `type` **Group**. Things with this `type` have unique features (see below). Groups can be nested and all functionality is recursive. They can also be useful for filtering on the _test_ and _trigger_ nodes.
-
-## Proxying
-
-**Proxies** come in two flavors: `state` and _command_.
-
-How they are defined and used depends if a _thing_ is of the special **Group** `type`, or any other `type`.
-
-#### Group `type`
-
-`States` are derived by reducing the `state` of all _things_ in the group to one value. They are configured in the _setup_ node under the _State of the Group_ tab.
-
-**All** _commands_ sent to a Group `type` _thing_ are automatically forwarded to **all** _things_ in the group.
-
-#### Non-Group `type`
-
-`State` proxies map to `state` from a different _thing_.
-
-_Command_ proxies forward _commands_ to a different _thing_.
-
-For non-Group `type` _things_, both proxy flavors are configured in the _setup_ node under the _Proxy_ tab.
 
 ## Bugs and Feedback
 

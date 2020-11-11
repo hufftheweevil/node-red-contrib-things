@@ -34,12 +34,8 @@
 
 <script src="things/ui-utils.js"></script>
 <script type="text/javascript">
-  // Following variables are declared globally in ui-utils.js
-  // operators, opHasValue(), thingPropsTypes, basicTypes, typeTypes
-  // resizeRule(), resizeRuleContainer(), loadRulesContainer(), saveRules()
-
   let extendedThingPropsTypes = [
-    ...thingPropsTypes.filter(tpt => tpt.value != 'group'),
+    ...THI.thingPropsTypes.filter(tpt => !/child|descendant/.test(tpt.value)),
     {
       value: 'thing',
       label: 'whole thing',
@@ -86,7 +82,7 @@
         types: ['msg']
       })
 
-      loadRulesContainer(this.rules)
+      THI.loadRulesContainer(this.rules)
     },
     oneditsave: function () {
       this.outputValue = $('#node-input-output').typedInput('type')
@@ -97,12 +93,12 @@
       )
         this.outputValue += '.' + path
 
-      this.rules = saveRules()
+      this.rules = THI.saveRules()
       this.propertyType = $('#node-input-property').typedInput('type')
 
       $('#node-input-outputs').val($('#node-input-secondOutput').prop('checked') ? 2 : 1)
     },
-    oneditresize: resizeRuleContainer
+    oneditresize: THI.resizeRuleContainer
   })
 </script>
 

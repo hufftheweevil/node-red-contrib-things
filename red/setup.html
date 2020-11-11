@@ -1,415 +1,6 @@
+<script src="things/convert.js"></script>
+<script src="things/directory.js"></script>
 <script type="text/javascript">
-  let sidebar = (function () {
-    let socket
-
-    function connect() {
-      socket = new WebSocket(`ws://${window.location.hostname}:8120/`)
-      socket.onopen = () => {
-        $('#things-dir-info').text('awaiting list')
-        socket.send('list')
-      }
-      socket.onmessage = event => {
-        $('#things-dir-info').text('connected')
-        let { topic, payload } = JSON.parse(event.data)
-        switch (topic) {
-          case 'list':
-            fullRefresh(payload)
-            break
-          case 'update':
-            let newRow = makeThingRow(payload)
-            $(`#Thing__${withoutSpaces(payload.name)}`).replaceWith(newRow)
-            fixBorder(newRow)
-            if (filterType && filterType != payload.type) newRow.hide()
-            break
-        }
-      }
-      socket.onclose = () => {
-        $('#things-dir-info').text('DISCONNECTED...')
-        setTimeout(() => socket.readyState !== WebSocket.OPEN && connect(), 5000)
-      }
-    }
-    connect()
-
-    let filterType
-    let dialog
-
-    let statusColors = {
-      red: '#c00',
-      green: '#5a8',
-      yellow: '#F9DF31',
-      blue: '#53A3F3',
-      grey: '#d3d3d3',
-      gray: '#d3d3d3'
-    }
-
-    function fixBorder(row) {
-      // Fixes border color for non-standard themes
-      $(row.children()[1]).css('border-right-color', $(row.children()[0]).css('border-right-color'))
-    }
-
-    function withoutSpaces(str) {
-      return str.replace(/ /g, '__')
-    }
-
-    function init() {
-      let content = $('<div>').addClass('red-ui-sidebar-context red-ui-sidebar-context-stack').css({
-        position: 'relative',
-        height: '100%',
-        overflowY: 'hidden'
-      })
-
-      // Header...
-
-      let header = $('<div>').appendTo(content)
-
-      $('<select id="things-type-filter">')
-        .css({ float: 'left', height: 28, margin: 2, fontSize: 12 })
-        .change(function () {
-          let value = $(this).val()
-          if (value == '') {
-            filterType = null
-            $(`#things-table tr`).show()
-            $(`#things-type-filter [value='']`).text('Filter type...')
-          } else {
-            filterType = value
-            $(`#things-table tr`)
-              .not(`.thing-row-type-${withoutSpaces(value)}`)
-              .not(`:first-child`)
-              .hide()
-            $(`#things-table tr.thing-row-type-${withoutSpaces(value)}`).show()
-            $(`#things-type-filter [value='']`).text('xxxx Clear Filter xxxx')
-          }
-        })
-        .html('<option value="">Filter type...</option>')
-        .appendTo(header)
-
-      $('<span id="things-dir-info">initializing...</span>')
-        .addClass('red-ui-sidebar-context-updated')
-        .css({ float: 'right', padding: 5 })
-        .appendTo(header)
-
-      // Table...
-
-      let tableCont = $('<div>')
-        .css({ clear: 'both', overflowY: 'scroll', height: 'calc(100% - 30px)' })
-        .appendTo(content)
-
-      let table = $('<table>')
-        .addClass('red-ui-info-table')
-        .html('<tbody id="things-table"></tbody>')
-        .appendTo(tableCont)
-
-      // Add tab
-      RED.sidebar.addTab({
-        id: 'things-directory',
-        label: ' things',
-        name: 'Things Directory',
-        content,
-        enableOnEdit: true,
-        iconClass: 'fa fa-cubes'
-      })
-
-      // First request
-      // *** MUST BE DONE LAST; for some reason no code runs after this ***
-      socket.send('list')
-    }
-
-    function fullRefresh(things) {
-      let table = $('#things-table')
-      table.empty()
-
-      things.sort((a, b) => a.name.localeCompare(b.name))
-
-      if (things.length) {
-        // Header Row
-        let headerRow = $(`<tr class="red-ui-help-info-row" style="font-weight: bold">
-            <td class="red-ui-sidebar-context-property">Thing</td>
-            <td style="vertical-align: top; padding: 3px 3px 3px 6px; overflow-y: hidden; border-right: solid 1px #ddd">State</td>
-            <td>Props</td>
-          </tr>`).appendTo(table)
-        fixBorder(headerRow)
-
-        // Each thing row
-        things.forEach(thing => {
-          let thingRow = makeThingRow(thing)
-          thingRow.appendTo(table)
-          fixBorder(thingRow)
-          if (filterType && filterType != thing.type) thingRow.hide()
-        })
-      } else {
-        // No things
-        let row = $('<tr>')
-          .addClass('red-ui-help-info-row red-ui-search-empty blank')
-          .html('<td colspan="3">No things setup</td>')
-          .appendTo(table)
-      }
-
-      // Recreate type-filter list (in case types removed/added)
-      let filter = $('#things-type-filter')
-      let sel = filter.val()
-      filter.children(':not(:first-child)').remove()
-      let types = things.map(t => t.type)
-      let typeOpts = types
-        .filter((v, i, a) => a.indexOf(v) == i)
-        .sort()
-        .map(type => $(`<option value='${type}'>${type}</option>`))
-      filter
-        .append(typeOpts)
-        .val(types.includes(sel) ? sel : '')
-        .change()
-    }
-
-    function makeThingRow(thing) {
-      let thingRow = $(
-        `<tr class="red-ui-help-info-row thing-row-type-${withoutSpaces(
-          thing.type
-        )}" id="Thing__${withoutSpaces(thing.name)}">
-              <td class="red-ui-sidebar-context-property"></td>
-              <td style="vertical-align: top; padding: 3px 3px 3px 6px; overflow-y: hidden; border-right: solid 1px #ddd"></td>
-              <td></td>
-            </tr>`
-      )
-
-      let identCol = $(thingRow.children()[0])
-      let stateCol = $(thingRow.children()[1])
-      let propsCol = $(thingRow.children()[2])
-
-      // IDENT COLUMN
-
-      identCol.text(thing.name)
-
-      let buttons = $('<div>')
-        .css({ position: 'absolute', right: 3, top: 3 })
-        .hide()
-        .appendTo(identCol)
-
-      RED.popover.tooltip(
-        $('<button class="red-ui-button red-ui-button-small">')
-          .html('<i class="fa fa-copy"></i>')
-          .appendTo(buttons)
-          .on('click', function (e) {
-            RED.clipboard.copyText(thing.name)
-          }),
-        'Copy name'
-      )
-
-      RED.popover.tooltip(
-        $('<button class="red-ui-button red-ui-button-small">')
-          .html('<i class="fa fa-trash"></i>')
-          .appendTo(buttons)
-          .on('click', function (e) {
-            e.preventDefault()
-            e.stopPropagation()
-            $('<div id="red-ui-confirm-dialog" class="hide">')
-              .html(`This could have unintended consequences. Use with caution.`)
-              .appendTo('#red-ui-editor')
-              .dialog({
-                modal: true,
-                autoOpen: true,
-                width: 700,
-                resizable: false,
-                classes: {
-                  'ui-dialog': 'red-ui-editor-dialog',
-                  'ui-widget-overlay': 'red-ui-editor-dialog'
-                },
-                title: `Delete thing ${thing.name}?`,
-                buttons: [
-                  {
-                    id: 'red-ui-confirm-delete-without',
-                    text: 'Delete thing',
-                    class: 'primary',
-                    click: function () {
-                      socket.send(
-                        JSON.stringify({
-                          topic: 'delete-thing',
-                          payload: {
-                            thing: thing.name
-                          }
-                        })
-                      )
-                      $(this).dialog('destroy')
-                    }
-                  },
-                  {
-                    id: 'red-ui-confirm-cancel',
-                    text: 'Cancel',
-                    click: function () {
-                      $(this).dialog('destroy')
-                    }
-                  }
-                ]
-              })
-          }),
-        'Delete thing'
-      )
-
-      identCol.hover(
-        () => buttons.show(),
-        () => buttons.hide()
-      )
-
-      $('<span>', { class: 'red-ui-sidebar-context-property-storename thing-type-and-id' })
-        .text(`${thing.type}${thing.id && thing.id != thing.name ? ` : ${thing.id}` : ''}`)
-        .appendTo(identCol)
-
-      if (thing.type == 'Group') {
-        let list = $('<ul>', { class: 'red-ui-sidebar-context-property-storename' }).appendTo(
-          identCol
-        )
-        thing.things.forEach(name => $('<li>').text(name).appendTo(list))
-      }
-
-      if (thing.status) {
-        let status = $('<div>').css({ display: 'flex', alignItems: 'center' }).appendTo(identCol)
-
-        if (thing.status.shape) {
-          let color = statusColors[thing.status.fill]
-          let svg = $('<div>')
-            .css({
-              marginRight: 5,
-              width: 6,
-              height: 6,
-              backgroundColor: thing.status.shape == 'dot' ? color : 'transparent',
-              borderStyle: 'solid',
-              borderColor: color,
-              borderWidth: 3,
-              borderRadius: 2
-            })
-            .appendTo(status)
-        }
-
-        if (thing.status.text != '{}')
-          $('<span>', { class: 'red-ui-flow-node-status-label' })
-            .css({ color: '#888' })
-            .text(thing.status.text)
-            .appendTo(status)
-      }
-
-      // STATE COLUMN
-
-      let state = Object.entries(thing.state)
-      if (state.length) {
-        state.forEach(([key, value]) => {
-          let tools = $('<span class="button-group"></span>')
-
-          let proxy = thing.proxy && thing.proxy.find(pd => pd.type == 'state' && pd.this == key)
-          if (proxy) {
-            let proxyInfo = $('<button class="red-ui-button red-ui-button-small">')
-              .html('<i class="fa fa-chain"></i>')
-              .appendTo(tools)
-              .on('click', function (e) {
-                let filterType = $('#things-type-filter').val()
-                let proxyRow = $(`#Thing__${withoutSpaces(proxy.child)}`)
-                // First determine if currently filtered and need to switch type
-                let proxyType = proxyRow.find('.thing-type-and-id').html().split(' : ')[0]
-                if (filterType != '' && filterType != proxyType)
-                  $('#things-type-filter').val(proxyType).change()
-                // Scroll to row
-                proxyRow.get()[0].scrollIntoView()
-                e.preventDefault()
-                e.stopPropagation()
-              })
-            RED.popover.tooltip(
-              proxyInfo,
-              [
-                'Proxy Info',
-                `Thing: ${proxy.child}`,
-                `State Key: ${proxy.that === null ? key : proxy.that}`
-              ].join('<br/>')
-            )
-          }
-
-          let delButton = $('<button class="red-ui-button red-ui-button-small">')
-            .html('<i class="fa fa-trash"></i>')
-            .appendTo(tools)
-            .on('click', function (e) {
-              e.preventDefault()
-              e.stopPropagation()
-              $('<div id="red-ui-confirm-dialog" class="hide">')
-                .html(
-                  `If you want to cause a trigger, consider that the new state value will be <code>undefined</code>. Only nodes that are configured to handle such a change will be triggered.`
-                )
-                .appendTo('#red-ui-editor')
-                .dialog({
-                  modal: true,
-                  autoOpen: true,
-                  width: 700,
-                  resizable: false,
-                  classes: {
-                    'ui-dialog': 'red-ui-editor-dialog',
-                    'ui-widget-overlay': 'red-ui-editor-dialog'
-                  },
-                  title: `Delete state key "${key}" for ${thing.name}?`,
-                  buttons: [
-                    {
-                      id: 'red-ui-confirm-delete-without',
-                      text: 'Delete key without causing trigger',
-                      click: function () {
-                        socket.send(
-                          JSON.stringify({
-                            topic: 'delete-state-key',
-                            payload: {
-                              thing: thing.name,
-                              key
-                            }
-                          })
-                        )
-                        $(this).dialog('destroy')
-                      }
-                    },
-                    {
-                      id: 'red-ui-confirm-delete-without',
-                      text: 'Delete key AND cause trigger',
-                      class: 'primary',
-                      click: function () {
-                        socket.send(
-                          JSON.stringify({
-                            topic: 'delete-state-key',
-                            payload: {
-                              thing: thing.name,
-                              key,
-                              trigger: true
-                            }
-                          })
-                        )
-                        $(this).dialog('destroy')
-                      }
-                    },
-                    {
-                      id: 'red-ui-confirm-cancel',
-                      text: 'Cancel',
-                      click: function () {
-                        $(this).dialog('destroy')
-                      }
-                    }
-                  ]
-                })
-            })
-          RED.popover.tooltip(delButton, 'Delete key')
-
-          RED.utils
-            .createObjectElement(value, { key, tools, sourceId: `state.${key}` })
-            .appendTo(stateCol)
-        })
-      } else {
-        $('<span class="red-ui-debug-msg-type-meta">none</span>').appendTo(stateCol)
-      }
-
-      // PROPS COLUMN
-
-      let props = Object.entries(thing.props)
-      if (props.length)
-        props.forEach(([key, value]) =>
-          RED.utils.createObjectElement(value, { key, sourceId: `props.${key}` }).appendTo(propsCol)
-        )
-      else $('<span class="red-ui-debug-msg-type-meta">none</span>').appendTo(propsCol)
-
-      return thingRow
-    }
-
-    return { init }
-  })()
-
   function adjustHeights() {
     let form = $('.node-form-page:visible')
     if (!form.length) return
@@ -427,11 +18,10 @@
     category: 'things',
     color: '#D8BFD8',
     defaults: {
-      thingType: {
-        value: '',
-        required: true
-      },
+      thingType: { value: '', required: true },
       things: { value: [] },
+      state: { value: [] },
+      commands: { value: [] },
       statusFunction: { value: '' },
       debug: { value: false }
     },
@@ -445,195 +35,41 @@
       return 'node_label_italic'
     },
     onpaletteadd: function () {
-      sidebar.init()
+      ThingsDirectory.init()
     },
     oneditresize: adjustHeights,
-    /* ------------------------------------------------------------------------
-    //
-    //
-    //
-    //
-    //               ON    EDIT    PREPARE
-    //
-    //
-    //
-    //
-    /* ------------------------------------------------------------------------ */
     oneditprepare: function () {
-      // ADJUST FORMATTING FROM OLD VERSIONS
-      // This will affect the node config as soon as editor is opened
-      // and it will become permanent thereafter.
-      this.things.forEach((thing, i) => {
-        ;['props', 'state', 'proxy'].forEach(key => {
-          if (typeof thing[key] == 'string') thing[key] = JSON.parse(thing[key] || '{}')
-        })
-        if (thing.proxy && !Array.isArray(thing.proxy)) {
-          let array = []
-          Object.entries(thing.proxy).forEach(([child, proxies]) =>
-            ['state', 'command'].forEach(type =>
-              Object.entries(proxies[type] || {}).forEach(([thisKey, that]) => {
-                if (thisKey == that) that = null
-                let proxyDef = { child, type, this: thisKey, that }
-                if (type == 'command') proxyDef.cmdType = 'str'
-                array.push(proxyDef)
-              })
-            )
-          )
-          thing.proxy = array
-        }
-      })
-      // END RE-FORMATTING
+      // Adjust config format from old versions
+      this.things.forEach(convertOldThing)
 
       let node = this
 
-      // ---------------------------- onEditPrepare >>>  definitinons
-
-      let mainPage = $('#node-form-main')
-      let groupPage = $('#node-form-group')
-      let thingPage = $('#node-form-thing')
-      let backButton = $('#node-button-back')
       let currentEdit
-
       let lists = {}
       ;[
         'things',
-        'group-things',
-        'group-state',
+        'state',
+        'commands',
         'thing-props',
         'thing-state',
-        'thing-proxy'
+        'thing-commands',
+        'thing-children'
       ].forEach(listName => (lists[listName.replace('-', '_')] = $(`#node-input-list-${listName}`)))
-
-      // ---------------------------- onEditPrepare >>>  helper functions
-
-      function populateList(listName, items) {
-        lists[listName].editableList('empty').editableList('addItems', items)
-      }
-
-      function getType(value) {
-        if (typeof value == 'number') return 'num'
-        if (typeof value == 'string') return 'str'
-        if (typeof value == 'boolean') return 'bool'
-        if (value instanceof RegExp) return 're'
-        return 'json'
-      }
-
-      function keyTyped(key) {
-        return {
-          types: [
-            {
-              value: key,
-              label: key + '.',
-              validate: /^[0-9a-zA-Z_\.]*$/
-            }
-          ]
-        }
-      }
-
-      function editableProps(addButton) {
-        return { removable: true, sortable: true, addButton }
-      }
-
-      function typedValue(input) {
-        let type = $(input).typedInput('type')
-        let value = $(input).typedInput('value')
-        switch (type) {
-          case 'num':
-          case 'command-num':
-            return Number(value)
-          case 'bool':
-            return value == 'true'
-          case 'command-bool':
-            return value == 'either' ? 'either' : value == 'true'
-          case 'json':
-            try {
-              return JSON.parse(value)
-            } catch (e) {
-              return value
-            }
-          case 're':
-            return new RegExp(value)
-          default:
-            return value
-        }
-      }
-
-      function typedToString(value) {
-        switch (getType(value)) {
-          case 're':
-            return value.toString().slice(1, -1)
-          case 'json':
-            return JSON.stringify(value)
-          default:
-            return value
-        }
-      }
-
-      function objToArray(obj) {
-        return Object.entries(obj || {}).map(([key, value]) => ({ key, value }))
-      }
-
-      function makeLabel(thing) {
-        let label = thing.name
-        if (thing.id != '' && thing.id != undefined) label += ` : ${thing.id}`
-        return label
-      }
-
-      // ---------------------------- onEditPrepare >>>  main things list
-
-      // Create thing list and populate
-      lists.things.editableList({
-        addItem: function (container, i, thing) {
-          $('<span>', { class: 'red-ui-treeList-label' })
-            .css({ padding: 5 })
-            .text(makeLabel(thing))
-            .on('click', function (e) {
-              edit(container)
-              e.preventDefault()
-              e.stopPropagation()
-            })
-            .appendTo(container)
-
-          if (!thing.hasOwnProperty('name')) edit(container)
-        },
-        ...editableProps('add thing')
-      })
-      populateList('things', JSON.parse(JSON.stringify(node.things))) // Poor man's clone
-
-      // Hide other pages
-      function showMain() {
-        mainPage.show()
-        backButton.hide().off('click')
-        groupPage.hide()
-        thingPage.hide()
-      }
-
-      // Show detail page
-      function showDetail(page, callback) {
-        mainPage.hide()
-        backButton.show().on('click', function () {
-          if (callback() !== false) showMain()
-        })
-        page.show()
-        adjustHeights()
-      }
 
       // ---------------------------- onEditPrepare >>> setup tabs
 
       let tabs = {
         main: {
           things: 'Things',
-          status: 'Status Function'
-        },
-        group: {
-          things: 'Things in Group',
-          state: 'State of the Group',
-          status: 'Status Fn'
+          state: '*State',
+          commands: '*Commands',
+          status: '*Status Fn'
         },
         thing: {
           props: 'Props',
           state: 'State',
-          proxy: 'Proxy',
+          commands: 'Commands',
+          children: 'Children',
           status: 'Status Fn'
         }
       }
@@ -652,7 +88,32 @@
         tabs[setId] = tabSet
       })
 
-      // ---------------------------- onEditPrepare >>> setup headers
+      // ---------------------------- onEditPrepare >>> setup common lists
+
+      THI.setupList(
+        lists.things,
+        'thing',
+        function (container, i, thing) {
+          $('<span>', { class: 'red-ui-treeList-label' })
+            .css({ padding: 5 })
+            .text(THI.makeLabel(thing))
+            .on('click', function (e) {
+              edit(container)
+              e.preventDefault()
+              e.stopPropagation()
+            })
+            .appendTo(container)
+
+          if (!thing.hasOwnProperty('name')) edit(container)
+        },
+        node.things
+      )
+
+      THI.setupList(lists.state, 'state', THI.addState, node.state)
+
+      THI.setupList(lists.commands, 'command', THI.addCommand, node.commands)
+
+      // ---------------------------- onEditPrepare >>> thing >>> setup headers
 
       $('.validate-thing').on('keyup', validateThing).on('change', validateThing)
 
@@ -702,7 +163,17 @@
         }
       }
 
-      // ---------------------------- onEditPrepare >>> setup lists >>> group_things
+      // ---------------------------- onEditPrepare >>> thing >>> setup lists
+
+      THI.setupList(lists.thing_props, 'props', THI.addProp)
+
+      THI.setupList(lists.thing_state, 'state', THI.addState)
+
+      THI.setupList(lists.thing_commands, 'command', THI.addCommand)
+      $('<div>')
+        .css({ padding: 15 })
+        .html('Otherwise, process as self <i>and</i> forward to children.')
+        .appendTo($('#node-input-list-thing-commands').parent())
 
       function findCircular(findThing, origThing) {
         if (findThing == origThing) return [findThing]
@@ -717,445 +188,132 @@
         }
       }
 
-      lists.group_things.editableList({
-        addItem: function (row, i, data) {
-          $('<input/>', {
-            class: 'node-input-thing-childName',
-            type: 'text',
-            value: data.name || ''
-          })
-            .css('width', '100%')
-            .appendTo(row)
-            .on('keyup', validateThingInGroup)
-            .on('change', validateThingInGroup)
+      THI.setupList(lists.thing_children, 'child thing', function (row, i, name) {
+        $('<input/>', {
+          class: 'node-input-list-childName',
+          type: 'text',
+          value: typeof name == 'string' ? name : ''
+        })
+          .css('width', '100%')
+          .appendTo(row)
+          .on('keyup', validateChildIsNotCircular)
+          .on('change', validateChildIsNotCircular)
 
-          let info = $('<span>', { class: 'node-ui-error-info' }).appendTo(row)
+        let info = $('<span>', { class: 'node-ui-error-info' }).appendTo(row)
 
-          function validateThingInGroup() {
-            let cir = findCircular($(this).val(), $('#node-input-group-name').val())
-            if (cir) {
-              $(this).addClass('input-error')
-              cir.push($(this).val())
-              info.html(
-                `This will create a circular group reference:<br/>
-                    &emsp;&emsp;${cir.join(' -> ')}<br/>
-                    It will be removed if saved.`
-              )
-            } else {
-              $(this).removeClass('input-error')
-              info.text('')
-            }
+        function validateChildIsNotCircular() {
+          let cir = findCircular($(this).val(), $('#node-input-thing-name').val())
+          if (cir) {
+            $(this).addClass('input-error')
+            cir.push($(this).val())
+            info.html(
+              `This will create a circular reference:<br/>
+              &emsp;&emsp;${cir.join(' -> ')}<br/>
+              It will be removed if saved.`
+            )
+          } else {
+            $(this).removeClass('input-error')
+            info.text('')
           }
-        },
-        ...editableProps('add thing in this group')
-      })
-
-      // ---------------------------- onEditPrepare >>> setup lists >>> group_state
-
-      let stateOpts = [
-        { v: 'allTrue', t: 'true if ALL true' },
-        { v: 'anyTrue', t: 'true if ANY true' },
-        { v: 'allFalse', t: 'false if ALL false' },
-        { v: 'anyFalse', t: 'false if ANY false' },
-        { v: 'min', t: 'minimum' },
-        { v: 'max', t: 'maximum' },
-        { v: 'fn', t: 'custom function...' }
-      ]
-
-      let useOpts = [
-        { v: 'same', t: 'Same key as' },
-        { v: 'diff', t: 'Different key as' },
-        { v: 'whole', t: 'Whole state of' }
-      ]
-
-      lists.group_state.editableList({
-        addItem: function (row, i, data) {
-          data.value = data.value || { type: 'allTrue' } // Defaults
-
-          let head = $('<div>').appendTo(row)
-          let advanced = $('<div>').appendTo(row)
-          let opts = $('<div>')
-            .css({ display: 'flex', height: 34, marginTop: 5, alignItems: 'center' })
-            .appendTo(row)
-
-          // v HEAD
-
-          $('<input>', { class: 'node-input-list-key', type: 'text' })
-            .css('width', '50%')
-            .appendTo(head)
-            .typedInput(keyTyped('state'))
-            .typedInput('value', data.key)
-
-          $('<div/>', { style: 'display:inline-block; padding:0px 6px;' }).text('=').appendTo(head)
-
-          let type = $('<select>', { class: 'node-input-list-type' })
-            .css('width', 'calc(50% - 30px)')
-            .appendTo(head)
-            .on('change', function () {
-              toggleFunctionOpts($(this).val())
-            })
-          stateOpts.forEach(({ v, t }) => $('<option>', { value: v }).text(t).appendTo(type))
-          type.val(data.value.type)
-
-          // ^ HEAD
-          // v ADVANCED (only if applicable)
-
-          $('<code>').text('function (values) {').appendTo(advanced)
-          let fn = $('<div>', {
-            class: 'node-text-editor node-input-list-function',
-            id: `node-text-editor-function-${i}`
-          })
-            .css({ height: 100, maxHeight: 100 })
-            .appendTo(advanced)
-          $('<code>').text('}').appendTo(advanced)
-          fn.data().editor = RED.editor.createEditor({
-            id: `node-text-editor-function-${i}`,
-            value: data.value.fn,
-            mode: 'ace/mode/nrjavascript'
-          })
-
-          // ^ ADVANCED
-          // v OPTS
-
-          let use = $('<select>', { class: 'node-input-list-use' }).appendTo(opts)
-          useOpts.forEach(({ v, t }) => $('<option>', { value: v }).text(t).appendTo(use))
-          $('<span>').css({ marginLeft: 5 }).text('child things').appendTo(opts)
-
-          let childKey = $('<input>', {
-            class: 'node-input-list-childKey',
-            type: 'text'
-          })
-            .css({ width: 200 })
-            .appendTo(opts)
-            .typedInput(keyTyped('state'))
-            .typedInput('value', data.value.use)
-
-          use
-            .val(data.value.use === null ? 'whole' : data.value.use == data.key ? 'same' : 'diff')
-            .on('change', function () {
-              childKey.typedInput($(this).val() == 'diff' ? 'show' : 'hide')
-            })
-            .change()
-
-          // ^ OPTS
-
-          function toggleFunctionOpts(v) {
-            let shide = v == 'fn' ? 'show' : 'hide'
-            advanced[shide]()
-            use.find('option[value=whole]')[shide]()
-            if (shide == 'hide' && use.val() == 'whole') use.val('same')
-          }
-          toggleFunctionOpts(data.value.type)
-        },
-        ...editableProps('add state')
-      })
-
-      // ---------------------------- onEditPrepare >>> setup lists >>> thing_props + thing_state
-
-      function simpleAddItem(key) {
-        return function (row, i, data) {
-          $('<input/>', { class: 'node-input-list-key', type: 'text' })
-            .css('width', '50%')
-            .appendTo(row)
-            .typedInput(keyTyped(key))
-            .typedInput('value', data.key)
-
-          $('<div/>', { style: 'display:inline-block; padding:0px 6px;' }).text('=').appendTo(row)
-
-          $('<input/>', { class: 'node-input-list-value', type: 'text' })
-            .css('width', 'calc(50% - 30px)')
-            .appendTo(row)
-            .typedInput({
-              types: ['str', 'num', 'bool', 'json', 're'],
-              default: data.hasOwnProperty('value') ? getType(data.value) : 'str'
-            })
-            .typedInput('value', typedToString(data.value))
         }
-      }
-
-      lists.thing_props.editableList({
-        addItem: simpleAddItem('props'),
-        ...editableProps('add prop')
-      })
-
-      lists.thing_state.editableList({
-        addItem: simpleAddItem('state'),
-        ...editableProps('add state')
-      })
-
-      // ---------------------------- onEditPrepare >>> setup lists >>> thing_proxy
-
-      lists.thing_proxy.editableList({
-        addItem: function (row, i, data) {
-          let id = `node-input-list-childName-${i}`
-          $('<label>', { for: id })
-            .css({ display: 'inline', marginRight: 20 })
-            .text('Child Thing')
-            .appendTo(row)
-          $('<input/>', {
-            id,
-            class: 'node-input-list-childName',
-            type: 'text',
-            value: data.key || ''
-          }).appendTo(row)
-
-          let list = $('<ol>', { class: 'no-max-size node-input-list-proxies' })
-            .appendTo(row)
-            .editableList({
-              connectWith: '.node-input-list-proxies',
-              height: 'auto',
-              addItem: function (_row, _i, _data) {
-                let thisPart = $('<input/>', { class: 'node-input-list-this', type: 'text' })
-                  .css('width', '50%')
-                  .appendTo(_row)
-                  .typedInput({
-                    types: [
-                      {
-                        value: 'state',
-                        label: 'state.',
-                        validate: /^[0-9a-zA-Z_\.]*$/
-                      },
-                      {
-                        value: 'command-str',
-                        label: 'command',
-                        icon: 'red/images/typedInput/az.png'
-                      },
-                      {
-                        value: 'command-num',
-                        label: 'command',
-                        icon: 'red/images/typedInput/09.png',
-                        validate: /^[+-]?[0-9]*\.?[0-9]*([eE][-+]?[0-9]+)?$/
-                      },
-                      {
-                        value: 'command-bool',
-                        label: 'command',
-                        icon: 'red/images/typedInput/bool.png',
-                        options: ['true', 'false', 'either']
-                      },
-                      {
-                        value: 'command-test',
-                        label: 'command test',
-                        icon: 'red/images/typedInput/re.png'
-                      },
-                      {
-                        value: 'command-key',
-                        label: 'command key',
-                        icon: 'red/images/typedInput/json.png'
-                      }
-                    ],
-                    default: _data.type == 'command' ? `command-${_data.cmdType}` : 'state'
-                  })
-                  .typedInput('value', typedToString(_data.this))
-                  .on('change', alignThat)
-
-                let mid = $('<div/>', { style: 'display:inline-block; padding:0px 6px;' }).appendTo(
-                  _row
-                )
-
-                let thatStateTypes = [
-                  {
-                    value: 'same',
-                    label: 'the same',
-                    hasValue: false
-                  },
-                  {
-                    value: 'state',
-                    label: 'state.',
-                    validate: /^[0-9a-zA-Z_\.]*$/
-                  }
-                ]
-                let thatCommandTypes = [
-                  {
-                    value: 'same',
-                    label: 'the same',
-                    hasValue: false
-                  },
-                  'str',
-                  'num',
-                  'bool'
-                ]
-
-                let thatPart = $('<input/>', { class: 'node-input-list-that', type: 'text' })
-                  .css('width', 'calc(50% - 30px)')
-                  .appendTo(_row)
-                  .typedInput({
-                    types: ['str']
-                  })
-                  .typedInput('value', typedToString(_data.that))
-
-                function alignThat(init) {
-                  let isState = thisPart.typedInput('type') == 'state'
-                  if (isState) {
-                    mid.text('=')
-                    thatPart.typedInput('types', thatStateTypes)
-                  } else {
-                    mid.text('->')
-                    thatPart.typedInput('types', thatCommandTypes)
-                  }
-                  // Only set type on init
-                  if (init === true) {
-                    let type =
-                      _data.that == null ? 'same' : isState ? 'state' : getType(_data.that || '')
-                    thatPart.typedInput('type', type)
-                  }
-                }
-                alignThat(true)
-              },
-              ...editableProps('add proxy')
-            })
-            .editableList('addItems', data.value || [{}])
-        },
-        ...editableProps('add thing to proxy')
       })
 
       // ---------------------------- onEditPrepare >>> edit
 
       function edit(row) {
         let thingType = $('#node-input-thingType').val()
-        let breadcrumb = $('<li>')
+        $('<li>')
           .html(thingType + ' thing')
           .appendTo('.red-ui-tray-breadcrumbs')
 
         currentEdit = row
 
-        let editFn = thingType == 'Group' ? editGroup : editThing
-        editFn($(row).data().data, function (newThing) {
-          currentEdit = null
-          breadcrumb.remove()
+        let thing = $(row).data().data
 
-          if (newThing.name === '') {
-            lists.things.editableList('removeItem', $(row).data().data)
-          } else {
-            $(row).data().data = newThing
-            $(row).find('.red-ui-treeList-label').text(makeLabel(newThing))
-          }
-        })
-      }
-
-      // ---------------------------- onEditPrepare >>> edit group
-      function editGroup(thing, onDone) {
         // Load current thing config
-        $('#node-input-group-name')
-          .val(thing.name || '')
-          .change()
-        populateList(
-          'group_things',
-          (thing.things || []).map(name => ({ name }))
-        )
-        populateList('group_state', objToArray(thing.state))
-        node.statusEditors.group.setValue(thing.statusFn || '')
 
-        showDetail(groupPage, function () {
-          // Callback ran when back button used (GROUP) to save thing
-          let newThing = {}
-
-          newThing.name = $('#node-input-group-name').val()
-
-          newThing.things = []
-          lists.group_things.editableList('items').each(function () {
-            let childName = $(this).find('.node-input-thing-childName').val()
-            if (childName == '') return
-            if (findCircular(childName, newThing.name)) return
-            newThing.things.push(childName)
-          })
-
-          newThing.state = {}
-          lists.group_state.editableList('items').each(function () {
-            let key = typedValue($(this).find('.node-input-list-key'))
-            if (key == '') return
-            let useType = $(this).find('.node-input-list-use').val()
-            let use =
-              useType == 'whole'
-                ? null
-                : useType == 'same'
-                ? key
-                : $(this).find('.node-input-list-childKey').val()
-            let editor = $(this).find('.node-input-list-function').data().editor
-            let type = $(this).find('.node-input-list-type').val()
-            newThing.state[key] = { type, use }
-            if (type == 'fn') newThing.state[key].fn = editor.getValue()
-            editor.destroy()
-          })
-
-          let status = node.statusEditors.group.getValue()
-          if (status) newThing.statusFn = status
-
-          onDone(newThing)
-        })
-        tabs.group.resize()
-      }
-
-      // ---------------------------- onEditPrepare >>> edit thing
-      function editThing(thing, onDone) {
-        // Load current thing config
+        // Name
         $('#node-input-thing-name')
           .val(thing.name || '')
           .change()
+
+        // ID
         $('#node-input-thing-id')
           .val(thing.id || '')
           .change()
-        populateList('thing_props', objToArray(thing.props))
-        populateList('thing_state', objToArray(thing.state))
-        let proxies = (thing.proxy || []).reduce((obj, p) => {
-          if (!obj[p.child]) obj[p.child] = []
-          obj[p.child].push(p)
-          return obj
-        }, {})
-        populateList('thing_proxy', objToArray(proxies))
-        node.statusEditors.thing.setValue(thing.statusFn || '')
 
-        showDetail(thingPage, function () {
-          // Callback ran when back button used (NON-GROUP) to save thing
-          let newThing = {}
+        // Props
+        THI.populateList(
+          lists.thing_props,
+          Object.entries(thing.props || {}).map(([key, value]) => ({ key, value }))
+        )
 
-          newThing.name = $('#node-input-thing-name').val()
-          newThing.id = $('#node-input-thing-id').val()
+        // State
+        THI.populateList(lists.thing_state, thing.state || [])
 
-          newThing.props = {}
-          lists.thing_props.editableList('items').each(function () {
-            let key = typedValue($(this).find('.node-input-list-key'))
-            if (key == '') return
-            let value = typedValue($(this).find('.node-input-list-value'))
-            RED.utils.setMessageProperty(newThing.props, key, value, true)
-          })
+        // Proxy
+        THI.populateList(lists.thing_commands, thing.commands || [])
 
-          newThing.state = {}
-          lists.thing_state.editableList('items').each(function () {
-            let key = typedValue($(this).find('.node-input-list-key'))
-            if (key == '') return
-            let value = typedValue($(this).find('.node-input-list-value'))
-            RED.utils.setMessageProperty(newThing.state, key, value, true)
-          })
+        // Children
+        THI.populateList(lists.thing_children, thing.children || [])
 
-          newThing.proxy = []
-          lists.thing_proxy.editableList('items').each(function () {
-            let child = $(this).find('.node-input-list-childName').val()
-            if (child == '') return
-            $(this)
-              .find('.node-input-list-proxies')
-              .editableList('items')
-              .each(function () {
-                let thisPart = $(this).find('.node-input-list-this')
-                let thatPart = $(this).find('.node-input-list-that')
-                let type = thisPart.typedInput('type').match(/^[a-z]*/)[0]
-                let proxy = {
-                  child,
-                  type,
-                  this: typedValue(thisPart),
-                  that: thatPart.typedInput('type') == 'same' ? null : typedValue(thatPart)
-                }
-                if (type == 'command')
-                  proxy.cmdType = thisPart.typedInput('type').match(/[a-z]*$/)[0]
-                if (proxy.this != '' && proxy.that != '') newThing.proxy.push(proxy)
-              })
-          })
+        // Status
+        if (thing.statusFn) {
+          node.statusEditors.thing.setValue(thing.statusFn)
+          node.statusEditors.thing.unsetStyle('editor-placeholder')
+          // } else if (node.statusFunction) {
+          //   node.statusEditors.thing.setValue(node.statusFunction)
+          //   node.statusEditors.thing.setStyle('editor-placeholder')
+        }
 
-          let status = node.statusEditors.thing.getValue()
-          if (status) newThing.statusFn = status
-
-          onDone(newThing)
-        })
+        // Prepare interface
+        $('#node-form-main').hide()
+        $('#node-form-thing').show()
+        adjustHeights()
         tabs.thing.resize()
+      }
+
+      // ---------------------------- onEditPrepare >>> save + cancel
+
+      $('#node-button-thing-save').on('click', function () {
+        let newThing = {
+          name: $('#node-input-thing-name').val(),
+          id: $('#node-input-thing-id').val(),
+          props: THI.saveProps(lists.thing_props),
+          state: THI.saveState(lists.thing_state),
+          commands: THI.saveCommands(lists.thing_commands),
+          children: []
+        }
+
+        lists.thing_children.editableList('items').each(function () {
+          let childName = $(this).find('.node-input-list-childName').val()
+          if (childName == '') return
+          if (findCircular(childName, newThing.name)) return
+          newThing.children.push(childName)
+        })
+
+        let status = node.statusEditors.thing.getValue()
+        if (status) newThing.statusFn = status
+
+        // Wrap up
+
+        if (newThing.name === '') {
+          lists.things.editableList('removeItem', currentEdit.data().data)
+        } else {
+          currentEdit.data().data = newThing
+          currentEdit.find('.red-ui-treeList-label').text(THI.makeLabel(newThing))
+        }
+
+        back()
+      })
+
+      $('#node-button-thing-cancel').on('click', back)
+
+      function back() {
+        currentEdit = null
+        $('.red-ui-tray-breadcrumbs').children().last().remove()
+        $('#node-form-thing').hide()
+        $('#node-form-main').show()
       }
 
       // ---------------------------- onEditPrepare >>> setup status function editors
@@ -1164,9 +322,6 @@
       this.statusEditors.main = RED.editor.createEditor({
         id: 'node-input-editor-statusFunction',
         value: this.statusFunction
-      })
-      this.statusEditors.group = RED.editor.createEditor({
-        id: 'node-input-editor-statusFunction-group'
       })
       this.statusEditors.thing = RED.editor.createEditor({
         id: 'node-input-editor-statusFunction-thing'
@@ -1193,70 +348,23 @@
         .html(
           `
         .ace_state_props {color: #b900ff}
-        .node-ui-error-info { display: block; font-size: small; color: #D74108 }`
+        .node-ui-error-info { display: block; font-size: small; color: #D74108 }
+        .node-form-page { min-width: 600px }
+        .typedInput-with-padding+div .red-ui-typedInput-type-label { padding-right: 5px }
+        .editor-placeholder {
+          .ace_content, .ace_active-line { background-color: lightgray }
+          .ace_line { color: gray, background-color: lightgray }
+        }
+        `
         )
         .appendTo('head')
 
-      // ---------------------------- onEditPrepare >>> warnings/checks
-
-      $('#node-input-thingType')
-        .on('focusin', function () {
-          $(this).data().oldval = $(this).val()
-        })
-        .on('focusout', function () {
-          let textbox = $(this)
-          let oldval = $(this).data().oldval
-          let newval = $(this).val()
-          if (oldval != '' && (oldval == 'Group') != (newval == 'Group')) {
-            $('<div id="red-ui-confirm-dialog" class="hide">')
-              .html(
-                `Switching between type 'Group' and any other type will ERASE all properties currently set for the below things, except their name. Are you sure you want to continue?`
-              )
-              .appendTo('#red-ui-editor')
-              .dialog({
-                modal: true,
-                autoOpen: true,
-                width: 700,
-                resizable: false,
-                classes: {
-                  'ui-dialog': 'red-ui-editor-dialog',
-                  'ui-widget-overlay': 'red-ui-editor-dialog'
-                },
-                title: `WARNING`,
-                buttons: [
-                  {
-                    id: 'red-ui-confirm-delete-without',
-                    text: 'Yes, switch type and clear all thing properties',
-                    class: 'primary',
-                    click: function () {
-                      $(`#node-input-list-things`)
-                        .editableList('items')
-                        .each(function () {
-                          let { name } = $(this).data().data
-                          $(this).data().data = { name }
-                        })
-                      $(this).dialog('destroy')
-                    }
-                  },
-                  {
-                    id: 'red-ui-confirm-cancel',
-                    text: 'Cancel',
-                    click: function () {
-                      textbox.val(oldval)
-                      $(this).dialog('destroy')
-                    }
-                  }
-                ]
-              })
-          }
-        })
-
       // Initialize
-      showMain()
+      $('#node-form-thing').hide()
     },
     oneditsave: function () {
-      let back = $('#node-button-back')
-      if (back.is(':visible')) back.click()
+      let save = $('#node-button-save')
+      if (save.is(':visible')) save.click()
 
       let things = []
       $(`#node-input-list-things`)
@@ -1265,9 +373,18 @@
           things.push($(this).data().data)
         })
       this.things = JSON.parse(JSON.stringify(things)) // Poor man's clone
+
+      console.log('before', this.state)
+      this.state = THI.saveState($('#node-input-list-state'))
+      console.log('after', this.state)
+
+      this.commands = THI.saveCommands($('#node-input-list-commands'))
+
       this.statusFunction = this.statusEditors.main.getValue()
       Object.values(this.statusEditors).forEach(editor => editor.destroy())
       delete this.statusEditors
+
+      this.random = console.log(this)
     },
     oneditcancel: function () {
       Object.values(this.statusEditors).forEach(editor => editor.destroy())
@@ -1301,6 +418,14 @@
         <ol id="node-input-list-things"></ol>
       </div>
 
+      <div id="main-tab-state" style="display:none">
+        <ol id="node-input-list-state"></ol>
+      </div>
+
+      <div id="main-tab-commands" style="display:none">
+        <ol id="node-input-list-commands"></ol>
+      </div>
+
       <div id="main-tab-status" style="display:none">
         <div><code>function (state, props) {</code></div>
         <div
@@ -1313,49 +438,14 @@
     </div>
   </div>
 
-  <!-- BACK BUTTON (shared) -->
-  <button id="node-button-back" class="red-ui-button" style="float:right">< Back</button>
-
-  <!-- GROUP PAGE -->
-  <div id="node-form-group" class="node-form-page">
-    <div class="form-row" style="clear: left">
-      <label for="node-input-group-name"><i class="fa fa-id-badge"></i> Group Name</label>
-      <input
-        type="text"
-        id="node-input-group-name"
-        class="validate-thing"
-        style="width: calc(70% - 65px)"
-      />
-      <span class="node-ui-error-info"></span>
-    </div>
-
-    <div class="form-row">
-      <ul style="margin-bottom: 20px;" id="group-tabs"></ul>
-    </div>
-
-    <div id="group-tabs-content" style="min-height: calc(100% - 95px);">
-      <div id="group-tab-things" style="display:none">
-        <ol id="node-input-list-group-things"></ol>
-      </div>
-
-      <div id="group-tab-state" style="display:none">
-        <ol id="node-input-list-group-state"></ol>
-      </div>
-
-      <div id="group-tab-status" style="display:none">
-        <div><code>function (state, props) {</code></div>
-        <div
-          style="height: 200px; min-height:200px"
-          class="node-text-editor"
-          id="node-input-editor-statusFunction-group"
-        ></div>
-        <div><code>}</code></div>
-      </div>
-    </div>
-  </div>
-
   <!-- THING PAGE -->
   <div id="node-form-thing" class="node-form-page">
+
+    <div style="float: right; display: flex; flex-direction: column">
+      <button id="node-button-thing-save" class="red-ui-button" style="margin-bottom: 12px">Save</button>
+      <button id="node-button-thing-cancel" class="red-ui-button">Cancel</button>
+    </div>
+
     <div class="form-row" style="clear: left">
       <label for="node-input-thing-name"><i class="fa fa-id-badge"></i> Name</label>
       <input
@@ -1391,8 +481,12 @@
         <ol id="node-input-list-thing-state"></ol>
       </div>
 
-      <div id="thing-tab-proxy" style="display:none">
-        <ol id="node-input-list-thing-proxy"></ol>
+      <div id="thing-tab-commands" style="display:none">
+        <ol id="node-input-list-thing-commands"></ol>
+      </div>
+
+      <div id="thing-tab-children" style="display:none">
+        <ol id="node-input-list-thing-children"></ol>
       </div>
 
       <div id="thing-tab-status" style="display:none">
@@ -1422,65 +516,14 @@
     <dt class="required">Thing Type</dt>
     <dd>
       User's choice. Typically, the platform that these <i>things</i> use to connect outside of
-      Node-RED. Special type "Group" can be used to access advanced group features.
+      Node-RED.
     </dd>
     <dt class="required">Things</dt>
     <dd>
       Each <i>thing</i> of this <code>type</code> is listed. Click a <i>thing</i> to see detailed
       setup properties.
-      <ul>
-        <li><code>Name</code>s must be unique among <b>all</b> <i>things</i></li>
-        <li>
-          <code>ID</code>s must be unique among all <i>things</i> of the same <code>type</code>
-        </li>
-        <li>
-          Individual <code>status functions</code> can be set for each <i>thing</i>. If not
-          specified, the <code>type</code>-level <code>status function</code> will be used.
-        </li>
-        <li>
-          For non-Group <i>things</i>
-          <ul>
-            <li>
-              Initial <code>state</code> values will not override current <i>thing</i>
-              <code>state</code> during re-deployment.
-            </li>
-            <li>
-              <code>Proxies</code> come in two flavors
-              <ul>
-                <li>
-                  <i>State proxies</i> allow a <i>thing</i> to get <code>state</code> from a child
-                  <i>thing</i>
-                </li>
-                <li>
-                  <i>Command proxies</i> allow a <i>thing</i> to forward a command to a child
-                  <i>thing</i>
-                </li>
-              </ul>
-            </li>
-          </ul>
-        </li>
-        <li>
-          For Group <i>things</i>
-          <ul>
-            <li>
-              List all of the <i>things</i> by <code>name</code> that should be included in the
-              group. Groups can be nested.
-            </li>
-            <li>
-              <code>State</code> getters take the <code>state</code> of all <i>things</i> in the
-              group and reduce to one value. They can be a pre-defined reduction method, or a custom
-              function. When using a custom function, the parameter <code>values</code> is an array.
-              In any case, <code>null</code> and <code>undefined</code> states are ignored.
-            </li>
-            <li>
-              For nested groups, only the direct children of each group are used when determining
-              <code>state</code>.
-            </li>
-          </ul>
-        </li>
-      </ul>
     </dd>
-    <dt class="optional">Status Function</dt>
+    <dt class="optional">Stauts Function</dt>
     <dd>
       A function that runs to determine the status of a <i>thing</i>. Function is run with current
       <code>state</code> and <code>props</code> as input, and should output a node status object.
@@ -1489,5 +532,79 @@
       status function will be used.
     </dd>
   </dl>
-  <p>See README for more information on <b>Groups</b> and <b>Proxies</b>.</p>
+  <p><b>For each thing:</b></p>
+  <dl class="message-properties">
+    <dt class="required">Name</dt>
+    <dd>Required. Must be unique among <b>all</b> <i>things</i></dd>
+    <dt class="optional">ID</dt>
+    <dd>Must be unique among all <i>things</i> of same <code>type</code></dd>
+    <dt class="optional">Props</dt>
+    <dd>Static properties</dd>
+    <dt class="optional">State</dt>
+    <dd>
+      Initial state and proxied states.
+      <ul>
+        <li>
+          On re-deployment, static values will only initialize if key is not already assigned.
+        </li>
+        <li>Proxied states can point to another <i>thing</i> or own <code>children</code>.</li>
+        <li>
+          Proxied states can refer to the same key or a different key. Or, if using a custom
+          function for all <code>children</code>, then the entire state can be used.
+        </li>
+        <li>
+          Custom function is given an array of <code>values</code>. Output should be the reduced
+          state for <i>thing</i>.
+        </li>
+      </ul>
+    </dd>
+    <dt class="optional">Commands</dt>
+    <dd>
+      Special actions to take when handling commands.
+      <ul>
+        <li>
+          Any command not listed will be processed as the <i>thing</i> itself <b>and</b> will also
+          be sent to all <code>children</code>. If this is not desired, configure it here.
+        </li>
+        <li>Configure a specific type of command, or use <code>test</code> to do a regex test.</li>
+        <ul>
+          <li>Key-type can be used for object-style commands.</li>
+        </ul>
+        <li>
+          Commands can be configured to be processed as self only, forwarded to
+          <code>children</code> only, or forwarded to another <i>thing</i>.
+        </li>
+        <li>Commands can be transformed to other commands before being processed/forwarded.</li>
+        <ul>
+          <li>
+            If using a key-type command and also using a transform, then the value of the key in the
+            command object will be lost.
+          </li>
+        </ul>
+      </ul>
+    </dd>
+    <dt class="optional">Children</dt>
+    <dd>
+      A list of other <i>things</i>.
+      <ul>
+        <li>
+          Children can be used to create a dynamic state for the parent <i>thing</i>. Use
+          <code>State</code> to configure.
+        </li>
+        <li>
+          All commands are automatically forwarded to all children, unless configured differently in
+          <code>Commands</code>.
+        </li>
+        <li>The parent-child relationship can be many-to-many.</li>
+      </ul>
+    </dd>
+    <dt class="optional">Stauts Function</dt>
+    <dd>
+      A function that runs to determine the status of a <i>thing</i>. Function is run with current
+      <code>state</code> and <code>props</code> as input, and should output a node status object.
+      The object can contain <code>text</code>, <code>fill</code>, and/or <code>shape</code>. If a
+      thing has its own status function, that will be used. Otherwise the <code>type</code>-level
+      status function will be used.
+    </dd>
+  </dl>
 </script>

@@ -1,4 +1,4 @@
-let { TESTS, makeParam } = require('./shared')
+let { TESTS, makeParam } = require('../lib/utils.js')
 
 module.exports = function (RED) {
   function Node(config) {
@@ -24,12 +24,8 @@ module.exports = function (RED) {
       // For each rule, filter the list
       config.rules.forEach(rule => {
         try {
-          let b = makeParam('b', rule, null, node, msg, RED)
-
-          // For "is in group" rule, convert group name into list of things in group
-          if (rule.thingProp == 'group') b = getGroupList(b).filter((v, i, a) => a.indexOf(v) == i)
-
-          let c = makeParam('c', rule, null, node, msg, RED)
+          let b = makeParam('b', rule, thing, node, msg, RED)
+          let c = makeParam('c', rule, thing, node, msg, RED)
           list = list.filter(thing => {
             let a = makeParam('a', rule, thing, node, msg, RED)
             return TESTS[rule.compare](a, b, c)

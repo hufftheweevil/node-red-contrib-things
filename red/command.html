@@ -53,8 +53,8 @@
 </script>
 
 <script type="text/html" data-help-name="Thing Command">
-<p>A node that will initiate the sending of a command to a <i>thing</i> or multiple <i>things</i>. Note that this node does not provide any communication to the outside. It will only relay messages to respective <i>process</i> nodes.</p>
-<p>The node will recurse through any groups and proxies before determining <i>thing</i> <code>type</code>, then forward to the respective <i>process</i> node(s).</p>
+<p>A node that will initiate the sending of a command to a <i>thing</i> or multiple <i>things</i>. Note that this node does not provide any communication to the outside. It will only relay messages to respective <i>process</i> node(s).</p>
+<p>The node will check for any command configuration for the <i>thing</i> and transform/forward, if necessary. If there is no configuration, then the command is processed for self and also forwarded to all children.</p>
 <h3>Properties</h3>
 <dl class="message-properties">
 <dt class="optional">Thing Name</dt><dd>When specified, all input messages will be directed to this <i>thing</i>. If not provided, the input message must include <i>thing</i> <code>name</code>.</dd>
