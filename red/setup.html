@@ -115,9 +115,9 @@
 
       // ---------------------------- onEditPrepare >>> thing >>> setup headers
 
-      $('.validate-thing').on('keyup', validateThing).on('change', validateThing)
+      $('.validate-thing').on('keyup', validateThingName).on('change', validateThingName)
 
-      function validateThing() {
+      function validateThingName() {
         // Determine if validating name | id
         let domId = $(this)[0].id
         let by = domId.split('-')[3]
@@ -150,6 +150,9 @@
               )
           )
             err = `Duplicate ${by} in another setup node`
+          // Finally check for whitespace
+          else if (val !== val.trim())
+            err = `Name contains leading/trailing whitespace, which will be removed`
         }
 
         if (err) {
@@ -277,8 +280,8 @@
 
       $('#node-button-thing-save').on('click', function () {
         let newThing = {
-          name: $('#node-input-thing-name').val(),
-          id: $('#node-input-thing-id').val(),
+          name: $('#node-input-thing-name').val().trim(),
+          id: $('#node-input-thing-id').val().trim(),
           props: THI.saveProps(lists.thing_props),
           state: THI.saveState(lists.thing_state),
           commands: THI.saveCommands(lists.thing_commands),
@@ -374,9 +377,7 @@
         })
       this.things = JSON.parse(JSON.stringify(things)) // Poor man's clone
 
-      console.log('before', this.state)
       this.state = THI.saveState($('#node-input-list-state'))
-      console.log('after', this.state)
 
       this.commands = THI.saveCommands($('#node-input-list-commands'))
 
