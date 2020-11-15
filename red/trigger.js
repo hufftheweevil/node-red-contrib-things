@@ -1,8 +1,11 @@
 let { stateBus } = require('../lib/bus.js')
-let { TESTS } = require('../lib/utils.js')
+let { TESTS, now } = require('../lib/utils.js')
+let { convertOldTrigger } = require('../lib/convert.js')
 
 module.exports = function (RED) {
   function Node(config) {
+    convertOldTrigger(config)
+
     RED.nodes.createNode(this, config)
 
     const node = this
@@ -13,7 +16,7 @@ module.exports = function (RED) {
     // state. This will change the node's status and
     // output a message (if configured as such)
 
-    // In multi mode, each thing that matches the conditions
+    // Each thing that matches the conditions
     // will be added to the `watchers` list to track each
     // one individually. In single mode, only one is used.
     class ThingWatcher {
@@ -21,114 +24,122 @@ module.exports = function (RED) {
         this.name = thingName
         this.lastKnownState = this.getState()
         this.callback = this.callback.bind(this)
-        this.init = true
       }
       get thing() {
         let things = global.get('things')
         return things ? things[this.name] : { state: {} } // Placeholder if called before setup in single mode
       }
       getState() {
-        return this.thing && JSON.stringify(this.pathOrWhole(config.output, config.outputPath))
+        return this.thing && JSON.stringify(this.get(config.triggerState || 'state'))
       }
-      pathOrWhole(flag, path) {
+      get(path) {
         try {
-          return flag == 'path' && path != ''
-            ? RED.util.getObjectProperty(this.thing.state, path)
-            : this.thing.state
+          return RED.util.getObjectProperty(this.thing, path)
         } catch (err) {
-          node.warn(`Error getting path: ${err}`)
+          node.warn(`Error getting path ${path}: ${err}`)
+          return ''
         }
       }
       callback() {
         let thing = this.thing
 
-        // Serialize latest state (or specific path, if configured)
-        let latestState = this.getState()
+        // Serialize latest state at specific path (or entire state if using 'All Updates')
+        this.latestState = this.getState()
+
+        // Ignore init
+        if (config.ignoreInit && this.lastKnownState == undefined) return this.finish()
 
         // Determine if need to output
-        let shouldOutput = config.output == 'all' || this.lastKnownState != latestState
-        if (shouldOutput && config.output == 'path') {
-          // Extra checks if using path-mode
-          if (config.ignoreInit && this.lastKnownState == undefined) shouldOutput = false
-          else if (config.outputTest) {
-            let { compare, type, value } = config.outputTest
+        if (config.triggerState === null || this.lastKnownState != this.latestState) {
+          // Extra checks if using test
+          if (config.triggerTest) {
+            let { compare, type, value } = config.triggerTest
             try {
-              let a = RED.util.getObjectProperty(thing.state, config.outputPath)
+              let a = this.get(config.triggerState)
               let b = RED.util.evaluateNodeProperty(value, type, node)
               let test = TESTS[compare]
-              shouldOutput = test(a, b)
+              this.finish(test(a, b))
             } catch (err) {
               node.warn(`Error during test: ${err}`)
-              shouldOutput = false
+              this.finish()
             }
+          } else {
+            // No other tests, just output
+            this.finish(true)
           }
-          this.init = false // Used for path config only
         }
-
-        // Output state message accordingly
-        if (shouldOutput) {
-          let msg = {
-            topic: this.name,
-            payload: this.pathOrWhole(config.payload, config.payloadPath)
+      }
+      finish(trigger) {
+        if (trigger) {
+          // Output state message accordingly
+          try {
+            let msg = {
+              topic: this.thing.name,
+              payload:
+                config.payload.type == 'state'
+                  ? this.get(this.thing.state, config.payload.value)
+                  : RED.util.evaluateNodeProperty(config.payload.value, config.payload.type, node)
+            }
+            setTimeout(() => node.send(msg), 1)
+          } catch (err) {
+            node.warn(`Error making payload: ${err}`)
           }
-          if (config.incThing) msg.thing = thing
-          setTimeout(() => node.send(msg), 1)
         }
 
         // Update last known state
-        this.lastKnownState = latestState
+        this.lastKnownState = this.latestState
 
-        // Update status (single mode only)
-        if (!config.multiMode) node.status(thing.status)
+        // Update status
+        node.status({
+          text: `${this.thing.name} | ${now()}`
+        })
       }
     }
 
     let watchers = []
 
-    if (!config.multiMode) {
-      // Create watcher and register
-      watchers = [new ThingWatcher(config.name)]
+    // Erase status
+    node.status({})
+    // Instant timeout causes this to run async (after all setup)
+    setTimeout(() => {
+      // Get list of all things and setup test
+      const things = global.get('things')
+      const THINGS = Object.values(things)
+      // This util is used in place of getTypedValue()
+      let compareValue = RED.util.evaluateNodeProperty(
+        config.triggerThing.value,
+        config.triggerThing.type
+      )
+      let test =
+        compareValue instanceof RegExp
+          ? value => compareValue.test(value)
+          : value => compareValue == value
+
+      function recurFindThings(name) {
+        let thing = things[name] || {}
+        return [thing.name, ...(thing.children || []).flatMap(recurFindThings)]
+      }
+
+      // Generate list of things that match conditions
+      watchers = (config.triggerThing.path == 'child'
+        ? THINGS.filter(thing => test(thing.name)).flatMap(t => t.children)
+        : config.triggerThing.path == 'descendant'
+        ? THINGS.filter(thing => test(thing.name)).flatMap(t => recurFindThings(t.name))
+        : THINGS.filter(thing => {
+            try {
+              return test(RED.util.getObjectProperty(thing, config.triggerThing.path))
+            } catch (err) {
+              node.warn(`Unable to test ${thing.name} for ${config.triggerThing.path}: ${err}`)
+              return false
+            }
+          }).map(thing => thing.name)
+      )
+        .filter((v, i, a) => a.indexOf(v) == i)
+        .map(name => new ThingWatcher(name))
+
+      // Listen for state updates for each thing
       registerThingListeners()
-    } else {
-      // Erase status
-      node.status({})
-      // Instant timeout causes this to run async (after all setup)
-      setTimeout(() => {
-        // Get list of all things and setup test
-        const things = global.get('things')
-        const THINGS = Object.values(things)
-        let compareValue = RED.util.evaluateNodeProperty(config.multiValue, config.multiTest)
-        let test =
-          compareValue instanceof RegExp
-            ? value => compareValue.test(value)
-            : value => compareValue == value
-
-        function recurFindThings(name) {
-          let thing = things[name] || {}
-          return [thing.name, ...thing.children.flatMap(recurFindThings)]
-        }
-
-        // Generate list of things that match conditions
-        watchers = (config.multiKey == 'child'
-          ? THINGS.filter(thing => test(thing.name)).flatMap(t => t.children)
-          : config.multiKey == 'descendant'
-          ? THINGS.filter(thing => test(thing.name)).flatMap(t => recurFindThings(t.name))
-          : THINGS.filter(thing => {
-              try {
-                return test(RED.util.getObjectProperty(thing, config.multiKey))
-              } catch (err) {
-                node.warn(`Unable to test ${thing.name} for ${config.multiKey}: ${err}`)
-                return false
-              }
-            }).map(thing => thing.name)
-        )
-          .filter((v, i, a) => a.indexOf(v) == i)
-          .map(name => new ThingWatcher(name))
-
-        // Listen for state updates for each thing
-        registerThingListeners()
-      }, 0)
-    }
+    }, 0)
 
     function registerThingListeners() {
       watchers.forEach(w => stateBus.on(w.name, w.callback))

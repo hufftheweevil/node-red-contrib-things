@@ -1,7 +1,6 @@
 let { stateBus } = require('../lib/bus.js')
 let { pushUnique, now } = require('../lib/utils.js')
 const ws = require('../lib/ws.js')
-let { send } = require('../lib/ws.js')
 
 module.exports = function (RED) {
   function Node(config) {
@@ -56,19 +55,14 @@ module.exports = function (RED) {
         // Emit to the bus; wake up trigger nodes
         stateBus.emit(thingName)
 
+        // Get thing
+        let thing = THINGS[thingName]
+
         // Send to websockets to update sidebar
-        ws.send({ topic: 'update', payload: THINGS[thingName] })
+        ws.send({ topic: 'update', payload: thing })
 
         // Trigger for all parents that are affected
-        things
-          .filter(t => {
-            let proxyStates = t.config.state || []
-            return (
-              proxyStates.some(s => s.child == thingName) ||
-              (t.children.includes(thingName) && proxyStates.some(s => s.fn))
-            )
-          })
-          .forEach(t => triggerUpdate(t.name))
+        thing.parents.forEach(parentName => triggerUpdate(parentName))
       }
 
       // Begin trigger process

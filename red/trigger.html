@@ -1,77 +1,44 @@
+<script src="things/convert.js"></script>
 <script src="things/ui-utils.js"></script>
 <script type="text/javascript">
-  function genMultiParams(obj = {}) {
-    obj.multiKey = $('#node-input-multi-1').typedInput('type')
-    let path = $('#node-input-multi-1').typedInput('value')
-    if (obj.multiKey == 'props' && path) obj.multiKey += '.' + path
-    obj.multiTest = $('#node-input-multi-2').typedInput('type')
-    obj.multiValue = $('#node-input-multi-2').typedInput('value')
-    return obj
-  }
-
   RED.nodes.registerType('Thing Trigger', {
     paletteLabel: 'trigger',
     category: 'things',
     color: '#D8BFD8',
     defaults: {
       nodeName: { value: '' },
-      multiMode: { value: false },
-      multiKey: { value: 'name' },
-      multiValue: { value: '' },
-      multiTest: { value: 'str' },
-      name: { value: '' },
-      output: { value: 'change' }, // What causes the node to trigger an output msg
-      outputPath: { value: '' },
-      outputTest: { value: null },
-      ignoreInit: { value: false },
-      payload: { value: 'whole' }, // What is sent in the payload of the output msg
-      payloadPath: { value: '' },
-      incThing: { value: false }
+      triggerThing: { value: { path: 'name', type: 'str', value: '' } },
+      triggerState: { value: 'state' },
+      triggerTest: { value: null },
+      ignoreInit: { value: true },
+      payload: { value: { type: 'state' } },
+      // Remaining fields are deprecated but listed here to allow old versions to convert properly
+      name: {},
+      multiMode: {},
+      multiKey: {},
+      multiTest: {},
+      multiValue: {},
+      output: {},
+      outputPath: {},
+      outputTest: {},
+      payloadPath: {}
     },
     inputs: 0,
     outputs: 1,
     icon: 'trigger.svg',
     label: function () {
-      return this.nodeName || (this.multiMode ? `Multi mode` : this.name) || 'trigger'
+      return (
+        this.nodeName ||
+        (typeof this.triggerThing == 'string' ? this.name : `Multi mode`) ||
+        'trigger'
+      )
     },
     labelStyle: function () {
-      return this.nodeName || (!this.multiMode && this.name) ? 'node_label_italic' : ''
+      return this.nodeName || typeof this.triggerThing == 'string' ? 'node_label_italic' : ''
     },
     oneditprepare: function () {
-      let StateType = {
-        value: 'str',
-        label: 'state.',
-        validate: /^[0-9a-zA-Z_\.]*$/
-      }
-      let basicTypes = ['flow', 'global', 'str', 'num', 'env']
+      convertOldTrigger(this)
 
-      // MULTI-MODE KEY
-
-      if (this.multiMode) {
-        $('#row-thingName').hide()
-      } else {
-        $('#row-thingTest').hide()
-      }
-      $('#node-input-multiMode').change(function () {
-        if ($(this).prop('checked')) {
-          $('#row-thingName').hide()
-          $('#row-thingTest').show()
-          $('#thing-test-results').show()
-        } else {
-          $('#row-thingName').show()
-          $('#row-thingTest').hide()
-          $('#thing-test-results').hide()
-        }
-      })
-
-      let multi1 = $('#node-input-multi-1')
-      let multi2 = $('#node-input-multi-2')
-
-      multi1.typedInput({
-        default: this.multiKey || 'name',
-        types: THI.thingPropsTypes.filter(tpt => tpt.value != 'state')
-      })
-      let typesForProps = ['str', 'num', 'bool', 're']
       let typesForNonProps = [
         {
           value: 'str',
@@ -81,23 +48,24 @@
         're'
       ]
 
-      if (this.multiKey && this.multiKey.startsWith('props')) {
-        multi1.typedInput('type', 'props')
-        multi1.typedInput('value', this.multiKey.slice(6))
+      // TRIGGER THING
 
-        multi2.typedInput({ types: typesForProps })
-      } else {
-        multi2.typedInput({ types: typesForNonProps })
-      }
-      multi1.on('change', function (xx, valType) {
-        let newTypes = valType == 'props' ? typesForProps : typesForNonProps
-        multi2.typedInput('types', newTypes)
-        updateMatches()
-      })
+      // // setup
 
-      multi2.typedInput('type', this.multiTest)
-      multi2.typedInput('value', this.multiValue)
-      multi2.on('change', updateMatches)
+      let thingPath = $('#node-input-thing-path')
+      let thingValue = $('#node-input-thing-value')
+
+      thingPath
+        .typedInput({
+          types: THI.thingPropsTypes.filter(tpt => tpt.value != 'state')
+        })
+        .on('change', function (xx, valType) {
+          let newTypes = valType == 'props' ? ['str', 'num', 'bool', 're'] : typesForNonProps
+          thingValue.typedInput('types', newTypes)
+          updateMatches()
+        })
+
+      thingValue.typedInput({ types: typesForNonProps }).on('change', updateMatches)
 
       // Get list of all things currently configured; for updateMatches()
       let disabledTabs = []
@@ -117,37 +85,39 @@
             THINGS.push(_thing)
           })
       })
-
       function updateMatches() {
         // Get current configuration
-        let { multiValue, multiTest, multiKey } = genMultiParams()
+        let triggerThing = {
+          path: THI.getTypedInput('node-input-thing-path', true),
+          ...THI.getTypedInput('node-input-thing-value')
+        }
 
         // Make test (similar to what happens at trigger.js)
-        if (multiTest == 're') multiValue = new RegExp(multiValue)
+        if (triggerThing.type == 're') triggerThing.value = new RegExp(triggerThing.value)
         let test = {
-          str: value => multiValue == value,
-          num: value => +multiValue == value,
-          bool: value => (multiValue == 'true') == value,
-          re: value => multiValue.test(value)
-        }[multiTest]
+          str: value => triggerThing.value == value,
+          num: value => +triggerThing.value == value,
+          bool: value => (triggerThing.value == 'true') == value,
+          re: value => triggerThing.value.test(value)
+        }[triggerThing.type]
 
         // Copied from trigger.js
         function recurFindThings(name) {
           let thing = things[name] || {}
-          return [thing.name, ...thing.children.flatMap(recurFindThings)]
+          return [thing.name, ...(thing.children || []).flatMap(recurFindThings)]
         }
 
         // Copied from trigger.js and modified
         let matches =
-          multiKey == 'child'
+          triggerThing.path == 'child'
             ? THINGS.filter(thing => test(thing.name)).flatMap(t => t.children)
-            : multiKey == 'descendant'
+            : triggerThing.path == 'descendant'
             ? THINGS.filter(thing => test(thing.name)).flatMap(t => recurFindThings(t.name))
             : THINGS.filter(thing => {
                 try {
-                  return test(RED.utils.getMessageProperty(thing, multiKey))
+                  return test(RED.utils.getMessageProperty(thing, triggerThing.path))
                 } catch (err) {
-                  console.log(`Unable to test ${thing.name} for ${multiKey}: ${err}`)
+                  console.log(`Unable to test ${thing.name} for ${triggerThing.path}: ${err}`)
                   return false
                 }
               }).map(thing => thing.name)
@@ -168,64 +138,131 @@
 
         num.on('click', () => list.toggle())
       }
-      if (this.multiMode) updateMatches()
 
-      // TRIGGER PATH
+      // // initialize
 
-      let compare = $('#node-input-outputTest-compare')
-      let forVal = $('#node-input-outputTest-for')
-
-      THI.operators
-        .filter(opt => !/btwn|istype/.test(opt.v))
-        .forEach(opt => $('<option>', { value: opt.v }).text(opt.t).appendTo(compare))
-
-      let optShide = val =>
-        forVal.typedInput(THI.operators.find(o => o.v == val).hasValue === false ? 'hide' : 'show')
-
-      $('#node-input-outputPath').typedInput({ types: [StateType] })
-      forVal.typedInput({ types: basicTypes, default: 'str' }).typedInput('width', '140px')
-      if (this.output != 'path') $('#row-outputPath, #row-outputTest, #row-ignoreInit').hide()
-
-      if (this.outputTest) {
-        $('#node-input-outputTest-checkbox').prop('checked', true)
-        compare.val(this.outputTest.compare)
-        forVal.typedInput('type', this.outputTest.type)
-        forVal.typedInput('value', this.outputTest.value)
-        optShide(this.outputTest.compare)
+      if (this.triggerThing.path.startsWith('props')) {
+        THI.setTypedInput(thingPath, 'props', this.triggerThing.path.slice(6))
+      } else {
+        THI.setTypedInput(thingPath, this.triggerThing.path)
       }
-      $('#node-input-output').change(function () {
-        let hideShow = $(this).val() == 'path' ? 'show' : 'hide'
-        $('#row-outputPath, #row-outputTest, #row-ignoreInit')[hideShow]()
-      })
-      compare.change(function () {
-        optShide($(this).val())
-      })
+      THI.setTypedInput(thingValue, this.triggerThing.type, this.triggerThing.value)
+      updateMatches()
 
-      // PAYLOAD PATH
+      // TRIGGER STATE
 
-      $('#node-input-payloadPath').typedInput({ types: [StateType] })
-      if (this.payload != 'path') $('#row-payloadPath').hide()
-      $('#node-input-payload').change(function () {
-        let hideShow = $(this).val() == 'path' ? 'show' : 'hide'
-        $('#row-payloadPath')[hideShow]()
-      })
-    },
-    oneditsave: function () {
-      // Multi-mode
-      if (this.multiMode) genMultiParams(this)
+      // // setup
 
-      // Advanced-trigger-mode
-      if (this.output == 'path') {
-        if ($('#node-input-outputTest-checkbox').prop('checked')) {
-          this.outputTest = {
-            compare: $('#node-input-outputTest-compare').val(),
-            type: $('#node-input-outputTest-for').typedInput('type'),
-            value: $('#node-input-outputTest-for').typedInput('value')
-          }
+      let statePath = $('#node-input-state-path')
+
+      statePath
+        .typedInput({
+          types: [
+            {
+              value: 'null',
+              label: 'All Updates',
+              hasValue: false
+            },
+            THI.StateType
+          ]
+        })
+        .on('change', shideStateTest)
+      statePath
+        .next()
+        .find('.red-ui-typedInput-input')
+        .on('keyup', e => shideStateTest(e, statePath.typedInput('type')))
+
+      function shideStateTest(e, valType) {
+        if (valType == 'state') {
+          $('#row-stateTest')[e.target.value != '' ? 'show' : 'hide']()
+          $('#copy-payload-path').show()
         } else {
-          this.outputTest = null
+          $('#row-stateTest, #copy-payload-path').hide()
         }
       }
+
+      let testCompare = $('#node-input-test-compare')
+      let testValue = $('#node-input-test-value')
+
+      THI.operators
+        .filter(opt => !/btwn|istype|isntype/.test(opt.v))
+        .forEach(opt => $('<option>', { value: opt.v }).text(opt.t).appendTo(testCompare))
+
+      testCompare.change(function () {
+        testValue.typedInput(
+          THI.operators.find(o => o.v == $(this).val()).hasValue === false ? 'hide' : 'show'
+        )
+      })
+
+      testValue.typedInput({ types: ['flow', 'global', 'str', 'num', 'env'], default: 'str' })
+
+      // // initialize
+
+      $('#row-stateTest').hide()
+
+      if (this.triggerState == null) {
+        THI.setTypedInput(statePath, 'null')
+      } else {
+        THI.setTypedInput(statePath, 'state', this.triggerState && this.triggerState.slice(6))
+      }
+
+      if (this.triggerTest) {
+        $('#node-input-test').prop('checked', true)
+        testCompare.val(this.triggerTest.compare)
+        THI.setTypedInput(testValue, this.triggerTest)
+      }
+
+      // PAYLOAD
+
+      // // setup + initialize
+
+      let payload = $('#node-input-output-payload')
+
+      payload.typedInput({
+        types: [
+          THI.StateType,
+          'flow',
+          'global',
+          'str',
+          'num',
+          'bool',
+          'json',
+          'bin',
+          're',
+          'date',
+          'env'
+        ]
+      })
+
+      THI.setTypedInput(payload, this.payload)
+
+      $('#copy-payload-path').on('click', () =>
+        THI.setTypedInput(payload, 'state', statePath.typedInput('value'))
+      )
+    },
+    oneditsave: function () {
+      // TRIGGER THING
+      this.triggerThing = {
+        path: THI.getTypedInput('node-input-thing-path', { makePath: true }),
+        ...THI.getTypedInput('node-input-thing-value')
+      }
+      console.log(this.triggerThing)
+
+      // TRIGGER STATE
+      let triggerState = THI.getTypedInput('node-input-state-path', { makePath: true })
+      this.triggerState = triggerState == 'null' ? null : triggerState
+
+      // TRIGGER TEST
+      this.triggerTest =
+        $('#node-input-test').is(':checked') && /^state.[\w]+/.test(this.triggerState)
+          ? {
+              compare: $('#node-input-test-compare').val(),
+              ...THI.getTypedInput('node-input-test-value')
+            }
+          : null
+
+      // PAYLOAD
+      this.payload = THI.getTypedInput('node-input-output-payload')
     }
   })
 </script>
@@ -235,51 +272,26 @@
     <label for="node-input-nodeName"><i class="fa fa-tag"></i> Node Name</label>
     <input type="text" id="node-input-nodeName" placeholder="Node Name" />
   </div>
-  <div class="form-row">
-    <label for="node-input-multiMode">&nbsp;</label>
-    <input
-      type="checkbox"
-      id="node-input-multiMode"
-      style="display:inline-block; width:15px; vertical-align:baseline;"
-    />
-    <span> Use multi-<i>thing</i> mode</span>
-  </div>
-  <div class="form-row" id="row-thingName">
-    <label for="node-input-name"><i class="fa fa-id-badge"></i> Thing Name</label>
-    <input type="text" id="node-input-name" placeholder="Thing Name" />
-  </div>
   <div class="form-row" id="row-thingTest">
-    <label for="node-input-name"><i class="fa fa-copy"></i> Thing Test</label>
-    <input type="text" id="node-input-multi-1" style="width: 35%" />
-    <input type="text" id="node-input-multi-2" style="width: 40%" />
+    <label for="node-input-thing-path"><i class="fa fa-id-badge"></i> Thing Test</label>
+    <input type="text" id="node-input-thing-path" style="width: 35%" />
+    <input type="text" id="node-input-thing-value" style="width: 40%" />
   </div>
   <div id="thing-test-results" style="padding-left: 115px; margin-bottom: 15px"></div>
   <div class="form-row">
-    <label for="node-input-output"><i class="fa fa-list"></i> Output...</label>
-    <select id="node-input-output" style="width: 70%">
-      <option value="all">On all state updates</option>
-      <option value="change">When any part of the state changes</option>
-      <option value="path">Only when a part of the state changes...</option>
-    </select>
+    <label for="node-input-state-path"><i class="fa fa-heartbeat"></i> Trigger</label>
+    <input type="text" id="node-input-state-path" />
   </div>
-  <div class="form-row" id="row-outputPath">
-    <label for="node-input-outputPath">&nbsp;</label>
-    <input type="text" id="node-input-outputPath" />
-  </div>
-  <div class="form-row" id="row-outputTest">
-    <label for="node-input-outputTest">&nbsp;</label>
+  <div class="form-row" id="row-stateTest">
+    <label for="node-input-test">&nbsp;</label>
     <div style="display: inline">
-      <input
-        type="checkbox"
-        id="node-input-outputTest-checkbox"
-        style="width: 14px; margin-bottom: 5px"
-      />
-      <span>And value</span>
-      <select id="node-input-outputTest-compare" style="width: 110px"></select>
-      <input type="text" id="node-input-outputTest-for" />
+      <input type="checkbox" id="node-input-test" style="width: 14px; margin-bottom: 5px" />
+      <span>And</span>
+      <select id="node-input-test-compare" style="width: 120px"></select>
+      <input type="text" id="node-input-test-value" style="width: calc(70% - 165px)" />
     </div>
   </div>
-  <div class="form-row" id="row-ignoreInit">
+  <div class="form-row">
     <label for="node-input-ignoreInit">&nbsp;</label>
     <input
       type="checkbox"
@@ -289,24 +301,11 @@
     <span> Ignore initialization</span>
   </div>
   <div class="form-row">
-    <label for="node-input-payload"><i class="fa fa-envelope"></i> Payload</label>
-    <select id="node-input-payload">
-      <option value="whole">Whole State</option>
-      <option value="path">Specific Path...</option>
-    </select>
-  </div>
-  <div class="form-row" id="row-payloadPath">
-    <label for="node-input-payloadPath">&nbsp;</label>
-    <input type="text" id="node-input-payloadPath" />
-  </div>
-  <div class="form-row">
-    <label for="node-input-incThing">&nbsp;</label>
-    <input
-      type="checkbox"
-      id="node-input-incThing"
-      style="display:inline-block; width:15px; vertical-align:baseline;"
-    />
-    <span> Include thing in output as <code>msg.thing</code></span>
+    <label for="node-input-output-payload"><i class="fa fa-envelope"></i> Payload</label>
+    <input type="text" id="node-input-output-payload" style="width: calc(70% - 40px)" />
+    <button id="copy-payload-path" class="red-ui-button" style="width: 34px">
+      <i class="fa fa-clipboard"></i>
+    </button>
   </div>
 </script>
 

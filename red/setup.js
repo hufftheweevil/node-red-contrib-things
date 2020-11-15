@@ -146,6 +146,7 @@ module.exports = function (RED) {
         THINGS[this.name] = this
       }
       get status() {
+        // Returns object {text, shape, fill}
         try {
           if (!this._status) return {}
           let _status = this._status(
@@ -162,6 +163,18 @@ module.exports = function (RED) {
         } catch (err) {
           node.warn(`Unable to generate status for ${this.name}: ${err}`)
         }
+      }
+      get parents() {
+        // Return array of all parent things
+        return Object.values(THINGS)
+          .filter(t => {
+            let proxyStates = t.config.state || []
+            return (
+              proxyStates.some(s => s.child == this.name) ||
+              (t.children.includes(this.name) && proxyStates.some(s => s.fn))
+            )
+          })
+          .map(t => t.name)
       }
     }
 
