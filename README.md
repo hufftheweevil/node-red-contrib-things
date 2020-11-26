@@ -5,9 +5,7 @@ A set of [Node-RED](https://github.com/node-red/node-red) nodes that uses an agn
 [![GitHub release](https://img.shields.io/github/release/hufftheweevil/node-red-contrib-things.svg?style=flat-square)](https://github.com/hufftheweevil/node-red-contrib-things/releases) [![NPM Version](https://img.shields.io/npm/v/node-red-contrib-things.svg?style=flat-square)](https://www.npmjs.com/package/node-red-contrib-things) [![GitHub last commit](https://img.shields.io/github/last-commit/hufftheweevil/node-red-contrib-things.svg?style=flat-square)](https://github.com/hufftheweevil/node-red-contrib-things/commits/master) [![Github All Releases](https://img.shields.io/npm/dw/node-red-contrib-things)](https://github.com/hufftheweevil/node-red-contrib-things/releases)
 [![Node version](https://img.shields.io/node/v/node-red-contrib-things.svg?style=flat-square)](http://nodejs.org/download/) [![GitHub repo size in bytes](https://img.shields.io/github/repo-size/hufftheweevil/node-red-contrib-things.svg?style=flat-square)](https://github.com/hufftheweevil/node-red-contrib-things) [![npm](https://img.shields.io/npm/l/node-red-contrib-things.svg?style=flat-square)](https://github.com/hufftheweevil/node-red-contrib-things/blob/master/LICENSE)
 
-### NOTICE
-
-This package is currently undergoing a rework that may change some of the functionality. `v2.4.5` is the latest published package on NPM and is confirmed to be stable. The latest commit to this repo represents `v3.0.0-alpha`. **However**, the creator has decided to make one more major change before `v3` final is released. `v3-alpha` is not recommend for production use at this time.
+**[Upgrading from v2?](#upgrading-from-v2)**
 
 ### Purpose
 
