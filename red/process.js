@@ -30,7 +30,7 @@ module.exports = function (RED) {
         origCommand
       })
       node.status({
-        text: `${thing.name} | ${JSON.stringify(command)} | ${now()}`
+        text: `${thing.name} | ${JSON.stringify(command).slice(0, 100)} | ${now()}`
       })
     }
 
