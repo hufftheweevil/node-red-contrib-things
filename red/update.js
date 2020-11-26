@@ -1,5 +1,6 @@
-let { stateBus, pushUnique, now } = require('./shared')
-let { sendToWs } = require('../ws')
+let { stateBus } = require('../lib/bus.js')
+let { pushUnique, now } = require('../lib/utils.js')
+const ws = require('../lib/ws.js')
 
 module.exports = function (RED) {
   function Node(config) {
@@ -54,17 +55,14 @@ module.exports = function (RED) {
         // Emit to the bus; wake up trigger nodes
         stateBus.emit(thingName)
 
-        // Send to websockets to update sidebar
-        sendToWs({ topic: 'update', payload: THINGS[thingName] })
+        // Get thing
+        let thing = THINGS[thingName]
 
-        // Trigger for all group and proxy parents too (recursive)
-        things
-          .filter(
-            t =>
-              (t.type == 'Group' && t.things && t.things.includes(thingName)) ||
-              (t.proxy && t.proxy.some(p => p.type == 'state' && p.child == thingName))
-          )
-          .forEach(t => triggerUpdate(t.name))
+        // Send to websockets to update sidebar
+        ws.send({ topic: 'update', payload: thing })
+
+        // Trigger for all proxies
+        thing.proxies.forEach(proxyName => triggerUpdate(proxyName))
       }
 
       // Begin trigger process

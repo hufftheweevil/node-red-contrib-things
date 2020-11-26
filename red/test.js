@@ -1,4 +1,5 @@
-let { TESTS, makeParam } = require('./shared')
+let { TESTS, makeParams } = require('../lib/utils.js')
+let { convertOldRule } = require('../lib/convert.js')
 
 module.exports = function (RED) {
   function Node(config) {
@@ -6,13 +7,6 @@ module.exports = function (RED) {
 
     const node = this
     const global = this.context().global
-
-    function getGroupList(name) {
-      let group = global.get('things')[name]
-      if (!group) return []
-      if (!group.things) return [name]
-      return group.things.map(getGroupList).flat()
-    }
 
     node.on('input', function (msg) {
       // Get reference to thing
@@ -35,13 +29,9 @@ module.exports = function (RED) {
 
       // Check all rules
       let pass = config.rules.every(rule => {
+        convertOldRule(rule)
         try {
-          if (rule.thingProp == 'group') b = getGroupList(b).filter((v, i, a) => a.indexOf(v) == i)
-
-          let a = makeParam('a', rule, thing, node, msg, RED)
-          let b = makeParam('b', rule, thing, node, msg, RED)
-          let c = makeParam('c', rule, thing, node, msg, RED)
-
+          let { a, b, c } = makeParams('abc', rule, thing, node, msg, RED)
           return TESTS[rule.compare](a, b, c)
         } catch (err) {
           node.warn(`Error during test: ${err}`)

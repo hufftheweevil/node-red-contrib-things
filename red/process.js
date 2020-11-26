@@ -1,4 +1,5 @@
-let { commandBus, now } = require('./shared')
+let { commandBus } = require('../lib/bus.js')
+let { now } = require('../lib/utils.js')
 
 module.exports = function (RED) {
   function Node(config) {

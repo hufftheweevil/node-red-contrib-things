@@ -1,16 +1,15 @@
-let { stateBus, pushUnique } = require('./shared')
-const { wss, sendToWs } = require('../ws')
+const { convertOldThing } = require('../lib/convert.js')
+const { stateBus } = require('../lib/bus.js')
+const ws = require('../lib/ws.js')
 
 module.exports = function (RED) {
-  let globalRef
-
-  function Node(config) {
-    RED.nodes.createNode(this, config)
+  function Node(nodeConfig) {
+    RED.nodes.createNode(this, nodeConfig)
 
     const node = this
 
     function debug(msg) {
-      if (config.debug) node.warn(msg)
+      if (nodeConfig.debug) node.warn(msg)
     }
 
     node.status({
@@ -19,170 +18,201 @@ module.exports = function (RED) {
       text: 'Initializing...'
     })
 
+    let errors = false
+
     // Initialize global.things if it doesn't exist
     const global = this.context().global
-    globalRef = global
     if (!global.get('things')) global.set('things', {})
     const THINGS = global.get('things')
 
-    let errors = 0
+    // Start TD server if not started
+    ws.init(RED, global)
 
-    config.things.forEach((newThing, i) => {
-      // ADJUST FORMATTING FROM OLD VERSIONS
-      // This reformatting will only be temporary.
-      // Must open node editor for each node to make permanent.
-      ;['props', 'state', 'proxy'].forEach(key => {
-        if (typeof newThing[key] == 'string') newThing[key] = JSON.parse(newThing[key] || '{}')
-      })
-      if (newThing.proxy && !Array.isArray(newThing.proxy)) {
-        let array = []
-        Object.entries(newThing.proxy).forEach(([child, proxies]) =>
-          ['state', 'command'].forEach(type =>
-            Object.entries(proxies[type] || {}).forEach(([thisKey, that]) => {
-              if (thisKey == that) that = null
-              let proxyDef = { child, type, this: thisKey, that }
-              if (type == 'command') proxyDef.cmdType = 'str'
-              array.push(proxyDef)
-            })
-          )
-        )
-        newThing.proxy = array
-      }
-      // END RE-FORMATTING
+    function getFamily(name, down, start) {
+      let prop = down ? 'children' : 'parents'
+      let next = THINGS[name]
+      if (!next) return []
+      if (!next[prop] || next[prop].length == 0) return start ? [] : [name]
+      return next[prop].map(n => getFamily(n, down)).flat()
+    }
 
-      let { name } = newThing
+    class Thing {
+      constructor(config) {
+        this.config = config
 
-      if (name === '') {
-        node.error(`Thing name missing during setup (${config.thingType}:${i})`)
-        return errors++
-      }
+        // NAME
+        this.name = config.name
 
-      if (config.thingType == 'Group') {
-        // Create thing/group
-        THINGS[name] = {
-          name,
-          type: 'Group',
-          things: newThing.things,
-          props: {}, // Placeholder (without it, can cause crash)
-          state: {}
-        }
+        // TYPE
+        this.type = nodeConfig.thingType
 
-        // Build state getters
-        Object.entries(newThing.state || {}).forEach(([key, opts]) => {
-          Object.defineProperty(THINGS[name].state, key, {
-            get: function () {
-              try {
-                let values = THINGS[name].things
-                  .map(childName => THINGS[childName])
-                  .map(child => child && (opts.use === null ? child.state : child.state[opts.use]))
-                  .filter(v => v !== null && v !== undefined)
-                switch (opts.type) {
-                  case 'anyTrue':
-                    return values.some(v => v === true)
-                  case 'allTrue':
-                    return values.every(v => v === true)
-                  case 'anyFalse':
-                    return values.some(v => v === false)
-                  case 'anyFalse':
-                    return values.every(v => v === false)
-                  case 'min':
-                    return Math.min(...values)
-                  case 'max':
-                    return Math.max(...values)
-                  case 'fn':
-                    return new Function('values', opts.fn)(values)
-                }
-              } catch (err) {
-                node.warn(`Unable to get generate ${name}.state.${key}: ${err}`)
-              }
-            },
-            enumerable: true
-          })
-        })
-      } else {
-        // This means config.thingType != 'Group'
+        // ID
+        if (config.hasOwnProperty('id')) this.id = config.id.trim()
+        if (this.id === '') this.id = config.name
+        else if (!isNaN(this.id)) this.id = +this.id
 
-        let { id } = newThing
+        // PROPS
+        this.props = config.props || {}
 
-        if (id.trim() === '') id = name
-        else if (!isNaN(id)) id = +id
+        // CHILDREN
+        this.children = config.children || []
 
-        let oldThing = THINGS[name]
-
-        // Build state
-        let state = {}
-        if (newThing.state) Object.assign(state, newThing.state)
-        if (oldThing) Object.assign(state, oldThing.state)
-
-        // Create thing
-        THINGS[name] = {
-          id,
-          name,
-          type: config.thingType,
-          state,
-          props: newThing.props ? newThing.props : {},
-          proxy: newThing.proxy || []
-        }
-
-        // For each proxied definition
-        THINGS[name].proxy
-          .filter(proxyDef => proxyDef.type == 'state')
-          .forEach(proxyDef => {
-            // Link state with getter
-            let proxyName = proxyDef.child
-            let from = proxyDef.this
-            let to = proxyDef.that === null ? from : proxyDef.that
-            Object.defineProperty(THINGS[name].state, from, {
+        // STATE
+        let initState = s => {
+          if (this.state.hasOwnProperty(s.key)) return // Already defined
+          //
+          // Static value
+          if (s.hasOwnProperty('value')) {
+            this.state[s.key] = s.value
+            return
+          }
+          // Single proxy
+          if (s.hasOwnProperty('child')) {
+            let childKey = s.hasOwnProperty('childKey') ? s.childKey : s.key
+            Object.defineProperty(this.state, s.key, {
               get: () => {
-                // This check for the thing is mostly just in case it attempts to
-                // use this state to update the status before the child has been setup
                 const THINGS = global.get('things')
-                let value = THINGS[proxyName] && THINGS[proxyName].state[to]
-                debug(`Calling getter for '${name}'.state.${from} -- Will return '${value}'`)
+                let value = THINGS[s.child] && THINGS[s.child].state[childKey]
+                debug(`Calling getter for '${this.name}'.state.${s.key} -- Will return '${value}'`)
                 return value
               },
               enumerable: true,
               configurable: true
             })
-          })
-      } // End if config.thingType != 'Group'
-
-      // Rest is common between Group and Non-Group
-
-      // Save status function
-      THINGS[name]._status =
-        (newThing.statusFn && new Function('state', 'props', newThing.statusFn)) ||
-        (config.statusFunction && new Function('state', 'props', config.statusFunction))
-
-      // Make status getter
-      Object.defineProperty(THINGS[name], 'status', {
-        get: function () {
-          if (!this._status) return {}
-          try {
-            return (
-              this._status(
-                RED.util.cloneMessage(this.state),
-                RED.util.cloneMessage(this.props)
-              ) || {
-                fill: 'red',
-                shape: 'ring',
-                text: 'Unknown'
-              }
-            )
-          } catch (err) {
-            node.warn(`Unable to generate status for type ${config.thingType}: ${err}`)
-            return {}
+            return
           }
-        },
-        enumerable: true,
-        configurable: true
-      })
+          // Multi proxy
+          if (s.hasOwnProperty('fn')) {
+            let childKey = s.hasOwnProperty('childKey') ? s.childKey : s.key
+            Object.defineProperty(this.state, s.key, {
+              get: () => {
+                try {
+                  const THINGS = global.get('things')
+                  let values = this.children
+                    .map(childName => THINGS[childName])
+                    .map(
+                      child => child && (childKey === null ? child.state : child.state[childKey])
+                    )
+                    .filter(v => v !== null && v !== undefined)
+                  switch (s.fn) {
+                    case 'anyTrue':
+                      return values.some(v => v === true)
+                    case 'allTrue':
+                      return values.every(v => v === true)
+                    case 'anyFalse':
+                      return values.some(v => v === false)
+                    case 'anyFalse':
+                      return values.every(v => v === false)
+                    case 'min':
+                      return Math.min(...values)
+                    case 'max':
+                      return Math.max(...values)
+                    default:
+                      return new Function('values', s.fn)(values)
+                  }
+                } catch (err) {
+                  node.warn(`Unable to get generate ${this.name}.state.${s.key}: ${err}`)
+                }
+              },
+              enumerable: true,
+              configurable: true
+            })
+            return
+          }
+        }
+        this.state = {}
+        // 1. Get old (last known) state; only for normally defined values
+        let oldState = THINGS[this.name] ? THINGS[this.name].state : {}
+        Object.entries(oldState).forEach(
+          ([key, value]) =>
+            !Object.getOwnPropertyDescriptor(oldState, key).hasOwnProperty('get') &&
+            !config.state.some(c => c.key == key && !c.hasOwnProperty('value')) &&
+            initState({ key, value })
+        )
+        // 3. Use own configuration
+        if (config.state) config.state.forEach(initState)
+        // 2. Use type-level configuration
+        if (nodeConfig.state) nodeConfig.state.forEach(initState)
 
-      // Emit to the bus so that all other nodes that
-      // are configured to output on changes/updates
-      // will be triggered. (And update their status)
-      stateBus.emit(newThing.name)
-    }) // End of forEach newThing
+        // STATUS FUNCTION
+        if (config.statusFn) {
+          this._status = new Function('state', 'props', config.statusFn)
+        } else if (nodeConfig.statusFunction) {
+          this._status = new Function('state', 'props', nodeConfig.statusFunction)
+        }
+
+        // Emit to the bus so that all other nodes that
+        // are configured to output on changes/updates
+        // will be triggered. (And update their status)
+        // stateBus.emit(this.name)
+
+        // Add to global things map
+        THINGS[this.name] = this
+      }
+
+      // STATUS
+      get status() {
+        // Returns object {text, shape, fill}
+        try {
+          if (!this._status) return {}
+          let _status = this._status(
+            RED.util.cloneMessage(this.state),
+            RED.util.cloneMessage(this.props)
+          )
+          if (_status == null)
+            return {
+              fill: 'red',
+              shape: 'ring',
+              text: 'Unknown'
+            }
+          return _status
+        } catch (err) {
+          node.warn(`Unable to generate status for ${this.name}: ${err}`)
+        }
+      }
+
+      // PARENTS
+      get parents() {
+        // Return array of all parent things
+        return Object.values(THINGS)
+          .filter(t => t.children.includes(this.name))
+          .map(t => t.name)
+      }
+
+      // DESCENDANTS
+      get descendants() {
+        // Return array of all descendants
+        return getFamily(this.name, true, true).filter((v, i, a) => a.indexOf(v) == i)
+      }
+
+      // ANCESTORS
+      get ancestors() {
+        // Return array of all ancestors
+        return getFamily(this.name, false, true).filter((v, i, a) => a.indexOf(v) == i)
+      }
+
+      // PROXIES
+      get proxies() {
+        // Return array of all proxied things
+        return Object.values(THINGS)
+          .filter(t => {
+            let proxyStates = t.config.state || []
+            return (
+              proxyStates.some(s => s.child == this.name) ||
+              (t.children.includes(this.name) && proxyStates.some(s => s.fn))
+            )
+          })
+          .map(t => t.name)
+      }
+    }
+
+    nodeConfig.things.forEach(thing => {
+      // Adjust config format from old versions
+      convertOldThing(thing)
+
+      // Build thing
+      new Thing(thing)
+    })
 
     node.status({
       shape: 'dot',
@@ -191,56 +221,4 @@ module.exports = function (RED) {
     })
   }
   RED.nodes.registerType('Thing Setup', Node)
-
-  // -------------------------------------------------------------
-
-  let getThings = () => (globalRef && globalRef.get('things')) || {}
-  let makeListPacket = () => ({ topic: 'list', payload: Object.values(getThings()) })
-
-  wss.on('connection', socket => {
-    socket.on('message', msg => {
-      // When client requests list of things, send it back
-      if (msg == 'list') return socket.send(JSON.stringify(makeListPacket()))
-
-      // Must be JSON msg
-      try {
-        msg = JSON.parse(msg)
-      } catch (e) {
-        console.error(e)
-      }
-      switch (msg.topic) {
-        case 'delete-thing':
-          delete getThings()[msg.payload.thing]
-          sendToWs(makeListPacket())
-          break
-
-        case 'delete-state-key':
-          let { thing: thingName, key, trigger } = msg.payload
-          let thing = getThings()[thingName]
-          delete thing.state[key]
-          if (trigger) stateBus.emit(thingName)
-          sendToWs({ topic: 'update', payload: thing })
-          break
-      }
-    })
-  })
-
-  RED.events.on('runtime-event', event => {
-    // On re-deployment
-    if (event.id == 'runtime-deploy') {
-      // Cleanup list of things
-      let allThingsSetup = []
-      RED.nodes.eachNode(setupConfig => {
-        if (RED.nodes.getNode(setupConfig.id) && setupConfig.type == 'Thing Setup')
-          allThingsSetup.push(...setupConfig.things.map(t => t.name))
-      })
-      let things = getThings()
-      Object.values(things)
-        .filter(t => !allThingsSetup.includes(t.name))
-        .forEach(t => delete things[t.name])
-
-      // Send list of things to any connected clients
-      sendToWs(makeListPacket())
-    }
-  })
 }

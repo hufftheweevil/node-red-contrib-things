@@ -1,4 +1,5 @@
-let { commandBus, now } = require('./shared')
+let { commandBus } = require('../lib/bus.js')
+let { now } = require('../lib/utils.js')
 
 module.exports = function (RED) {
   function Node(config) {
@@ -41,92 +42,109 @@ module.exports = function (RED) {
       handleCommand(name, command)
     })
 
-    // This function is fully recursive; It handles all groups and proxy commands
-    // until no more pathes to follow, then calls emitCommand()
+    // This function is fully recursive; It handles all command definitions and forwarding
+    // until there no more pathes to follow, then calls emitCommand()
     function handleCommand(name, command, meta = {}) {
       // Pointer to the thing
       let thing = getThing(name)
       if (!thing) return
 
-      // Check if group
-      if (thing.type == 'Group') {
-        debug('Thing is a Group, sending to each:', thing.things)
-        thing.things.forEach(childName => handleCommand(childName, command))
-        return
-      }
+      // If no command defs, then just skip to last step
+      let cmdDefs = thing.commands || []
+      if (!cmdDefs.length) return last()
 
-      // Check for proxies
-      let proxies = (thing.proxy || []).filter(proxyDef => proxyDef.type == 'command')
-      if (!proxies.length) return doEmit()
-
+      // COMMAND TYPE == array
       if (Array.isArray(command)) {
         // Unable to deal with array commands at this time
         node.warn(
-          `Unable to handle proxies for array type commands. Command will be sent to same thing. If this is intended, then everything is ok.`
+          'Unable to handle command routing for array type commands. Command will be processed as self and sent to children. If this is intended, then everything is ok.'
         )
-        return doEmit()
+        return last()
       }
 
+      // COMMAND TYPE == object
       if (typeof command === 'object') {
-        // Normal object - need to go through proxies with command-key type
+        // Need to go through cmdDefs with key type
         let origCommand = { ...command }
         let proxyCommands = {}
-        proxies
-          .filter(pd => pd.cmdType == 'key')
-          .forEach(pd => {
-            if (command.hasOwnProperty(pd.this)) {
-              if (pd.that == null) {
+        cmdDefs
+          .filter(cd => cd.type == 'key')
+          .forEach(cd => {
+            if (command.hasOwnProperty(cd.cmd)) {
+              let next
+              if (cd.as === null) {
                 // Method is "the same", so include in object to be sent to child thing
                 // After done going through all keys, those commands will be sent
-                proxyCommands[pd.child] = proxyCommands[pd.child] || {}
-                proxyCommands[pd.child][pd.this] = command[pd.this]
+                next = child => {
+                  proxyCommands[child] = proxyCommands[child] || {}
+                  proxyCommands[child][cd.cmd] = command[cd.cmd]
+                }
               } else {
                 // Method is sending a primitive value as the command, instead
                 // of an object. This means the value in the origCommand is lost.
-                handleCommand(pd.child, pd.that, { origThing: thing, origCommand, meta })
+                next = child => handleCommand(child, cd.as, { origThing: thing, origCommand, meta })
               }
-              delete command[pd.this]
+              handleProxy(cd, next)
+              delete command[cd.cmd]
             }
           })
-        // Send commands to all child things that have proxies
-        Object.entries(proxyCommands).forEach(([childThing, thatCommand]) => {
-          debug(
-            `Using command proxy from ${name} to ${childThing} for ${JSON.stringify(thatCommand)}`
-          )
-          handleCommand(childThing, thatCommand, { origThing: thing, origCommand, meta })
+        // Send commands to all child things that have cmdDefs
+        Object.entries(proxyCommands).forEach(([child, nextCommand]) => {
+          debug(`Forwarding command from ${name} to ${child} for ${JSON.stringify(nextCommand)}`)
+          handleCommand(child, nextCommand, { origThing: thing, origCommand, meta })
         })
-        // If any keys left, send to same thing
-        if (Object.keys(command).length) doEmit()
+        // If any keys left, do default emit
+        if (Object.keys(command).length) last()
         return
       }
 
-      // Primitive type: string | number | boolean
-      let proxyTest =
-        typeof command === 'string'
-          ? pd =>
-              (pd.cmdType == 'str' && pd.this == command) ||
-              (pd.cmdType == 'test' && new RegExp(pd.this).test(command))
-          : typeof command === 'number'
-          ? pd => pd.cmdType == 'num' && pd.this == command
-          : typeof command === 'boolean'
-          ? pd => pd.cmdType == 'bool' && (pd.this == 'either' || pd.this == command)
-          : null
-      let proxy = proxyTest && proxies.find(proxyTest)
+      // COMMAND TYPE == string | number | boolean
+      let proxy = cmdDefs.find(cd => {
+        switch (cd.type) {
+          case 'str':
+            return typeof command == 'string' && cd.cmd == command
+          case 'num':
+            return typeof command == 'number' && cd.cmd == command
+          case 'bool':
+            return typeof command == 'boolean' && (cd.cmd == command || cd.cmd == 'either')
+          case 'test':
+            return new RegExp(cd.cmd).test(command)
+        }
+      })
       if (proxy) {
-        let thatCommand = proxy.that == null ? command : proxy.that
-        debug(
-          `Using command proxy from ${name} to ${proxy.child} for '${command}'=>'${thatCommand}'`
-        )
-        handleCommand(proxy.child, thatCommand, {
-          origThing: thing,
-          origCommand: command,
-          meta
+        let nextCommand = proxy.as == undefined ? command : proxy.as
+        handleProxy(proxy, thing => {
+          debug(
+            `Forwarding command from ${name} to ${proxy.child} for '${command}'=>'${nextCommand}'`
+          )
+          handleCommand(thing, nextCommand, {
+            origThing: thing,
+            origCommand: command,
+            meta
+          })
         })
-        return
+      } else {
+        last()
       }
 
-      function doEmit() {
+      function handleProxy(pd, next) {
+        if (pd.child === null) {
+          // Process as self only
+          next(name)
+        } else if (pd.child === undefined) {
+          // Forward to children only
+          thing.children.forEach(next)
+        } else {
+          // Forward to specific child
+          next(pd.child)
+        }
+      }
+
+      function last() {
+        // Process as self
         emitCommand({ thing, command, ...meta })
+        // Forward to children, if any
+        thing.children && thing.children.forEach(thing => handleCommand(thing, command, meta))
       }
     }
 

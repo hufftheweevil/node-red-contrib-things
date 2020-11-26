@@ -1,4 +1,5 @@
-let { TESTS, makeParam } = require('./shared')
+let { TESTS, makeParams } = require('../lib/utils.js')
+let { convertOldRule } = require('../lib/convert.js')
 
 module.exports = function (RED) {
   function Node(config) {
@@ -10,28 +11,22 @@ module.exports = function (RED) {
     const node = this
     const global = this.context().global
 
-    function getGroupList(name) {
-      let group = global.get('things')[name]
-      if (!group) return []
-      if (!group.things) return [name]
-      return group.things.map(getGroupList).flat()
-    }
-
     node.on('input', function (msg) {
       // Get list of things
       let list = Object.values(global.get('things'))
 
       // For each rule, filter the list
       config.rules.forEach(rule => {
+        convertOldRule(rule)
         try {
-          let b = makeParam('b', rule, null, node, msg, RED)
+          // `b` and `c` is the same for all things
+          let { b, c } = makeParams('bc', rule, null, node, msg, RED)
 
-          // For "is in group" rule, convert group name into list of things in group
-          if (rule.thingProp == 'group') b = getGroupList(b).filter((v, i, a) => a.indexOf(v) == i)
-
-          let c = makeParam('c', rule, null, node, msg, RED)
           list = list.filter(thing => {
-            let a = makeParam('a', rule, thing, node, msg, RED)
+            // `a` is different for each thing
+            let { a } = makeParams('a', rule, thing, node, msg, RED)
+
+            // Run test for this thing + rule
             return TESTS[rule.compare](a, b, c)
           })
         } catch (err) {
@@ -44,7 +39,11 @@ module.exports = function (RED) {
       try {
         list =
           config.outputValue == 'thing'
-            ? RED.util.cloneMessage(list)
+            ? RED.util.cloneMessage(list).map(t => {
+                delete t.config
+                delete t._status
+                return t
+              })
             : list.map(thing => RED.util.getObjectProperty(thing, config.outputValue))
       } catch (err) {
         node.warn(`Unable to build list: ${err}`)

@@ -10,7 +10,7 @@
         <option value="array">Array of</option>
         <option value="individual">Individual messages containing</option>
       </select>
-      <input id="node-input-output" />
+      <input id="node-input-output" style="width: 150px" />
     </span>
   </div>
   <div class="form-row">
@@ -32,13 +32,10 @@
   </div>
 </script>
 
+<script src="things/ui-utils.js"></script>
 <script type="text/javascript">
-  // Following variables are declared globally in test.html
-  // operators, opHasValue(), thingPropsTypes, basicTypes, typeTypes
-  // resizeRule(), resizeRuleContainer(), loadRulesContainer(), saveRules()
-
   let extendedThingPropsTypes = [
-    ...thingPropsTypes.filter(tpt => tpt.value != 'group'),
+    ...THI.thingPropsTypes.filter(tpt => tpt.value != 'is'),
     {
       value: 'thing',
       label: 'whole thing',
@@ -79,13 +76,12 @@
           default: key
         })
         .typedInput('value', path)
-        .typedInput('width', 150)
 
       $('#node-input-property').typedInput({
         types: ['msg']
       })
 
-      loadRulesContainer(this.rules)
+      THI.loadRulesContainer(this.rules)
     },
     oneditsave: function () {
       this.outputValue = $('#node-input-output').typedInput('type')
@@ -96,32 +92,23 @@
       )
         this.outputValue += '.' + path
 
-      this.rules = saveRules()
+      this.rules = THI.saveRules()
       this.propertyType = $('#node-input-property').typedInput('type')
 
       $('#node-input-outputs').val($('#node-input-secondOutput').prop('checked') ? 2 : 1)
     },
-    oneditresize: resizeRuleContainer
+    oneditresize: THI.resizeRuleContainer
   })
 </script>
 
 <script type="text/html" data-help-name="Thing List">
-  <p>A node that will list all <i>things</i> that match the specified conditions.</p>
-  <h3>Properties</h3>
-  <dl class="message-properties">
-    <dt class="required">Output</dt>
-    <dd>Choose the type and value of the output</dd>
-    <dt class="required">Property</dt>
-    <dd>Specify what property to output on</dd>
-    <dt class="required">Conditions</dt>
-    <dd>
-      The conditions that must be met to include a <i>thing</i> on the list. Leave empty to list all
-      <i>things</i>.
-    </dd>
-  </dl>
-  <h3>Output</h3>
-  <p>
-    The input message will be forwarded (unless <code>Discard input message</code> is checked), with
-    the addition of the output specified in the properties.
-  </p>
+<p>A node that will list all <i>things</i> that match the specified conditions.</p>
+<h3>Properties</h3>
+<dl class="message-properties">
+<dt class="required">Output</dt><dd>Choose the type and value of the output</dd>
+<dt class="required">Property</dt><dd>Specify what property to output on</dd>
+<dt class="required">Conditions</dt><dd>The conditions that must be met to include a <i>thing</i> on the list. Leave empty to list all <i>things</i>.</dd>
+</dl>
+<h3>Output</h3>
+<p>The input message will be forwarded (unless <code>Discard input message</code> is checked), with the addition of the output specified in the properties.</p>
 </script>
