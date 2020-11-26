@@ -61,8 +61,8 @@ module.exports = function (RED) {
         // Send to websockets to update sidebar
         ws.send({ topic: 'update', payload: thing })
 
-        // Trigger for all parents that are affected
-        thing.parents.forEach(parentName => triggerUpdate(parentName))
+        // Trigger for all proxies
+        thing.proxies.forEach(proxyName => triggerUpdate(proxyName))
       }
 
       // Begin trigger process

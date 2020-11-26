@@ -28,6 +28,14 @@ module.exports = function (RED) {
     // Start TD server if not started
     ws.init(RED, global)
 
+    function getFamily(name, down, start) {
+      let prop = down ? 'children' : 'parents'
+      let next = THINGS[name]
+      if (!next) return []
+      if (!next[prop] || next[prop].length == 0) return start ? [] : [name]
+      return next[prop].map(n => getFamily(n, down)).flat()
+    }
+
     class Thing {
       constructor(config) {
         this.config = config
@@ -55,14 +63,6 @@ module.exports = function (RED) {
           //
           // Static value
           if (s.hasOwnProperty('value')) {
-            // Grab 'current' state if thing already exists
-            // if (
-            //   oldState.hasOwnProperty(s.key) &&
-            //   !Object.getOwnPropertyDescriptor(oldState, s.key).hasOwnProperty('get')
-            // )
-            //   this.state[s.key] = oldState[s.key]
-            // // Otherwise initialize static value
-            // else
             this.state[s.key] = s.value
             return
           }
@@ -121,14 +121,18 @@ module.exports = function (RED) {
           }
         }
         this.state = {}
+        // 1. Get old (last known) state; only for normally defined values
         let oldState = THINGS[this.name] ? THINGS[this.name].state : {}
         Object.entries(oldState).forEach(
           ([key, value]) =>
             !Object.getOwnPropertyDescriptor(oldState, key).hasOwnProperty('get') &&
+            !config.state.some(c => c.key == key && !c.hasOwnProperty('value')) &&
             initState({ key, value })
         )
-        if (nodeConfig.state) nodeConfig.state.forEach(initState)
+        // 3. Use own configuration
         if (config.state) config.state.forEach(initState)
+        // 2. Use type-level configuration
+        if (nodeConfig.state) nodeConfig.state.forEach(initState)
 
         // STATUS FUNCTION
         if (config.statusFn) {
@@ -145,6 +149,8 @@ module.exports = function (RED) {
         // Add to global things map
         THINGS[this.name] = this
       }
+
+      // STATUS
       get status() {
         // Returns object {text, shape, fill}
         try {
@@ -164,8 +170,30 @@ module.exports = function (RED) {
           node.warn(`Unable to generate status for ${this.name}: ${err}`)
         }
       }
+
+      // PARENTS
       get parents() {
         // Return array of all parent things
+        return Object.values(THINGS)
+          .filter(t => t.children.includes(this.name))
+          .map(t => t.name)
+      }
+
+      // DESCENDANTS
+      get descendants() {
+        // Return array of all descendants
+        return getFamily(this.name, true, true).filter((v, i, a) => a.indexOf(v) == i)
+      }
+
+      // ANCESTORS
+      get ancestors() {
+        // Return array of all ancestors
+        return getFamily(this.name, false, true).filter((v, i, a) => a.indexOf(v) == i)
+      }
+
+      // PROXIES
+      get proxies() {
+        // Return array of all proxied things
         return Object.values(THINGS)
           .filter(t => {
             let proxyStates = t.config.state || []

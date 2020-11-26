@@ -27,15 +27,28 @@
     outputs: 1,
     icon: 'trigger.svg',
     label: function () {
+      convertOldTrigger(this)
       return (
         this.nodeName ||
-        (typeof this.triggerThing == 'string' ? this.name : `Multi mode`) ||
-        'trigger'
+        (THI.isofOps[this.triggerThing.path] || this.triggerThing.path) +
+          ' ' +
+          (this.triggerThing.type == 're'
+            ? `/${this.triggerThing.value}/`
+            : this.triggerThing.value.toString()) +
+          ' ~ ' +
+          (this.triggerState == null
+            ? 'any'
+            : this.triggerState.length > 6
+            ? this.triggerState.slice(6)
+            : 'state') +
+          (this.triggerTest
+            ? ` ${THI.operators.find(o => o.v == this.triggerTest.compare).t} ${
+                this.triggerTest.value
+              }`
+            : '')
       )
     },
-    labelStyle: function () {
-      return this.nodeName || typeof this.triggerThing == 'string' ? 'node_label_italic' : ''
-    },
+    labelStyle: 'node_label_italic',
     oneditprepare: function () {
       convertOldTrigger(this)
 
@@ -72,8 +85,8 @@
       RED.nodes.eachWorkspace(ws => {
         if (ws.disabled) disabledTabs.push(ws.id)
       })
-      const things = {}
-      const THINGS = []
+      const THINGS = {}
+      const things = []
       RED.nodes.eachNode(node => {
         !node.d &&
           !disabledTabs.includes(node.z) &&
@@ -81,14 +94,22 @@
           node.things &&
           node.things.forEach(thing => {
             let _thing = { ...thing, type: node.thingType }
-            things[thing.name] = _thing
-            THINGS.push(_thing)
+            convertOldThing(_thing)
+            THINGS[thing.name] = _thing
+            things.push(_thing)
           })
       })
+      function getFamily(name, down, start) {
+        let prop = down ? 'children' : 'parents'
+        let next = THINGS[name]
+        if (!next) return []
+        if (!next[prop] || next[prop].length == 0) return start ? [] : [name]
+        return next[prop].map(n => getFamily(n, down)).flat()
+      }
       function updateMatches() {
         // Get current configuration
         let triggerThing = {
-          path: THI.getTypedInput('node-input-thing-path', true),
+          path: THI.getTypedInput('node-input-thing-path', { makePath: true }),
           ...THI.getTypedInput('node-input-thing-value')
         }
 
@@ -101,28 +122,41 @@
           re: value => triggerThing.value.test(value)
         }[triggerThing.type]
 
-        // Copied from trigger.js
-        function recurFindThings(name) {
-          let thing = things[name] || {}
-          return [thing.name, ...(thing.children || []).flatMap(recurFindThings)]
-        }
-
         // Copied from trigger.js and modified
-        let matches =
-          triggerThing.path == 'child'
-            ? THINGS.filter(thing => test(thing.name)).flatMap(t => t.children)
-            : triggerThing.path == 'descendant'
-            ? THINGS.filter(thing => test(thing.name)).flatMap(t => recurFindThings(t.name))
-            : THINGS.filter(thing => {
-                try {
-                  return test(RED.utils.getMessageProperty(thing, triggerThing.path))
-                } catch (err) {
-                  console.log(`Unable to test ${thing.name} for ${triggerThing.path}: ${err}`)
-                  return false
-                }
-              }).map(thing => thing.name)
+        let path = triggerThing.path
+        let matches = things
+          .filter(thing => {
+            try {
+              // Special cases
+              if (path == 'children') {
+                return (thing.children || []).some(test)
+              } else if (path == 'parents') {
+                return things
+                  .filter(t => {
+                    let proxyStates = t.state || []
+                    return (
+                      proxyStates.some(s => s.child == thing.name) ||
+                      ((t.children || []).includes(thing.name) && proxyStates.some(s => s.fn))
+                    )
+                  })
+                  .map(t => t.name)
+                  .some(test)
+              } else if (path == 'descendants') {
+                return getFamily(thing.name, true, true).some(test)
+              } else if (path == 'ancestors') {
+                return getFamily(thing.name, false, true).some(test)
+              }
 
-        matches = matches.filter((v, i, a) => a.indexOf(v) == i)
+              // Default case
+              let val = RED.utils.getMessageProperty(thing, path)
+              return test(val)
+            } catch (err) {
+              console.log(`Unable to test ${thing.name} for ${path}: ${err}`)
+              return false
+            }
+          })
+          .map(thing => thing.name)
+          .filter((v, i, a) => a.indexOf(v) == i)
 
         let results = $('#thing-test-results')
         results.empty()
@@ -141,11 +175,13 @@
 
       // // initialize
 
-      if (this.triggerThing.path.startsWith('props')) {
-        THI.setTypedInput(thingPath, 'props', this.triggerThing.path.slice(6))
+      let [x, root, path] = this.triggerThing.path.match(/([^.]+)(?:\.(.+))?/) || []
+      if (THI.isofOps[root]) {
+        THI.setTypedInput(thingPath, 'is', THI.isofOps[root])
       } else {
-        THI.setTypedInput(thingPath, this.triggerThing.path)
+        THI.setTypedInput(thingPath, root, path)
       }
+
       THI.setTypedInput(thingValue, this.triggerThing.type, this.triggerThing.value)
       updateMatches()
 
@@ -246,7 +282,6 @@
         path: THI.getTypedInput('node-input-thing-path', { makePath: true }),
         ...THI.getTypedInput('node-input-thing-value')
       }
-      console.log(this.triggerThing)
 
       // TRIGGER STATE
       let triggerState = THI.getTypedInput('node-input-state-path', { makePath: true })
@@ -313,26 +348,28 @@
   <p>A node that outputs a message when a thing's state changes. Can be configured in many ways.</p>
   <h3>Properties</h3>
   <dl class="message-properties">
-    <dt class="required">Multi-thing Mode</dt>
-    <dd>When enabled, allows multiple <i>things</i> to trigger this node</dd>
-    <dt class="required">Thing Name</dt>
-    <dd>(Single-thing mode) The <i>thing</i> <code>name</code> to trigger from</dd>
     <dt class="required">Thing Test</dt>
     <dd>
-      (Multi-thing mode) Can be configured to check against any static attributes of each
-      <i>thing</i>. List of matching <i>things</i> is made immediately after setup and is not
-      updated until nodes are re-deployed. Each <i>thing</i> is tracked individually. Editor will
-      show how many <i>things</i> match the current configuration. Click the number to see the full
-      list.
+      Test used to determine <b>what</b> <i>things</i> to watch. Can be configured to check against
+      any static attributes of each <i>thing</i>. List of matching <i>things</i> is made immediately
+      after setup and is not updated until nodes are re-deployed. Each <i>thing</i> is tracked
+      individually. Editor will show how many <i>things</i> match the current configuration. Click
+      the number to see the full list.
     </dd>
-    <dt class="required">Output...</dt>
+    <dt class="required">Trigger</dt>
     <dd>
-      Configure <b>when</b> to trigger an output. If a state key is specified, certain values can be
-      filtered as well. <i>Ignore initialization</i> option will prevent triggers when the value
-      changes from <code>undefined</code>.
+      Configure <b>when</b> to trigger an output. "All Updates" will trigger on any
+      <code>state</code> update, regardless of changes. Use <code>state.</code> to track a specific
+      <code>state</code> key. Leave empty to trigger on any <code>state</code> change.
+      <i>Ignore initialization</i> option will prevent triggers when the value changes from
+      <code>undefined</code>.
     </dd>
     <dt class="required">Payload</dt>
-    <dd>Configure <b>what</b> to output on <code>msg.payload</code></dd>
+    <dd>
+      Configure what to output on <code>msg.payload</code>. Can be a typical Node-RED typed value,
+      or part of the <i>thing</i> <code>state</code>. Leave <code>state.</code> empty to output the
+      entire state. Use the copy button to quickly copy the state field from the Trigger.
+    </dd>
   </dl>
   <h3>Output</h3>
   <dl class="message-properties">
@@ -340,7 +377,5 @@
     <dd><i>Thing</i> <code>name</code></dd>
     <dt class="required"><code>payload</code> <span class="property-type">any</span></dt>
     <dd>Depends on Payload property</dd>
-    <dt class="required"><code>thing</code> <span class="property-type">object</span></dt>
-    <dd>The entire thing object, only if selected in properties</dd>
   </dl>
 </script>

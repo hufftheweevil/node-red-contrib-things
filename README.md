@@ -48,9 +48,9 @@ All _things_ configured in the setup nodes are listed in the **Things Directory*
 
 ### Upgrading from v2
 
-Version 3 has been designed to automatically upgrade any nodes from version 2. The main difference is how the configuration data is stored for the _setup_ node. Therefore, it is **highly recommended** to backup your `flows.json` file before upgrading. After upgrading to version 3, it is **recommended** to open every _setup_ node you have and verify that they remain configured as you want. Many tests have been done to ensure everything upgrades properly, but of course there is always a chance for something to go wrong. Please report any bugs you encounter.
+Version 3 has been designed to automatically upgrade any nodes from version 2. The main difference is how the configuration data is stored for the _setup_ node. Therefore, it is **highly recommended** to backup your `flows.json` file before upgrading. After upgrading to version 3, it is **recommended** to open every _setup_ and _trigger_ node you have and verify that they remain configured as you want. Many tests have been done to ensure everything upgrades properly, but of course there is always a chance for something to go wrong. Please report any bugs you encounter.
 
-**Major changes from v2 to v3:**
+**Other major changes from v2 to v3:**
 
 - The concept of "Groups" has been morphed into Children, and available for any `type`.
 - The two parts of the "Proxy" system have moved. State proxies are now part of the State setup. And command proxies are now part of the Command setup. See [Setup](#setup) below.
@@ -69,7 +69,7 @@ All _things_ must be configured using this node. Use a different _setup_ node fo
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Thing Type | User's choice. Typically, the platform that these _things_ use to connect outside of Node-RED.                                                                     |
 | Things     | Each _thing_ of this `type` is listed. Click a _thing_ to see detailed setup properties.                                                                           |
-| \*Common   | Optional. Each `type` can have common State, Commands, or Status Function. These get applied to all _things_ of this `type` unless overriden at the _thing_ level. |
+| (common)   | Optional. Each `type` can have common State, Commands, or Status Function. These get applied to all _things_ of this `type` unless overriden at the _thing_ level. |
 
 **For each thing:**
 | Property | Info
@@ -108,21 +108,18 @@ A node that outputs a message when a thing's state changes. Can be configured in
 
 ##### Properties
 
-| Property         | Info                                                                                                                                                                                                                                                                                                                                                         |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Multi-thing Mode | When enabled, allows multiple <i>things</i> to trigger this node                                                                                                                                                                                                                                                                                             |
-| Thing Name       | (Single-thing mode) The _thing_ `name` to trigger from                                                                                                                                                                                                                                                                                                       |
-| Thing Test       | (Multi-thing mode) Can be configured to check against any static attributes of each _thing_. List of matching <i>things</i> is made immediately after setup and is not updated until nodes are re-deployed. Each _thing_ is tracked individually. Editor will show how many _things_ match the current configuration. Click the number to see the full list. |
-| Output...        | Configure **when** to trigger an output. If a state key is specified, certain values can be filtered as well. _Ignore initialization_ option will prevent triggers when the value changes from `undefined`.                                                                                                                                                  |
-| Payload          | Configure **what** to output on `msg.payload`                                                                                                                                                                                                                                                                                                                |
+| Property   | Info                                                                                                                                                                                                                                                                                                                                                                                         |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Thing Test | Test used to determine **what** _things_ to watch. Can be configured to check against any static attributes of each _thing_. List of matching <i>things</i> is made immediately after setup and is not updated until nodes are re-deployed. Each _thing_ is tracked individually. Editor will show how many _things_ match the current configuration. Click the number to see the full list. |
+| Trigger    | Configure **when** to trigger an output. "All Updates" will trigger on any `state` update, regardless of changes. Use `state.` to track a specific `state` key. Leave empty to trigger on any `state` change. _Ignore initialization_ option will prevent triggers when the value changes from `undefined`.                                                                                  |
+| Payload    | Configure what to output on `msg.payload`. Can be a typical Node-RED typed value, or part of the _thing_ `state`. Leave `state.` empty to output the entire state. Use the copy button to quickly copy the state field from the Trigger.                                                                                                                                                     |
 
 ##### Output
 
-| Key       | Type     | Info                                                    |
-| --------- | -------- | ------------------------------------------------------- |
-| `topic`   | _string_ | _Thing_ `name`                                          |
-| `payload` | any      | Depends on Payload property                             |
-| `thing`   | _object_ | The entire thing object, only if selected in properties |
+| Key       | Type     | Info                        |
+| --------- | -------- | --------------------------- |
+| `topic`   | _string_ | _Thing_ `name`              |
+| `payload` | any      | Depends on Payload property |
 
 ### get
 

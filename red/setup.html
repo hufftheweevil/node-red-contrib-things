@@ -265,9 +265,6 @@
         if (thing.statusFn) {
           node.statusEditors.thing.setValue(thing.statusFn)
           node.statusEditors.thing.unsetStyle('editor-placeholder')
-          // } else if (node.statusFunction) {
-          //   node.statusEditors.thing.setValue(node.statusFunction)
-          //   node.statusEditors.thing.setStyle('editor-placeholder')
         }
 
         // Prepare interface
@@ -385,8 +382,6 @@
       this.statusFunction = this.statusEditors.main.getValue()
       Object.values(this.statusEditors).forEach(editor => editor.destroy())
       delete this.statusEditors
-
-      this.random = console.log(this)
     },
     oneditcancel: function () {
       Object.values(this.statusEditors).forEach(editor => editor.destroy())
@@ -525,13 +520,10 @@
       Each <i>thing</i> of this <code>type</code> is listed. Click a <i>thing</i> to see detailed
       setup properties.
     </dd>
-    <dt class="optional">Stauts Function</dt>
+    <dt class="optional">(common)</dt>
     <dd>
-      A function that runs to determine the status of a <i>thing</i>. Function is run with current
-      <code>state</code> and <code>props</code> as input, and should output a node status object.
-      The object can contain <code>text</code>, <code>fill</code>, and/or <code>shape</code>. If a
-      thing has its own status function, that will be used. Otherwise the <code>type</code>-level
-      status function will be used.
+      Each <code>type</code> can have common State, Commands, or Status Function. These get applied
+      to all <i>things</i> of this <code>type</code> unless overriden at the <i>thing</i> level.
     </dd>
   </dl>
   <p><b>For each thing:</b></p>
@@ -600,7 +592,7 @@
         <li>The parent-child relationship can be many-to-many.</li>
       </ul>
     </dd>
-    <dt class="optional">Stauts Function</dt>
+    <dt class="optional">Stautus Function</dt>
     <dd>
       A function that runs to determine the status of a <i>thing</i>. Function is run with current
       <code>state</code> and <code>props</code> as input, and should output a node status object.

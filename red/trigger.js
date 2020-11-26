@@ -77,7 +77,7 @@ module.exports = function (RED) {
               topic: this.thing.name,
               payload:
                 config.payload.type == 'state'
-                  ? this.get(this.thing.state, config.payload.value)
+                  ? this.get('state' + (config.payload.value ? '.' + config.payload.value : ''))
                   : RED.util.evaluateNodeProperty(config.payload.value, config.payload.type, node)
             }
             setTimeout(() => node.send(msg), 1)
@@ -115,27 +115,18 @@ module.exports = function (RED) {
           ? value => compareValue.test(value)
           : value => compareValue == value
 
-      function recurFindThings(name) {
-        let thing = things[name] || {}
-        return [thing.name, ...(thing.children || []).flatMap(recurFindThings)]
-      }
-
       // Generate list of things that match conditions
-      watchers = (config.triggerThing.path == 'child'
-        ? THINGS.filter(thing => test(thing.name)).flatMap(t => t.children)
-        : config.triggerThing.path == 'descendant'
-        ? THINGS.filter(thing => test(thing.name)).flatMap(t => recurFindThings(t.name))
-        : THINGS.filter(thing => {
-            try {
-              return test(RED.util.getObjectProperty(thing, config.triggerThing.path))
-            } catch (err) {
-              node.warn(`Unable to test ${thing.name} for ${config.triggerThing.path}: ${err}`)
-              return false
-            }
-          }).map(thing => thing.name)
-      )
-        .filter((v, i, a) => a.indexOf(v) == i)
-        .map(name => new ThingWatcher(name))
+      watchers = THINGS.filter(thing => {
+        try {
+          let val = RED.util.getObjectProperty(thing, config.triggerThing.path)
+          if (/children|parents|ancestors|descendants/.test(config.triggerThing.path))
+            return val.some(test)
+          return test(val)
+        } catch (err) {
+          node.warn(`Unable to test ${thing.name} for ${config.triggerThing.path}: ${err}`)
+          return false
+        }
+      }).map(thing => new ThingWatcher(thing.name))
 
       // Listen for state updates for each thing
       registerThingListeners()

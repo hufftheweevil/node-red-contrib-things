@@ -1,4 +1,5 @@
-let { TESTS, makeParam } = require('../lib/utils.js')
+let { TESTS, makeParams } = require('../lib/utils.js')
+let { convertOldRule } = require('../lib/convert.js')
 
 module.exports = function (RED) {
   function Node(config) {
@@ -28,11 +29,9 @@ module.exports = function (RED) {
 
       // Check all rules
       let pass = config.rules.every(rule => {
+        convertOldRule(rule)
         try {
-          let a = makeParam('a', rule, thing, node, msg, RED)
-          let b = makeParam('b', rule, thing, node, msg, RED)
-          let c = makeParam('c', rule, thing, node, msg, RED)
-
+          let { a, b, c } = makeParams('abc', rule, thing, node, msg, RED)
           return TESTS[rule.compare](a, b, c)
         } catch (err) {
           node.warn(`Error during test: ${err}`)
