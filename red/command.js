@@ -62,6 +62,7 @@ module.exports = function (RED) {
 
       // COMMAND TYPE == object
       if (typeof command === 'object') {
+        console.log({ command, cmdDefs })
         // Need to go through cmdDefs with key type
         let origCommand = { ...command }
         let proxyCommands = {}
@@ -70,7 +71,7 @@ module.exports = function (RED) {
           .forEach(cd => {
             if (command.hasOwnProperty(cd.cmd)) {
               let next
-              if (cd.as === null) {
+              if (cd.as == undefined) {
                 // Method is "the same", so include in object to be sent to child thing
                 // After done going through all keys, those commands will be sent
                 next = child => {
