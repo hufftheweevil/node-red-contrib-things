@@ -62,7 +62,6 @@ module.exports = function (RED) {
 
       // COMMAND TYPE == object
       if (typeof command === 'object') {
-        console.log({ command, cmdDefs })
         // Need to go through cmdDefs with key type
         let origCommand = { ...command }
         let proxyCommands = {}
