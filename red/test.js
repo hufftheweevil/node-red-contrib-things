@@ -1,4 +1,4 @@
-let { TESTS, makeParams } = require('../lib/utils.js')
+let { TESTS, makeParams, makeStatus } = require('../lib/utils.js')
 let { convertOldRule } = require('../lib/convert.js')
 
 module.exports = function (RED) {
@@ -42,6 +42,9 @@ module.exports = function (RED) {
       // Output, maybe
       if (pass) node.send(msg)
       else if (config.secondOutput) node.send([null, msg])
+
+      // Update status
+      node.status(makeStatus(thing.name, pass ? 'PASS' : 'FAIL'))
     })
   }
   RED.nodes.registerType('Thing Test', Node)

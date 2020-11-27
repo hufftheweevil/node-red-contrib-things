@@ -1,5 +1,5 @@
 let { commandBus } = require('../lib/bus.js')
-let { now } = require('../lib/utils.js')
+let { makeStatus } = require('../lib/utils.js')
 
 module.exports = function (RED) {
   function Node(config) {
@@ -35,9 +35,7 @@ module.exports = function (RED) {
       if (typeof command == 'undefined' || command === '')
         return err(`Command not specified in properties or input`)
 
-      node.status({
-        text: `${name} | ${JSON.stringify(command)} | ${now()}`
-      })
+      node.status(makeStatus(name, command))
 
       handleCommand(name, command)
     })

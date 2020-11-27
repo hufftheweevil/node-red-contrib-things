@@ -1,5 +1,5 @@
 let { stateBus } = require('../lib/bus.js')
-let { pushUnique, now } = require('../lib/utils.js')
+let { pushUnique, makeStatus } = require('../lib/utils.js')
 const ws = require('../lib/ws.js')
 
 module.exports = function (RED) {
@@ -83,9 +83,7 @@ module.exports = function (RED) {
         })
       } else {
         // Not configured with `type`, so show status of this update
-        node.status({
-          text: `${thing.name} | ${JSON.stringify(update)} | ${now()}`
-        })
+        node.status(makeStatus(thing.name, update))
       }
     })
   }

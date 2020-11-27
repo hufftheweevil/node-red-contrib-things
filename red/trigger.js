@@ -1,5 +1,5 @@
 let { stateBus } = require('../lib/bus.js')
-let { TESTS, now } = require('../lib/utils.js')
+let { TESTS, makeStatus } = require('../lib/utils.js')
 let { convertOldTrigger } = require('../lib/convert.js')
 
 module.exports = function (RED) {
@@ -90,9 +90,7 @@ module.exports = function (RED) {
         this.lastKnownState = this.latestState
 
         // Update status
-        node.status({
-          text: `${this.thing.name} | ${now()}`
-        })
+        node.status(makeStatus(this.thing.name))
       }
     }
 

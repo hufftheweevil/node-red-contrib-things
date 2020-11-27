@@ -1,5 +1,5 @@
 let { commandBus } = require('../lib/bus.js')
-let { now } = require('../lib/utils.js')
+let { makeStatus } = require('../lib/utils.js')
 
 module.exports = function (RED) {
   function Node(config) {
@@ -29,9 +29,7 @@ module.exports = function (RED) {
         origThing,
         origCommand
       })
-      node.status({
-        text: `${thing.name} | ${JSON.stringify(command).slice(0, 100)} | ${now()}`
-      })
+      node.status(makeStatus(thing.name, command))
     }
 
     // Listen for command requests for this thing type
