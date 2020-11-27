@@ -48,7 +48,7 @@ module.exports = function (RED) {
       if (!thing) return
 
       // If no command defs, then just skip to last step
-      let cmdDefs = thing.commands || []
+      let cmdDefs = thing.config.commands || []
       if (!cmdDefs.length) return last()
 
       // COMMAND TYPE == array
