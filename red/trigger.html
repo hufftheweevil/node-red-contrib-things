@@ -28,13 +28,12 @@
     icon: 'trigger.svg',
     label: function () {
       convertOldTrigger(this)
+      let { path, type, value } = this.triggerThing
       return (
         this.nodeName ||
-        (THI.isofOps[this.triggerThing.path] || this.triggerThing.path) +
+        (THI.isofOps[path] || (path == 'name' ? '' : path)) +
           ' ' +
-          (this.triggerThing.type == 're'
-            ? `/${this.triggerThing.value}/`
-            : this.triggerThing.value.toString()) +
+          (type == 're' ? `/${value}/` : value.toString()) +
           ' ~ ' +
           (this.triggerState == null
             ? 'any'
