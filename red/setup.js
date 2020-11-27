@@ -206,6 +206,11 @@ module.exports = function (RED) {
           })
           .map(t => t.name)
       }
+
+      // COMMANDS
+      get commands() {
+        return [...(this.config.commands || []), ...(nodeConfig.commands || [])]
+      }
     }
 
     nodeConfig.things.forEach(thing => {
