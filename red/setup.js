@@ -134,12 +134,35 @@ module.exports = function (RED) {
         // 2. Use type-level configuration
         if (nodeConfig.state) nodeConfig.state.forEach(initState)
 
-        // STATUS FUNCTION
+        // STATUS
+        let _status
         if (config.statusFn) {
-          this._status = new Function('state', 'props', config.statusFn)
+          _status = new Function('state', 'props', config.statusFn)
         } else if (nodeConfig.statusFunction) {
-          this._status = new Function('state', 'props', nodeConfig.statusFunction)
+          _status = new Function('state', 'props', nodeConfig.statusFunction)
         }
+        Object.defineProperty(this, 'status', {
+          enumerable: true,
+          get: () => {
+            // Returns object {text, shape, fill}
+            try {
+              if (!_status) return {}
+              let status = _status(
+                RED.util.cloneMessage(this.state),
+                RED.util.cloneMessage(this.props)
+              )
+              if (status == null)
+                return {
+                  fill: 'red',
+                  shape: 'ring',
+                  text: 'Unknown'
+                }
+              return status
+            } catch (err) {
+              node.warn(`Unable to generate status for ${this.name}: ${err}`)
+            }
+          }
+        })
 
         // Emit to the bus so that all other nodes that
         // are configured to output on changes/updates
@@ -148,27 +171,6 @@ module.exports = function (RED) {
 
         // Add to global things map
         THINGS[this.name] = this
-      }
-
-      // STATUS
-      get status() {
-        // Returns object {text, shape, fill}
-        try {
-          if (!this._status) return {}
-          let _status = this._status(
-            RED.util.cloneMessage(this.state),
-            RED.util.cloneMessage(this.props)
-          )
-          if (_status == null)
-            return {
-              fill: 'red',
-              shape: 'ring',
-              text: 'Unknown'
-            }
-          return _status
-        } catch (err) {
-          node.warn(`Unable to generate status for ${this.name}: ${err}`)
-        }
       }
 
       // PARENTS
