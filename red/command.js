@@ -148,7 +148,11 @@ module.exports = function (RED) {
 
     function emitCommand(msg) {
       if (!msg.thing) return
-      debug(`Sending command to type ${msg.thing.type}: ${JSON.stringify(msg)}`)
+      debug(
+        `Sending command to type ${msg.thing.type}: ${JSON.stringify(msg.command)} -> ${
+          msg.thing.name
+        }}`
+      )
       // Emit to the bus so that all other nodes that
       // are configured for this thing type will output.
       commandBus.emit(msg.thing.type, msg)
