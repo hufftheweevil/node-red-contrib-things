@@ -68,29 +68,20 @@ module.exports = function (RED) {
         cmdDefs
           .filter(cd => cd.type == 'key')
           .forEach(cd => {
-            if (command.hasOwnProperty(cd.cmd)) {
-              let next
-              if (cd.as == undefined) {
-                // Method is "the same", so include in object to be sent to child thing
-                // After done going through all keys, those commands will be sent
-                next = child => {
-                  proxyCommands[child] = proxyCommands[child] || {}
-                  proxyCommands[child][cd.cmd] = command[cd.cmd]
-                }
-              } else {
-                // Method is sending a primitive value as the command, instead
-                // of an object. This means the value in the origCommand is lost.
-                next = child => handleCommand(child, cd.as, { origThing: thing, origCommand, meta })
-              }
-              handleProxy(cd, next)
-              delete command[cd.cmd]
-            }
+            // Check if this key used in command object
+            if (!command.hasOwnProperty(cd.cmd)) return
+            handleProxy(cd, child => {
+              let to = cd.as === undefined ? cd.cmd : cd.as
+              proxyCommands[child] = proxyCommands[child] || {}
+              proxyCommands[child][to] = command[cd.cmd]
+              debug(`Forwarding command from ${name} to ${child} for '.${cd.cmd}'=>'.${to}'`)
+            })
+            delete command[cd.cmd]
           })
         // Send commands to all child things that have cmdDefs
-        Object.entries(proxyCommands).forEach(([child, nextCommand]) => {
-          debug(`Forwarding command from ${name} to ${child} for ${JSON.stringify(nextCommand)}`)
+        Object.entries(proxyCommands).forEach(([child, nextCommand]) =>
           handleCommand(child, nextCommand, { origThing: thing, origCommand, meta })
-        })
+        )
         // If any keys left, do default emit
         if (Object.keys(command).length) last()
         return
