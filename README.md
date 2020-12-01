@@ -44,7 +44,11 @@ A **_thing_**, as used in this library, is any device or entity in Node-RED that
 
 This library of nodes does not actually connect to any of the devices; it only acts as a state management system. All outside communication will need to go through another Node-RED node. For example, if using Lifx lights, you will need one of the Lifx Node-RED libraries.
 
-All _things_ configured in the setup nodes are listed in the **Things Directory** sidebar tab after deployment.
+### Things Directory
+
+All _things_ configured in the setup nodes are listed in the **Things Directory** sidebar tab after deployment. Information for each _thing_ includes `name`, `type`, `ID`, `status`, `state`, and `props`. State values that are proxied, will show a small button when hovered that will link to the proxy _thing_. The directory can be filtered by `type`. Future versions will include other methods of filtering/searching.
+
+**IMPORTANT:** If your Things Directory shows "DISCONNECTED" and you are using a container such as Docker, ensure you are allowing port `8120` through on your container, in addition to the standard `1880` for Node-RED. Port `8120` is used for websocket communication of all real-time _thing_-related data to the editor.
 
 ### Upgrading from v2
 
