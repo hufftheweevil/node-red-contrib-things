@@ -3,6 +3,9 @@ const { stateBus } = require('../lib/bus.js')
 const ws = require('../lib/ws.js')
 
 module.exports = function (RED) {
+  // Start TD server if not started
+  ws.init(RED)
+
   function Node(nodeConfig) {
     RED.nodes.createNode(this, nodeConfig)
 
@@ -25,8 +28,8 @@ module.exports = function (RED) {
     if (!global.get('things')) global.set('things', {})
     const THINGS = global.get('things')
 
-    // Start TD server if not started
-    ws.init(RED, global)
+    // Link global context
+    ws.link(global)
 
     function getFamily(name, down, start) {
       let prop = down ? 'children' : 'parents'
