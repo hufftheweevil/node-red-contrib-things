@@ -62,9 +62,13 @@ module.exports = function (RED) {
 
       // COMMAND TYPE == object
       if (typeof command === 'object') {
-        // Need to go through cmdDefs with key type
+        // Clone command to prevent mutating if the same command was sent to multiple things
+        command = { ...command }
+        // Clone again to new variable - to track what keys are being forwarded elsewhere and what isn't
         let origCommand = { ...command }
+        // Dictionary to store which key/value pairs are being sent to which things
         let proxyCommands = {}
+        // Go through cmdDefs with key type
         cmdDefs
           .filter(cd => cd.type == 'key')
           .forEach(cd => {
@@ -117,10 +121,10 @@ module.exports = function (RED) {
       }
 
       function handleProxy(pd, next) {
-        if (pd.child === null) {
+        if (pd.child === undefined) {
           // Process as self only
           next(name)
-        } else if (pd.child === undefined) {
+        } else if (pd.child === null) {
           // Forward to children only
           thing.children.forEach(next)
         } else {
