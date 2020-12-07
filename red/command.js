@@ -134,6 +134,11 @@ module.exports = function (RED) {
       }
 
       function last() {
+        debug(
+          `Processing as self (${thing.name}) and forwarding to all children (${(
+            thing.children || []
+          ).join(', ')})`
+        )
         // Process as self
         emitCommand({ thing, command, ...meta })
         // Forward to children, if any
