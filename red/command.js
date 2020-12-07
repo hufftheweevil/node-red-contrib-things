@@ -12,7 +12,7 @@ module.exports = function (RED) {
       if (config.debug) node.warn(msg)
     }
     function err(msg) {
-      node.error(`Input message: ${JSON.stringify(msg)}`)
+      node.error(`Error: ${msg}`)
       return null
     }
 
