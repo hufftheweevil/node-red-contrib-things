@@ -243,7 +243,7 @@
 
       if (this.triggerTest) {
         $('#node-input-test').prop('checked', true)
-        testCompare.val(this.triggerTest.compare)
+        testCompare.val(this.triggerTest.compare).change()
         THI.setTypedInput(testValue, this.triggerTest)
       }
 
