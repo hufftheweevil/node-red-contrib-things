@@ -123,7 +123,7 @@ module.exports = function (RED) {
       function handleProxy(pd, next) {
         if (pd.child === undefined) {
           // Process as self only
-          next(name)
+          emitCommand({ thing, command, ...meta })
         } else if (pd.child === null) {
           // Forward to children only
           thing.children.forEach(next)
