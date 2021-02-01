@@ -46,7 +46,7 @@ This library of nodes does not actually connect to any of the devices; it only a
 
 ### Things Directory
 
-After deployment, the **Things Directory** lists all _things_ configured in the setup nodes. Information for each _thing_ includes `name`, `type`, `ID`, `status`, `state`, and `props`. Proxied state values show a small button when hovered that links to the proxy _thing_. You can filter the directory by `type`. Other methods of filtering/searching will appear in the future.
+After deployment, the **Things Directory** lists all _things_ configured in the setup nodes. Information for each _thing_ includes `name`, `type`, `ID`, `status`, `state`, and `props`. Proxied state values show a small button when hovered that links to the proxy _thing_. You can filter the directory at the top.
 
 **IMPORTANT:** If your Things Directory shows "DISCONNECTED" and you are using a container such as Docker, ensure you are allowing port `8120` through on your container in addition to the standard `1880` for Node-RED. This library uses port `8120` for websocket communication of real-time _thing_-related data to the editor.
 
@@ -76,20 +76,20 @@ You must configure all _things_ using this node. Use a different _setup_ node fo
 | Property   | Info                                                                                                                                                               |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Thing Type | User's choice. Typically, the platform that these _things_ use to connect outside of Node-RED.                                                                     |
-| Things     | Lists each _thing_ of this `type`. Click a _thing_ to see detailed setup properties.                                                                           |
+| Things     | Lists each _thing_ of this `type`. Click a _thing_ to see detailed setup properties.                                                                               |
 | (common)   | Optional. Each `type` can have common State, Commands, or Status Function. These apply to all _things_ of this `type` unless overridden for an individual _thing_. |
 
 **For each thing:**
 
-| Property | Info
-| -------- | --------- |
-| Name | Required. Must be unique among **all** _things_
-| ID | Optional. Must be unique among all _things_ of same `type`
-| Props | Optional. Static properties
-| State | Optional. Initial state and proxied states. <ul> <li> On re-deployment, static values only initialize unassigned keys. </li><li> Proxied states can point to another _thing_ or a _thing_'s `children`. </li><li> Proxied states can refer to the same key or a different key. Or, if using a custom function for all `children`, the entire state can be used. </li><li> A custom function is given an array of `values`. The function should return reduced state for _thing_. </li> </ul>
-| Commands | Optional. Special actions to take when handling commands. <ul> <li>Any command not listed is processed as the _thing_ itself **and** passes to `children`. You can disable broadcast to `children` here. </li><li> Configure a specific type of command, or use `test` for a regex test. </li><ul><li> You can use key-type for object-style commands. </li></ul><li> You can configure commands to process for self only, forward to `children` only, or forward to another _thing_. </li><li> Commands can be transformed to other commands before processing/forwarding. </li><ul><li> If using a key-type command and also using a transform, the key can be transformed without modifying the value. </li></ul> </ul>
-| Children | Optional. A list of other _things_. <ul> <li> You can use children can be to create dynamic state for the parent _thing_. Use `State` to configure. </li><li> All commands forward automatically to all children, unless configured differently in `Commands`. </li> <li>The parent-child relationship can be many-to-many.</li> </ul>
-| Status Function | Optional. A function that runs to determine the status of a _thing_. This function takes current `state` and `props` as input, and outputs a node status object. The output object can contain `text`, `fill`, and/or `shape`. if individual _thing_ has a status function it will override the `type`-level status function.
+| Property        | Info                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Name            | Required. Must be unique among **all** _things_                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| ID              | Optional. Must be unique among all _things_ of same `type`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Props           | Optional. Static properties                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| State           | Optional. Initial state and proxied states. <ul> <li> On re-deployment, static values only initialize unassigned keys. </li><li> Proxied states can point to another _thing_ or a _thing_'s `children`. </li><li> Proxied states can refer to the same key or a different key. Or, if using a custom function for all `children`, the entire state can be used. </li><li> A custom function is given an array of `values`. The function should return reduced state for _thing_. </li> </ul>                                                                                                                                                                                                                               |
+| Commands        | Optional. Special actions to take when handling commands. <ul> <li>Any command not listed is processed as the _thing_ itself **and** passes to `children`. You can disable broadcast to `children` here. </li><li> Configure a specific type of command, or use `test` for a regex test. </li><ul><li> You can use key-type for object-style commands. </li></ul><li> You can configure commands to process for self only, forward to `children` only, or forward to another _thing_. </li><li> Commands can be transformed to other commands before processing/forwarding. </li><ul><li> If using a key-type command and also using a transform, the key can be transformed without modifying the value. </li></ul> </ul> |
+| Children        | Optional. A list of other _things_. <ul> <li> You can use children can be to create dynamic state for the parent _thing_. Use `State` to configure. </li><li> All commands forward automatically to all children, unless configured differently in `Commands`. </li> <li>The parent-child relationship can be many-to-many.</li> </ul>                                                                                                                                                                                                                                                                                                                                                                                     |
+| Status Function | Optional. A function that runs to determine the status of a _thing_. This function takes current `state` and `props` as input, and outputs a node status object. The output object can contain `text`, `fill`, and/or `shape`. if individual _thing_ has a status function it will override the `type`-level status function.                                                                                                                                                                                                                                                                                                                                                                                              |
 
 ### update
 
@@ -117,11 +117,11 @@ A node that outputs a message when a thing's state changes. Can be configured in
 
 ##### Properties
 
-| Property   | Info                                                                                                                                                                                                                                                                                                                                                                                         |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Thing Test | Test used to determine **what** _things_ to watch. Can be configured to check against any static attributes of each _thing_. List of matching _things_ is made immediately after setup and is not updated until nodes are re-deployed. Each _thing_ is tracked individually. Editor will show how many _things_ match the current configuration. Click the number to see the full list.      |
-| Trigger    | Configure **when** to trigger an output. "All Updates" triggers on any `state` update, regardless of changes. Use `state.` to track a specific `state` key. Leave empty to trigger on any `state` change. _Ignore initialization_ option prevents triggers when the value changes from `undefined`.                                                                                          |
-| Payload    | Configure what to output on `msg.payload`. Can be a typical Node-RED typed value, or part of the _thing_ `state`. Leave `state.` empty to output the entire state. Use the copy button to quickly copy the state field from the Trigger.                                                                                                                                                     |
+| Property   | Info                                                                                                                                                                                                                                                                                                                                                                                    |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Thing Test | Test used to determine **what** _things_ to watch. Can be configured to check against any static attributes of each _thing_. List of matching _things_ is made immediately after setup and is not updated until nodes are re-deployed. Each _thing_ is tracked individually. Editor will show how many _things_ match the current configuration. Click the number to see the full list. |
+| Trigger    | Configure **when** to trigger an output. "All Updates" triggers on any `state` update, regardless of changes. Use `state.` to track a specific `state` key. Leave empty to trigger on any `state` change. _Ignore initialization_ option prevents triggers when the value changes from `undefined`.                                                                                     |
+| Payload    | Configure what to output on `msg.payload`. Can be a typical Node-RED typed value, or part of the _thing_ `state`. Leave `state.` empty to output the entire state. Use the copy button to quickly copy the state field from the Trigger.                                                                                                                                                |
 
 ##### Output
 
@@ -151,10 +151,10 @@ A node that allows a message to pass based on specified conditions related to a 
 
 ##### Properties
 
-| Property   | Info                                                                                |
-| ---------- | ----------------------------------------------------------------------------------- |
-| Thing Name | The _thing_ to reference                                                            |
-| Conditions | The conditions that must be met to allow the message to pass through                |
+| Property   | Info                                                                             |
+| ---------- | -------------------------------------------------------------------------------- |
+| Thing Name | The _thing_ to reference                                                         |
+| Conditions | The conditions that must be met to allow the message to pass through             |
 | 2nd Output | Optionally choose to have a 2nd output that passes the message if the test fails |
 
 ##### Input
@@ -191,10 +191,10 @@ The node checks for any command configuration for the _thing_ and transform/forw
 
 ##### Properties
 
-| Property   | Info                                                                                                                                           |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Thing Name | Optional. When specified, all input messages are directed to this _thing_. If not provided, the input message must include _thing_ `name`.     |
-| Command    | Optional. When specified, used as the _command_. If not provided, the input must include the _command_.                                        |
+| Property   | Info                                                                                                                                       |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Thing Name | Optional. When specified, all input messages are directed to this _thing_. If not provided, the input message must include _thing_ `name`. |
+| Command    | Optional. When specified, used as the _command_. If not provided, the input must include the _command_.                                    |
 
 ##### Input
 
@@ -209,10 +209,10 @@ A node that listens for messages from _command_ nodes for a specific _thing_ `ty
 
 ##### Properties
 
-| Property   | Info                                                      |
-| ---------- | --------------------------------------------------------- |
-| Thing Type | The _thing_ `type` to listen for                          |
-| Topic      | The property or custom string to send as the `msg.topic`  |
+| Property   | Info                                                     |
+| ---------- | -------------------------------------------------------- |
+| Thing Type | The _thing_ `type` to listen for                         |
+| Topic      | The property or custom string to send as the `msg.topic` |
 
 ##### Output
 
