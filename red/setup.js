@@ -114,7 +114,7 @@ module.exports = function (RED) {
                       return new Function('values', s.fn)(values)
                   }
                 } catch (err) {
-                  node.warn(`Unable to get generate ${this.name}.state.${s.key}: ${err}`)
+                  node.warn(`Unable to generate ${this.name}.state.${s.key}: ${err}`)
                 }
               },
               enumerable: true,
