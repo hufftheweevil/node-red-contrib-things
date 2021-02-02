@@ -109,6 +109,28 @@
         },
         node.things
       )
+      let sort1 = $('<a>')
+        .addClass('red-ui-button red-ui-button-small')
+        .css({ marginTop: 4, float: 'right' })
+        .text('sort by name')
+        .click(() => {
+          lists.things.editableList('sort', (a, b) => (a.name || '').localeCompare(b.name))
+        })
+      let sort2 = $('<a>')
+        .addClass('red-ui-button red-ui-button-small')
+        .css({ marginTop: 4, float: 'right' })
+        .text('sort by id')
+        .click(() => {
+          let allIdsNums = true
+          lists.things.editableList('items').each(function () {
+            if (isNaN($(this).data().data.id)) allIdsNums = false
+          })
+          let sortFn = allIdsNums
+            ? (a, b) => a.id - b.id
+            : (a, b) => (a.id ?? '').toString().localeCompare(b.id)
+          lists.things.editableList('sort', sortFn)
+        })
+      lists.things.parent().parent().append(sort2, sort1)
 
       THI.setupList(lists.state, 'state', THI.addState, node.state)
 
