@@ -42,6 +42,7 @@ module.exports = function (RED) {
     class Thing {
       constructor(config) {
         this.config = config
+        this.typeConfig = nodeConfig
 
         // NAME
         this.name = config.name
@@ -201,7 +202,7 @@ module.exports = function (RED) {
         // Return array of all proxied things
         return Object.values(THINGS)
           .filter(t => {
-            let proxyStates = t.config.state || []
+            let proxyStates = [...t.typeConfig.state, ...t.config.state]
             return (
               proxyStates.some(s => s.child == this.name) ||
               (t.children.includes(this.name) && proxyStates.some(s => s.fn))
