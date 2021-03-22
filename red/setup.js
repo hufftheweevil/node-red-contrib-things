@@ -132,10 +132,10 @@ module.exports = function (RED) {
             !config.state.some(c => c.key == key && !c.hasOwnProperty('value')) &&
             initState({ key, value })
         )
-        // 3. Use own configuration
-        if (config.state) config.state.forEach(initState)
         // 2. Use type-level configuration
         if (nodeConfig.state) nodeConfig.state.forEach(initState)
+        // 3. Use own configuration
+        if (config.state) config.state.forEach(initState)
 
         // STATUS
         let _status
