@@ -202,7 +202,7 @@ module.exports = function (RED) {
         // Return array of all proxied things
         return Object.values(THINGS)
           .filter(t => {
-            let proxyStates = [...t.typeConfig.state, ...t.config.state]
+            let proxyStates = [...(t.typeConfig.state || []), ...(t.config.state || [])]
             return (
               proxyStates.some(s => s.child == this.name) ||
               (t.children.includes(this.name) && proxyStates.some(s => s.fn))
@@ -213,7 +213,7 @@ module.exports = function (RED) {
 
       // COMMANDS
       get commands() {
-        return [...(this.config.commands || []), ...(nodeConfig.commands || [])]
+        return [...(nodeConfig.commands || []), ...(this.config.commands || [])]
       }
     }
 
