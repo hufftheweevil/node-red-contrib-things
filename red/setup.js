@@ -125,6 +125,8 @@ module.exports = function (RED) {
           }
         }
         this.state = {}
+        // State is initialized in 3 steps, in order of priority. Once a
+        // state key is defined, nothing will be defined over top of it.
         // 1. Get old (last known) state; only for normally defined values
         let oldState = THINGS[this.name] ? THINGS[this.name].state : {}
         Object.entries(oldState).forEach(
@@ -133,10 +135,10 @@ module.exports = function (RED) {
             !config.state.some(c => c.key == key && !c.hasOwnProperty('value')) &&
             initState({ key, value })
         )
-        // 2. Use type-level configuration
-        if (nodeConfig.state) nodeConfig.state.forEach(initState)
-        // 3. Use own configuration
+        // 2. Use own configuration
         if (config.state) config.state.forEach(initState)
+        // 3. Use type-level configuration
+        if (nodeConfig.state) nodeConfig.state.forEach(initState)
 
         // STATUS
         let _status
