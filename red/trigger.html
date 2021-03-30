@@ -1,4 +1,4 @@
-<script src="things/convert.js"></script>
+<!-- <script src="things/convert.js"></script> -->
 <script src="things/ui-utils.js"></script>
 <script type="text/javascript">
   RED.nodes.registerType('Thing Trigger', {
@@ -11,23 +11,23 @@
       triggerState: { value: 'state' },
       triggerTest: { value: null },
       ignoreInit: { value: true },
-      payload: { value: { type: 'state' } },
+      payload: { value: { type: 'state' } }
       // Remaining fields are deprecated but listed here to allow old versions to convert properly
-      name: {},
-      multiMode: {},
-      multiKey: {},
-      multiTest: {},
-      multiValue: {},
-      output: {},
-      outputPath: {},
-      outputTest: {},
-      payloadPath: {}
+      // name: {},
+      // multiMode: {},
+      // multiKey: {},
+      // multiTest: {},
+      // multiValue: {},
+      // output: {},
+      // outputPath: {},
+      // outputTest: {},
+      // payloadPath: {}
     },
     inputs: 0,
     outputs: 1,
     icon: 'trigger.svg',
     label: function () {
-      convertOldTrigger(this)
+      // convertOldTrigger(this)
       let { path, type, value } = this.triggerThing
       return (
         this.nodeName ||
@@ -49,7 +49,7 @@
     },
     labelStyle: 'node_label_italic',
     oneditprepare: function () {
-      convertOldTrigger(this)
+      // convertOldTrigger(this)
 
       let typesForNonProps = [
         {
@@ -93,7 +93,7 @@
           node.things &&
           node.things.forEach(thing => {
             let _thing = { ...thing, type: node.thingType }
-            convertOldThing(_thing)
+            // convertOldThing(_thing)
             THINGS[thing.name] = _thing
             things.push(_thing)
           })
