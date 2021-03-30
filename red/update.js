@@ -19,7 +19,7 @@ module.exports = function (RED) {
       // Property takes precedence.
       let name = config.name || msg.topic
 
-      if (!name) return node.error('Thing name is required in properties or input')
+      if (!name) return node.error('Thing name is required in properties or input', msg)
 
       // Pointer to the thing
       let thing = THINGS[name]
@@ -31,7 +31,7 @@ module.exports = function (RED) {
       }
 
       // If still not found, error
-      if (!thing) return node.error(`Unknown thing ${name}`)
+      if (!thing) return node.error(`Unknown thing ${name}`, msg)
 
       // Determine update packet
       let update = {}
@@ -41,6 +41,12 @@ module.exports = function (RED) {
           RED.util.setMessageProperty(update, key, value, true)
         })
       } else {
+        if (typeof msg.payload != 'object')
+          return node.error(
+            `Invalid update payload provided: '${JSON.stringify(msg.payload)}'`,
+            msg
+          )
+
         update = msg.payload
       }
 
