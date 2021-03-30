@@ -102,11 +102,11 @@ module.exports = function (RED) {
                     case 'anyTrue':
                       return values.some(v => v === true)
                     case 'allTrue':
-                      return values.every(v => v === true)
+                      return values.length && values.every(v => v === true)
                     case 'anyFalse':
                       return values.some(v => v === false)
-                    case 'anyFalse':
-                      return values.every(v => v === false)
+                    case 'allFalse':
+                      return values.length && values.every(v => v === false)
                     case 'min':
                       return Math.min(...values)
                     case 'max':
