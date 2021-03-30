@@ -95,15 +95,44 @@
         lists.things,
         'thing',
         function (container, i, thing) {
-          $('<span>', { class: 'red-ui-treeList-label' })
-            .css({ padding: 5 })
+          container.css({ display: 'flex', alignItems: 'center' })
+
+          let lbl = $('<span>', { class: 'red-ui-treeList-label' })
+            .css({
+              padding: 5,
+              flex: 1,
+              cursor: thing.disabled ? '' : 'pointer',
+              color: thing.disabled ? 'gray' : ''
+            })
             .text(THI.makeLabel(thing))
-            .on('click', function (e) {
-              edit(container)
+            .click(e => {
+              if (!thing.disabled) edit(container)
               e.preventDefault()
               e.stopPropagation()
             })
+
             .appendTo(container)
+
+          let btn = $('<button>')
+            .addClass('red-ui-button red-ui-button-small')
+            .text(thing.disabled ? 'Enable' : 'Disable')
+            .css({ minWidth: 'fit-content' })
+            .hide()
+            .click(() => {
+              let disabled = !thing.disabled // Define new disabled state
+              thing.disabled = disabled
+              btn.text(disabled ? 'Enable' : 'Disable')
+              lbl.text(THI.makeLabel(thing)).css({
+                cursor: disabled ? '' : 'pointer',
+                color: disabled ? 'gray' : ''
+              })
+            })
+            .appendTo(container)
+
+          container.hover(
+            () => btn.show(),
+            () => btn.hide()
+          )
 
           if (!thing.hasOwnProperty('name')) edit(container)
         },

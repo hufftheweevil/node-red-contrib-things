@@ -220,6 +220,8 @@ module.exports = function (RED) {
     }
 
     nodeConfig.things.forEach(thing => {
+      if (thing.disabled) return
+
       // Adjust config format from old versions
       convertOldThing(thing)
 
