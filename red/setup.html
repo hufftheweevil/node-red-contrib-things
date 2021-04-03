@@ -553,11 +553,11 @@
 
 <script type="text/html" data-help-name="Thing Setup">
   <p>
-    All <i>things</i> must be configured using this node. Use a different <i>setup</i> node for each
-    <i>type</i> that you have. It is up to you how you organize your <i>types</i>. But it is
-    recommended to base them on the platforms you use - or in other words, based on how the devices
-    connect in to and out of Node-RED. There are no inputs or outputs for this node. All things
-    listed will be created when the flows are deployed.
+    You must configure all <i>things</i> using this node. Use a different <i>setup</i> node for each
+    <i>type</i> in your flows. It is up to you how you organize your <i>types</i>. We recommended
+    you base them on the platforms you use -- in other words, based on how the devices connect into
+    and out of Node-RED. There are no inputs or outputs for this node. The flows creates all listed
+    things on deployment.
   </p>
   <h3>Properties</h3>
   <dl class="message-properties">
@@ -568,13 +568,13 @@
     </dd>
     <dt class="required">Things</dt>
     <dd>
-      Each <i>thing</i> of this <code>type</code> is listed. Click a <i>thing</i> to see detailed
-      setup properties.
+      Lists each <i>thing</i> of this <code>type</code>. Click a <i>thing</i> to see detailed setup
+      properties.
     </dd>
     <dt class="optional">(common)</dt>
     <dd>
-      Each <code>type</code> can have common State, Commands, or Status Function. These get applied
-      to all <i>things</i> of this <code>type</code> unless overriden at the <i>thing</i> level.
+      Each <code>type</code> can have common State, Commands, or Status Function. These apply to all
+      <i>things</i> of this <code>type</code> unless overridden for an individual <i>thing</i>.
     </dd>
   </dl>
   <p><b>For each thing:</b></p>
@@ -589,17 +589,18 @@
     <dd>
       Initial state and proxied states.
       <ul>
+        <li>On re-deployment, static values only initialize unassigned keys.</li>
         <li>
-          On re-deployment, static values will only initialize if key is not already assigned.
+          Proxied states can point to another <i>thing</i> or a <i>thing</i>'s
+          <code>children</code>.
         </li>
-        <li>Proxied states can point to another <i>thing</i> or own <code>children</code>.</li>
         <li>
           Proxied states can refer to the same key or a different key. Or, if using a custom
-          function for all <code>children</code>, then the entire state can be used.
+          function for all <code>children</code>, the entire state can be used.
         </li>
         <li>
-          Custom function is given an array of <code>values</code>. Output should be the reduced
-          state for <i>thing</i>.
+          A custom function is given an array of <code>values</code>. The function should return
+          reduced state for <i>thing</i>.
         </li>
       </ul>
     </dd>
@@ -608,22 +609,26 @@
       Special actions to take when handling commands.
       <ul>
         <li>
-          Any command not listed will be processed as the <i>thing</i> itself <b>and</b> will also
-          be sent to all <code>children</code>. If this is not desired, configure it here.
+          Any command not listed is processed as the <i>thing</i> itself <b>and</b> passes to
+          <code>children</code>. You can disable broadcast to <code>children</code> here.
         </li>
-        <li>Configure a specific type of command, or use <code>test</code> to do a regex test.</li>
+        <li>Configure a specific type of command, or use <code>test</code> for a regex test.</li>
         <ul>
-          <li>Key-type can be used for object-style commands.</li>
+          <li>You can use key-type for object-style commands.</li>
         </ul>
         <li>
-          Commands can be configured to be processed as self only, forwarded to
-          <code>children</code> only, or forwarded to another <i>thing</i>.
+          You can configure commands to process for self only, forward to
+          <code>children</code> only, or forward to another <i>thing</i>.
         </li>
-        <li>Commands can be transformed to other commands before being processed/forwarded.</li>
+        <li>Commands can be transformed to other commands before processing/forwarding.</li>
         <ul>
           <li>
-            If using a key-type command and also using a transform, then the key can be transformed
-            and the value will stay.
+            If using a key-type command and also using a transform, the key can be transformed
+            without modifying the value.
+          </li>
+          <li>
+            If using transform and process as self-only, the transformed command will be recycled
+            back into the command handler.
           </li>
         </ul>
       </ul>
@@ -633,23 +638,23 @@
       A list of other <i>things</i>.
       <ul>
         <li>
-          Children can be used to create a dynamic state for the parent <i>thing</i>. Use
+          You can use children can be to create dynamic state for the parent <i>thing</i>. Use
           <code>State</code> to configure.
         </li>
         <li>
-          All commands are automatically forwarded to all children, unless configured differently in
+          All commands forward automatically to all children, unless configured differently in
           <code>Commands</code>.
         </li>
         <li>The parent-child relationship can be many-to-many.</li>
       </ul>
     </dd>
-    <dt class="optional">Stautus Function</dt>
+    <dt class="optional">Status Function</dt>
     <dd>
-      A function that runs to determine the status of a <i>thing</i>. Function is run with current
-      <code>state</code> and <code>props</code> as input, and should output a node status object.
-      The object can contain <code>text</code>, <code>fill</code>, and/or <code>shape</code>. If a
-      thing has its own status function, that will be used. Otherwise the <code>type</code>-level
-      status function will be used.
+      A function that runs to determine the status of a <i>thing</i>. This function takes current
+      <code>state</code> and <code>props</code> as input, and outputs a node status object. The
+      output object can contain <code>text</code>, <code>fill</code>, and/or <code>shape</code>. if
+      individual <i>thing</i> has a status function it will override the <code>type</code>-level
+      status function.
     </dd>
   </dl>
 </script>

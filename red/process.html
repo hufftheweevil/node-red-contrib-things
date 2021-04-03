@@ -69,16 +69,26 @@
 </script>
 
 <script type="text/html" data-help-name="Thing Process">
-<p>A node that will listen for messages from <i>command</i> nodes for a specific <i>thing</i> <code>type</code>, and then output the message. Note that this node does not provide any communication to the outside. It will only relay messages from repsective <i>command</i> nodes. Its purpose is to funnel all messages intended for a certain node library into one place.</p>
-<h3>Properties</h3>
-<dl class="message-properties">
-<dt class="required">Thing Type</dt><dd>The <i>thing</i> <code>type</code> to listen for</dd>
-<dt class="required">Topic</dt><dd>The property or custom string to send as the <code>msg.topic</code>.</dd>
-</dl>
-<h3>Output</h3>
-<dl class="message-properties">
-<dt class="required"><code>topic</code> <span class="property-type">string</span></dt><dd>As configured in properties</dd>
-<dt class="required"><code>payload</code> <span class="property-type">any</span></dt><dd>The <i>command</i>, passed from a <i>command</i> node</dd>
-<dt class="required"><code>thing</code> <span class="property-type">object</span></dt><dd>The entire thing object</dd>
-</dl>
+  <p>
+    A node that listens for messages from <i>command</i> nodes for a specific <i>thing</i>
+    <code>type</code>, and then outputs the message. Note that this node does not provide any
+    communication to the outside. It only relays messages from repsective <i>command</i> nodes. Its
+    purpose is to funnel all messages intended for a certain node library into one place.
+  </p>
+  <h3>Properties</h3>
+  <dl class="message-properties">
+    <dt class="required">Thing Type</dt>
+    <dd>The <i>thing</i> <code>type</code> to listen for</dd>
+    <dt class="required">Topic</dt>
+    <dd>The property or custom string to send as the <code>msg.topic</code></dd>
+  </dl>
+  <h3>Output</h3>
+  <dl class="message-properties">
+    <dt class="required"><code>topic</code> <span class="property-type">string</span></dt>
+    <dd>As configured in properties</dd>
+    <dt class="required"><code>payload</code> <span class="property-type">any</span></dt>
+    <dd>The <i>command</i>, passed from a <i>command</i> node</dd>
+    <dt class="required"><code>thing</code> <span class="property-type">object</span></dt>
+    <dd>The entire thing object</dd>
+  </dl>
 </script>

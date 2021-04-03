@@ -113,17 +113,46 @@
 </script>
 
 <script type="text/html" data-help-name="Thing Update">
-<p>A node that will update a <i>thing</i>'s state, potentially causing a separate <i>trigger</i> node(s) to output. Use is flexible and can be configured in a few ways.</p>
-<h3>Properties</h3>
-<dl class="message-properties">
-<dt class="optional">Thing Name</dt><dd>When specified, all input messages will be directed to this thing. If not provided, the input message must include thing <code>name</code>.</dd>
-<dt class="optional">Update Properties</dt><dd>The <code>state</code> keys/values to be updated. If any updates are configured, then input <code>payload</code> will be ignored. To use input <code>payload</code> as the state update, the update properties list must be empty.</dd>
-<dt class="optional">Thing Type</dt><dd>When specified, the node will watch for all <i>things</i> of the <code>type</code> and update its status with any missing <i>things</i>. Additionally, if specified, input messages can optionally use <i>thing</i> <code>ID</code> instead of <code>name</code>. If not provided, the node will not display a status.</dd>
-</dl>
-<h3>Input</h3>
-<dl class="message-properties">
-<dt class="optional"><code>topic</code> <span class="property-type">string</span></dt><dd><i>Thing</i> <code>name</code>. Only used if not specified in properties. <b>Note:</b> will <i>not</i> override property setting. Alternatively, if the node is configured with a <i>thing</i> <code>type</code>, then the <i>thing</i> <code>ID</code> can be used as the <code>topic</code>.</dd>
-<dt class="optional"><code>payload</code> <span class="property-type">object</span></dt><dd>The <code>state</code> update. Ignored if any updates are set in properties.</dd>
-<dt class="optional"><code>replace</code> <span class="property-type">boolean</span></dt><dd>If <code>true</code>, the new <code>state</code> will completely replace current <code>state</code>. Otherwise it will be merged, top-level only.</dd>
-</dl>
+  <p>
+    A node that updates a <i>thing</i>'s state, potentially causing separate <i>trigger</i> node(s)
+    to output. Updates are quite flexible and can be configured in a few ways.
+  </p>
+  <h3>Properties</h3>
+  <dl class="message-properties">
+    <dt class="optional">Thing Name</dt>
+    <dd>
+      When specified, all input messages are directed to this thing. If not provided, the input
+      message must include thing <code>name</code>.
+    </dd>
+    <dt class="optional">Update Properties</dt>
+    <dd>
+      The <code>state</code> keys/values to update. If any updates are configured, then input
+      <code>payload</code> is ignored. To use input <code>payload</code> as the state update, the
+      update properties list must be empty.
+    </dd>
+    <dt class="optional">Thing Type</dt>
+    <dd>
+      When specified, the node will watch for all <i>things</i> of the <code>type</code> and update
+      its status with any missing <i>things</i>. Additionally, if specified, input messages can
+      optionally use <i>thing</i> <code>ID</code> instead of <code>name</code>. If not provided, the
+      node will not display a status.
+    </dd>
+  </dl>
+  <h3>Input</h3>
+  <dl class="message-properties">
+    <dt class="optional"><code>topic</code> <span class="property-type">string</span></dt>
+    <dd>
+      <i>Thing</i> <code>name</code>. Only used if not specified in properties. <b>Note:</b> will
+      <i>not</i> override property setting. Alternatively, if the node is configured with a
+      <i>thing</i> <code>type</code>, then the <i>thing</i> <code>ID</code> can be used as the
+      <code>topic</code>.
+    </dd>
+    <dt class="optional"><code>payload</code> <span class="property-type">object</span></dt>
+    <dd>The <code>state</code> update. Ignored if any updates are set in properties.</dd>
+    <dt class="optional"><code>replace</code> <span class="property-type">boolean</span></dt>
+    <dd>
+      If <code>true</code>, the new <code>state</code> completely replaces current
+      <code>state</code>. Otherwise it will be merged, top-level only.
+    </dd>
+  </dl>
 </script>
