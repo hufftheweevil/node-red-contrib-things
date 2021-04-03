@@ -1,5 +1,4 @@
 let { TESTS, makeParams } = require('../lib/utils.js')
-// let { convertOldRule } = require('../lib/convert.js')
 
 module.exports = function (RED) {
   function Node(config) {
@@ -17,7 +16,6 @@ module.exports = function (RED) {
 
       // For each rule, filter the list
       config.rules.forEach(rule => {
-        // convertOldRule(rule)
         try {
           // `b` and `c` is the same for all things
           let { b, c } = makeParams('bc', rule, null, node, msg, RED)

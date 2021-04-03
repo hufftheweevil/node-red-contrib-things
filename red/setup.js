@@ -1,4 +1,3 @@
-// const { convertOldThing } = require('../lib/convert.js')
 const { stateBus, commandBus } = require('../lib/bus.js')
 const ws = require('../lib/ws.js')
 
@@ -347,9 +346,6 @@ module.exports = function (RED) {
 
     nodeConfig.things.forEach(thing => {
       if (thing.disabled) return
-
-      // Adjust config format from old versions
-      // convertOldThing(thing)
 
       // Build thing
       new Thing(thing)

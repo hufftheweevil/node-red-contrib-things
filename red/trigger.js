@@ -1,11 +1,8 @@
 let { stateBus } = require('../lib/bus.js')
 let { TESTS, makeStatus } = require('../lib/utils.js')
-// let { convertOldTrigger } = require('../lib/convert.js')
 
 module.exports = function (RED) {
   function Node(config) {
-    // convertOldTrigger(config)
-
     RED.nodes.createNode(this, config)
 
     const node = this
