@@ -1,5 +1,5 @@
 // const { convertOldThing } = require('../lib/convert.js')
-const { stateBus } = require('../lib/bus.js')
+const { stateBus, commandBus } = require('../lib/bus.js')
 const ws = require('../lib/ws.js')
 
 module.exports = function (RED) {
@@ -216,6 +216,132 @@ module.exports = function (RED) {
       // COMMANDS
       get commands() {
         return [...(nodeConfig.commands || []), ...(this.config.commands || [])]
+      }
+
+      // HANDLE COMMAND
+      handleCommand(command, meta = {}, debug) {
+        // debug function is used from command node
+        debug?.(`Handling command for ${this.name}: ${JSON.stringify(command)}`)
+
+        let handleProxy = (proxyCmdDef, next) => {
+          if (proxyCmdDef.child === undefined) {
+            // Process as self only
+            // If no transform, skip to emit
+            if (proxyCmdDef.as == undefined) return this.emitCommand({ command, ...meta })
+            // Otherwise, allow reinsertion to handler process
+            next(this.name)
+          } else if (proxyCmdDef.child === null) {
+            // Forward to children only
+            this.children.forEach(next)
+          } else {
+            // Forward to specific child
+            next(proxyCmdDef.child)
+          }
+        }
+
+        // Used after all command proxies are checked
+        // Defaults to processing command as self and forwarding to all children
+        let defaultEmit = () => {
+          debug?.(
+            `Processing as self (${this.name}) and forwarding to all children (${(
+              this.children || []
+            ).join(', ')})`
+          )
+          // Process as self
+          this.emitCommand({ command, ...meta }, debug)
+          // Forward to handlers of all children, if any
+          this.children?.forEach(thing => THINGS[thing]?.handleCommand(command, meta))
+        }
+
+        // If no command defs, then just skip to last step
+        let cmdDefs = this.commands || []
+        if (!cmdDefs.length) return defaultEmit()
+
+        // COMMAND TYPE == array
+        if (Array.isArray(command)) {
+          // Unable to deal with array commands at this time
+          node.warn(
+            'Unable to handle command routing for array type commands. Command will be processed as self and sent to children. If this is intended, then everything is ok.'
+          )
+          return defaultEmit()
+        }
+
+        // COMMAND TYPE == object
+        if (typeof command === 'object') {
+          // Clone command to prevent mutating if the same command was sent to multiple things
+          command = { ...command }
+          // Clone again to new variable - to track what keys are being forwarded elsewhere and what isn't
+          let origCommand = { ...command }
+          // Dictionary to store which key/value pairs are being sent to which things
+          let proxyCommands = {}
+          // Go through cmdDefs with key type
+          cmdDefs
+            .filter(cmdDef => cmdDef.type == 'key')
+            .forEach(cmdDef => {
+              // Check if this key used in command object
+              if (!command.hasOwnProperty(cmdDef.cmd)) return
+              handleProxy(cmdDef, child => {
+                let to = cmdDef.as === undefined ? cmdDef.cmd : cmdDef.as
+                proxyCommands[child] = proxyCommands[child] || {}
+                proxyCommands[child][to] = command[cmdDef.cmd]
+                debug?.(
+                  `Forwarding command from ${this.name} to ${child} for '.${cmdDef.cmd}'=>'.${to}'`
+                )
+              })
+              delete command[cmdDef.cmd]
+            })
+          // Send commands to all child things that have cmdDefs
+          Object.entries(proxyCommands).forEach(([child, nextCommand]) =>
+            THINGS[child]?.handleCommand(nextCommand, { origThing: this, origCommand, meta })
+          )
+          // If any keys left, do default emit
+          if (Object.keys(command).length) defaultEmit()
+          // Otherwise, skip defaultEmit
+          return
+        }
+
+        // COMMAND TYPE == string | number | boolean
+        let cmdDef = cmdDefs.find(cmdDef => {
+          switch (cmdDef.type) {
+            case 'str':
+              return typeof command == 'string' && cmdDef.cmd == command
+            case 'num':
+              return typeof command == 'number' && cmdDef.cmd == command
+            case 'bool':
+              return (
+                typeof command == 'boolean' && (cmdDef.cmd == command || cmdDef.cmd == 'either')
+              )
+            case 'test':
+              return new RegExp(cmdDef.cmd).test(command)
+          }
+        })
+        if (cmdDef) {
+          let nextCommand = cmdDef.as == undefined ? command : cmdDef.as
+          handleProxy(cmdDef, thing => {
+            debug?.(
+              `Forwarding command from ${this.name} to ${cmdDef.child} for '${command}'=>'${nextCommand}'`
+            )
+            THINGS[thing]?.handleCommand(nextCommand, {
+              origThing: thing,
+              origCommand: command,
+              meta
+            })
+          })
+          // Skip defaultEmit
+        } else {
+          // No command proxies found
+          defaultEmit()
+        }
+      }
+
+      // EMIT COMMAND
+      emitCommand(msg, debug) {
+        debug?.(
+          `Sending command to type ${this.type}: ${JSON.stringify(msg.command)} -> ${this.name}}`
+        )
+        // Emit to the bus so that all process nodes that
+        // are configured for this thing type will output.
+        commandBus.emit(this.type, { thing: this, ...msg })
       }
     }
 
