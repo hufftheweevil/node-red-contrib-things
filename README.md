@@ -52,16 +52,7 @@ After deployment, the **Things Directory** lists all _things_ configured in the 
 
 ### Upgrading from v2
 
-Version 3 is designed to automatically upgrade version 2 nodes. The main difference is how the library stores configuration data for the _setup_ node. Therefore, it is **highly recommended** to back up your `flows.json` file before upgrading.
-
-After upgrading to version 3, we **recommended** that you open every _setup_ and _trigger_ node and verify they remain configured as desired. We've run many tests to ensure everything upgrades properly, but of course there is always a chance for something to go wrong.
-
-Please report any bugs you encounter.
-
-**Other major changes from v2 to v3:**
-
-- The concept of "Groups" has morphed into "Children" and are now available for any `type`.
-- The two parts of the "Proxy" system have moved. State proxies are now part of State setup. Command proxies are now part of Command setup. See [Setup](#setup) below.
+Version 3 has breaking changes from version 2. Versions `<3.2.0` contain automatic conversion functions to handle the differences. If you want to upgrade from `^2` to `>=3.2.0`, it is **recommended** that you first upgrade to version `3.1.3`, then open every _setup_ and _trigger_ node and verify they remain configured as desired. After that, you can then upgrade to `>=3.2.0` without issue. Failure to follow these instructions may result in loss of configuration data.
 
 ## Nodes
 
