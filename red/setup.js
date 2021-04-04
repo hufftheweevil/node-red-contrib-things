@@ -226,7 +226,7 @@ module.exports = function (RED) {
           if (proxyCmdDef.child === undefined) {
             // Process as self only
             // If no transform, skip to emit
-            if (proxyCmdDef.as == undefined) return this.emitCommand({ command, ...meta })
+            if (proxyCmdDef.as == undefined) return this._emitCommand({ command, ...meta })
             // Otherwise, allow reinsertion to handler process
             next(this.name)
           } else if (proxyCmdDef.child === null) {
@@ -247,7 +247,7 @@ module.exports = function (RED) {
             ).join(', ')})`
           )
           // Process as self
-          this.emitCommand({ command, ...meta }, debug)
+          this._emitCommand({ command, ...meta }, debug)
           // Forward to handlers of all children, if any
           this.children?.forEach(thing => THINGS[thing]?.handleCommand(command, meta))
         }
@@ -333,14 +333,39 @@ module.exports = function (RED) {
         }
       }
 
-      // EMIT COMMAND
-      emitCommand(msg, debug) {
+      // EMIT COMMAND (intended for internal use only)
+      _emitCommand(msg, debug) {
         debug?.(
           `Sending command to type ${this.type}: ${JSON.stringify(msg.command)} -> ${this.name}}`
         )
         // Emit to the bus so that all process nodes that
         // are configured for this thing type will output.
         commandBus.emit(this.type, { thing: this, ...msg })
+      }
+
+      // UPDATE STATE
+      updateState(packet, replace) {
+        // Update state accordingly
+        if (replace) {
+          this.state = packet
+        } else {
+          Object.assign(this.state, packet)
+        }
+
+        // Begin trigger process
+        this._triggerUpdate()
+      }
+
+      // TRIGGER UPDATE (intended for internal use only)
+      _triggerUpdate() {
+        // Emit to the bus; wake up trigger nodes
+        stateBus.emit(this.name)
+
+        // Send to websockets to update sidebar
+        ws.send({ topic: 'update', payload: this })
+
+        // Trigger for all proxies
+        this.proxies.forEach(proxyName => THINGS[proxyName]?._triggerUpdate())
       }
     }
 

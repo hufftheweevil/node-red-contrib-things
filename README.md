@@ -109,7 +109,7 @@ A node that updates a _thing_'s state, potentially causing separate _trigger_ no
 | --------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `topic`   | _string_  | Optional. _Thing_ `name`. Only used if not specified in properties. **Note:** will _not_ override property setting. Alternatively, if the node is configured with a _thing_ `type`, then the _thing_ `ID` can be used as the `topic`. |
 | `payload` | _object_  | Optional. The `state` update. Ignored if any updates are set in properties.                                                                                                                                                           |
-| `replace` | _boolean_ | Optional. If `true`, the new `state` completely replaces current `state`. Otherwise it will be merged, top-level only.                                                                                                                |
+| `replace` | _boolean_ | Optional. If `true`, the new `state` completely replaces current `state`. Otherwise it will be merged, top-level only. Caution: Proxy state keys will be erased when using replace option.                                            |
 
 ### trigger
 

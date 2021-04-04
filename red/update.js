@@ -50,29 +50,8 @@ module.exports = function (RED) {
         update = msg.payload
       }
 
-      // Update state accordingly
-      if (msg.replace) {
-        thing.state = update
-      } else {
-        Object.assign(thing.state, update)
-      }
-
-      function triggerUpdate(thingName) {
-        // Emit to the bus; wake up trigger nodes
-        stateBus.emit(thingName)
-
-        // Get thing
-        let thing = THINGS[thingName]
-
-        // Send to websockets to update sidebar
-        ws.send({ topic: 'update', payload: thing })
-
-        // Trigger for all proxies
-        thing.proxies.forEach(proxyName => triggerUpdate(proxyName))
-      }
-
-      // Begin trigger process
-      triggerUpdate(name)
+      // Send to thing for update process
+      thing.updateState(update, msg.replace)
 
       // If configured with `type`, update status
       if (config.thingType) {
