@@ -141,6 +141,12 @@ A node that appends specified values of a _thing_ to a message.
 | Thing Name | The _thing_ to reference            |
 | Message    | Similar to the built-in inject node |
 
+##### Input
+
+| Key     | Type     | Info                                                                                                    |
+| ------- | -------- | ------------------------------------------------------------------------------------------------------- |
+| `topic` | _string_ | Optional. _Thing_ `name`, if not specified in properties. **Note:** will not override property setting. |
+
 ##### Output
 
 Same message from input, with specified properties changed/added.

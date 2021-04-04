@@ -123,14 +123,16 @@
 </script>
 
 <script type="text/html" data-help-name="Thing Get">
-  <p>A node that appends specified values of a <i>thing</i> to a message.</p>
-  <h3>Properties</h3>
-  <dl class="message-properties">
-    <dt class="required">Thing Name</dt>
-    <dd>The <i>thing</i> to reference</dd>
-    <dt class="required">Message</dt>
-    <dd>Similar to the built-in inject node</dd>
-  </dl>
-  <h3>Output</h3>
-  <p>Same message from input, with specified properties changed/added.</p>
+<p>A node that appends specified values of a <i>thing</i> to a message.</p>
+<h3>Properties</h3>
+<dl class="message-properties">
+<dt class="required">Thing Name</dt><dd>The <i>thing</i> to reference</dd>
+<dt class="required">Message</dt><dd>Similar to the built-in inject node</dd>
+</dl>
+<h3>Input</h3>
+<dl class="message-properties">
+<dt class="optional"><code>topic</code> <span class="property-type">string</span></dt><dd><i>Thing</i> <code>name</code>, if not specified in properties. <b>Note:</b> will not override property setting.</dd>
+</dl>
+<h3>Output</h3>
+<p>Same message from input, with specified properties changed/added.</p>
 </script>
