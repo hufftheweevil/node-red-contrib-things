@@ -36,7 +36,7 @@ module.exports = function (RED) {
 
       node.status(makeStatus(name, command))
 
-      getThing(name)?.handleCommand(command, {}, debug)
+      getThing(name) && getThing(name).handleCommand(command, {}, debug)
     })
   }
   RED.nodes.registerType('Thing Command', Node)

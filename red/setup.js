@@ -220,7 +220,7 @@ module.exports = function (RED) {
       // HANDLE COMMAND
       handleCommand(command, meta = {}, debug) {
         // debug function is used from command node
-        debug?.(`Handling command for ${this.name}: ${JSON.stringify(command)}`)
+        debug && debug(`Handling command for ${this.name}: ${JSON.stringify(command)}`)
 
         let handleProxy = (proxyCmdDef, next) => {
           if (proxyCmdDef.child === undefined) {
@@ -241,7 +241,7 @@ module.exports = function (RED) {
         // Used after all command proxies are checked
         // Defaults to processing command as self and forwarding to all children
         let defaultEmit = () => {
-          debug?.(
+          debug && debug(
             `Processing as self (${this.name}) and forwarding to all children (${(
               this.children || []
             ).join(', ')})`
@@ -249,7 +249,7 @@ module.exports = function (RED) {
           // Process as self
           this._emitCommand({ command, ...meta }, debug)
           // Forward to handlers of all children, if any
-          this.children?.forEach(thing => THINGS[thing]?.handleCommand(command, meta))
+          this.children && this.children.forEach(thing => THINGS[thing] && THINGS[thing].handleCommand(command, meta))
         }
 
         // If no command defs, then just skip to last step
@@ -283,7 +283,7 @@ module.exports = function (RED) {
                 let to = cmdDef.as === undefined ? cmdDef.cmd : cmdDef.as
                 proxyCommands[child] = proxyCommands[child] || {}
                 proxyCommands[child][to] = command[cmdDef.cmd]
-                debug?.(
+                debug && debug(
                   `Forwarding command from ${this.name} to ${child} for '.${cmdDef.cmd}'=>'.${to}'`
                 )
               })
@@ -291,7 +291,7 @@ module.exports = function (RED) {
             })
           // Send commands to all child things that have cmdDefs
           Object.entries(proxyCommands).forEach(([child, nextCommand]) =>
-            THINGS[child]?.handleCommand(nextCommand, { origThing: this, origCommand, meta })
+            THINGS[child] && THINGS[child].handleCommand(nextCommand, { origThing: this, origCommand, meta })
           )
           // If any keys left, do default emit
           if (Object.keys(command).length) defaultEmit()
@@ -317,10 +317,10 @@ module.exports = function (RED) {
         if (cmdDef) {
           let nextCommand = cmdDef.as == undefined ? command : cmdDef.as
           handleProxy(cmdDef, thing => {
-            debug?.(
+            debug && debug(
               `Forwarding command from ${this.name} to ${cmdDef.child} for '${command}'=>'${nextCommand}'`
             )
-            THINGS[thing]?.handleCommand(nextCommand, {
+            THINGS[thing] && THINGS[thing].handleCommand(nextCommand, {
               origThing: thing,
               origCommand: command,
               meta
@@ -335,7 +335,7 @@ module.exports = function (RED) {
 
       // EMIT COMMAND (intended for internal use only)
       _emitCommand(msg, debug) {
-        debug?.(
+        debug && debug(
           `Sending command to type ${this.type}: ${JSON.stringify(msg.command)} -> ${this.name}}`
         )
         // Emit to the bus so that all process nodes that
@@ -365,7 +365,7 @@ module.exports = function (RED) {
         ws.send({ topic: 'update', payload: this })
 
         // Trigger for all proxies
-        this.proxies.forEach(proxyName => THINGS[proxyName]?._triggerUpdate())
+        this.proxies.forEach(proxyName => THINGS[proxyName] && THINGS[proxyName]._triggerUpdate())
       }
     }
 
