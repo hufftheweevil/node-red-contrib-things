@@ -345,6 +345,9 @@ module.exports = function (RED) {
 
       // UPDATE STATE
       updateState(packet, replace) {
+        // Serialize state before changes
+        let oldState = JSON.stringify(this.state)
+
         // Update state accordingly
         if (replace) {
           this.state = packet
@@ -353,16 +356,30 @@ module.exports = function (RED) {
         }
 
         // Begin trigger process
-        this._triggerUpdate()
+        this._triggerUpdate(oldState !== JSON.stringify(this.state))
       }
 
       // TRIGGER UPDATE (intended for internal use only)
-      _triggerUpdate() {
+      _triggerUpdate(hasChanged) {
         // Emit to the bus; wake up trigger nodes
+        // (Let trigger nodes determine if something changed and if that matters)
         stateBus.emit(this.name)
 
         // Send to websockets to update sidebar
-        ws.send({ topic: 'update', payload: this })
+        // (only if something changed; and without config info)
+        if (hasChanged)
+          ws.send({
+            topic: 'update',
+            payload: {
+              name: this.name,
+              type: this.type,
+              id: this.id,
+              children: this.children,
+              state: this.state,
+              props: this.props,
+              status: this.status
+            }
+          })
 
         // Trigger for all proxies
         this.proxies.forEach(proxyName => THINGS[proxyName]?._triggerUpdate())
