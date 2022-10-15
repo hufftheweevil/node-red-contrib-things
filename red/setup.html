@@ -377,38 +377,6 @@
         id: 'node-input-editor-statusFunction-thing'
       })
 
-      // Add extra color highlighting for 'state' and 'props'
-      let session = this.statusEditors.main.session
-      session.setMode(`ace/mode/nrjavascript`, function () {
-        let rules = session.$mode.$highlightRules.getRules()
-        Object.values(rules).forEach(rule => {
-          rule.unshift({
-            token: 'state_props',
-            regex: 'values|state|props'
-          })
-        })
-        // Force recreation of tokenizer
-        session.$mode.$tokenizer = null
-        session.bgTokenizer.setTokenizer(session.$mode.getTokenizer())
-        // Force re-highlight whole document
-        session.bgTokenizer.start(0)
-      })
-      $('<style>')
-        .prop('type', 'text/css')
-        .html(
-          `
-        .ace_state_props {color: #b900ff}
-        .node-ui-error-info { display: block; font-size: small; color: #D74108 }
-        .node-form-page { min-width: 600px }
-        .typedInput-with-padding+div .red-ui-typedInput-type-label { padding-right: 5px }
-        .editor-placeholder {
-          .ace_content, .ace_active-line { background-color: lightgray }
-          .ace_line { color: gray, background-color: lightgray }
-        }
-        `
-        )
-        .appendTo('head')
-
       // Initialize
       $('#node-form-thing').hide()
     },
