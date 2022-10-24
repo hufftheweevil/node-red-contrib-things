@@ -371,10 +371,12 @@
       this.statusEditors = {}
       this.statusEditors.main = RED.editor.createEditor({
         id: 'node-input-editor-statusFunction',
+        mode: 'ace/mode/text', // Note: only applies if Node-RED using Ace editor
         value: this.statusFunction
       })
       this.statusEditors.thing = RED.editor.createEditor({
-        id: 'node-input-editor-statusFunction-thing'
+        id: 'node-input-editor-statusFunction-thing',
+        mode: 'ace/mode/text' // Note: only applies if Node-RED using Ace editor
       })
 
       // Initialize
