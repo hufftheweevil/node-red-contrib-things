@@ -19,7 +19,8 @@
       "list": "red/list.js",
       "command": "red/command.js",
       "process": "red/process.js"
-    }
+    },
+    "version": ">=1.0.0"
   },
   "keywords": [
     "node-red",
