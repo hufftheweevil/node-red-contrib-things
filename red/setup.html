@@ -354,7 +354,11 @@
         back()
       })
 
-      $('#node-button-thing-cancel').on('click', back)
+      $('#node-button-thing-cancel').on('click', function () {
+        if ($('#node-input-thing-name').val().trim() === '')
+          lists.things.editableList('removeItem', currentEdit.data().data)
+        back()
+      })
 
       function back() {
         currentEdit = null
