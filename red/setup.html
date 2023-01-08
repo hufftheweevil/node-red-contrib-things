@@ -311,10 +311,7 @@
         THI.populateList(lists.thing_children, thing.children || [])
 
         // Status
-        if (thing.statusFn) {
-          node.statusEditors.thing.setValue(thing.statusFn)
-          node.statusEditors.thing.unsetStyle('editor-placeholder')
-        }
+        if (thing.statusFn) node.statusEditors.thing.setValue(thing.statusFn)
 
         // Prepare interface
         $('#node-form-main').hide()
