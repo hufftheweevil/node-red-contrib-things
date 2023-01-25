@@ -381,8 +381,8 @@ module.exports = function (RED) {
             }
           })
 
-        // Trigger for all proxies
-        this.proxies.forEach(proxyName => THINGS[proxyName]?._triggerUpdate())
+        // Trigger for all proxies (only if something changed)
+        if (hasChanged) this.proxies.forEach(proxyName => THINGS[proxyName]?._triggerUpdate(true))
       }
     }
 
